@@ -1,6 +1,7 @@
 
-name2name_back = [
-
+#name2name_
+back = [
+    'lar',
     "lık",
     "luk",
     'lı'  ,
@@ -36,8 +37,9 @@ name2name_back = [
 ]
 
 
-name2name_front = [
-
+#name2name_
+front = [
+    'ler',
     'lik' ,#luk ve turevler          kucuk unlu uyumu
     "lük",
 

@@ -1,6 +1,15 @@
 from enum import Enum
 from suffixes import name2name
 
+vowels = ['a','o','u','ı','e','ö','ü','i',]
+
+back_vowels = ['a','ı','o','u']
+
+front_vowels =['e','i','ö','ü']
+
+fistikci_sahap = ['f','s','t','ç','ş','h','p']
+
+
 class Harmony(Enum):
     Back  = 0
     Front = 1
@@ -32,17 +41,20 @@ def exists(word):
 
 def harmony(word):
     i = len(word) -1
-    while(word[i] not in ['a','o','u','ı','e','ö','ü','i',]):
+    while(word[i] not in vowels):
         i = i-1
     ## kuraldışıları da çözüver
-    if (word[i] in ['a','ı','o','u']):
+    if (word[i] in back_vowels):
         return Harmony.Back
-    if (word[i] in ['e','i','ö','ü']):
+    if (word[i] in front_vowels):
         return Harmony.Front
     
 
 def infinitive(word):
     return word + ("mak" if harmony(word) == Harmony.Back else "mek")
  
+
+def isVerb(word):
+    return exists(infinitive(word))
 
     
