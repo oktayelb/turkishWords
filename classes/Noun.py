@@ -20,8 +20,8 @@ class Word():
     ##isRoot
     ##root
 
-## Noun("am").cik() = Noun("amcik")
-# Noun("amcik").las() = Verb("amciklas")
+## Noun("adam").cık() = Noun("adamcık")
+# Noun("adamcık").laş() = Verb("adamcıklaş")
 # 
 # 
 # 
