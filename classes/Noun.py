@@ -20,15 +20,13 @@ class Word():
     ##isRoot
     ##root
 
-## Noun("adam").cık() = Noun("adamcık")
+# Noun("adam").cık() = Noun("adamcık")
 # Noun("adamcık").laş() = Verb("adamcıklaş")
+# Bu sekilde yazmak turkce acisindan daha kolay ve
+# anlasilir oldugu icin class/method olayina giristim
+# belki geri donulebilir cunku pek yarari oldugunu sanmiyorum 
 # 
-# 
-# 
-# 
-# 
-# 
-#  
+
 
 class Noun(Word):
 

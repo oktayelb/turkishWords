@@ -22,8 +22,6 @@ class MinorHarmony(Enum):   ## Kucuk Unlu uyumu
     FrontWide   = 3  ##Ince Duz
 
 
-
-
 def exists(word):           ## Sozcuk words.txt te var mi onu kontrol ediyor.
     
     with  open("words.txt", "r", encoding="utf-8") as f:
@@ -37,11 +35,13 @@ def exists(word):           ## Sozcuk words.txt te var mi onu kontrol ediyor.
     while low <= high:
         mid = (low + high) // 2
         if word_list[mid] == word:
+            f.close()
             return True
         elif word_list[mid] < word:
             low = mid + 1
         else:
             high = mid - 1
+    f.close()
     return False
 
 
