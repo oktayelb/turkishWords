@@ -95,6 +95,6 @@ front = [
     
     'deş'   ,
     'er', #ulestirme
-    'inci' #sıra
+    'inci', #sıra
     'üncü'
 ]

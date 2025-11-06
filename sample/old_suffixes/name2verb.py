@@ -9,7 +9,7 @@ back = [
     'sa' ,
     'ar',
     'ır',
-
+    "lat",
 ]
 
 #name2verb_
@@ -20,6 +20,7 @@ front = [
     'leş',
     'ik',
     'len',
+    "let",
     'se' ,
     'er',
     'ir',

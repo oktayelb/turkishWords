@@ -1,13 +1,15 @@
 #verb2verb_
 back = [
-
+    "ma",
     'ıt',
+    "ut",
     't',
     'dır', 
     'dur',
     'tır',
     'tur',
     'ış',
+    "uş",
     'ş',
     'ın',
     'un',
@@ -20,13 +22,16 @@ back = [
 
 #verb2verb_
 front = [
+    "me",
     'it',
+    "üt",
     't',
     'dir', 
     'dür',
     'tir',
     'tur',
     'iş',
+    "üş",
     'ş',
     'in',
     'ün',

@@ -1,83 +1,91 @@
 from enum import Enum
-from suffixes import name2name
 
-vowels = ['a','o','u','ı','e','ö','ü','i',]     ##T.Turkcesindeki tum Unluler
-
-back_vowels = ['a','ı','o','u']                 ## Kalin Unluler
-
-front_vowels =['e','i','ö','ü']                 ## Ince Unluler
-
-fistikci_sahap = ['f','s','t','ç','ş','h','p']  ## Ikonik unsuz sertlestirmesine sokan unsuz harfler
+# --- Constants ---
+VOWELS = ['a','o','u','ı','e','ö','ü','i']
+BACK_VOWELS = ['a','ı','o','u']
+FRONT_VOWELS = ['e','i','ö','ü']
+HARD_CONSONANTS = ['f','s','t','k','ç','ş','h','p']  # fıstıkçı şahap
 
 
-class MajorHarmony(Enum):   ## Buyuk Unlu Uyuymu
-    Back  = 0  ##Kalin
-    Front = 1  ##ince 
+vowels  = ['a','o','u','ı','e','ö','ü','i']
+fistikci_sahap = ['f','s','t','k','ç','ş','h','p']
 
-class MinorHarmony(Enum):   ## Kucuk Unlu uyumu
+# --- Enums ---
+class MajorHarmony(Enum):
+    BACK = "back"
+    FRONT = "front"
 
-    BackRound   = 0  ##Kalin Yuvarlak 
-    BackWide    = 1  ##Kalin Duz
-    FrontRound  = 2  ##Ince Yuvarlak 
-    FrontWide   = 3  ##Ince Duz
-
-
-def exists(word):           ## Sozcuk words.txt te var mi onu kontrol ediyor.
-    
-    with  open("words.txt", "r", encoding="utf-8") as f:
-        word_list = [line.strip() for line in f]
-
-    word_list.sort()
-
-    low = 0
-    high = len(word_list) - 1
-
-    while low <= high:
-        mid = (low + high) // 2
-        if word_list[mid] == word:
-            f.close()
-            return True
-        elif word_list[mid] < word:
-            low = mid + 1
-        else:
-            high = mid - 1
-    f.close()
-    return False
+class MinorHarmony(Enum):
+    BACK_ROUND = 0
+    BACK_WIDE  = 1
+    FRONT_ROUND = 2
+    FRONT_WIDE  = 3
 
 
+# --- Load words once ---
+with open("words.txt", "r", encoding="utf-8") as f:
+    WORDS = set(line.strip() for line in f if line.strip())
 
-def major_harmony(word):    ## Sozcuge gelecek ekler icin son unlusune bakiyor. Istisnalari saymiyor.
-    i = len(word) -1
-    while(word[i] not in vowels):
-        i = i-1
-    ## kuraldışıları da çözüver
-    if (word[i] in back_vowels):
-        return MajorHarmony.Back
-    if (word[i] in front_vowels):
-        return MajorHarmony.Front
-    
-
-def minor_harmony(word):
-    i = len(word) -1
-    while(word[i] not in vowels):
-        i = i-1
-    ## kuraldışıları da çözüver
-    temp = word[i]
-    if (temp in ['o','u']):
-        return MinorHarmony.BackRound
-    if (temp in ['ı','a']):
-        return MinorHarmony.BackWide
-    if (temp in ['ö','ü'] ):
-        return MinorHarmony.FrontRound
-    if (temp in ['i','e']):
-        return MinorHarmony.FrontWide
+def exists(word: str) -> bool:
+    """Checks if a word exists in words.txt"""
+    return word in WORDS or infinitive(word) in WORDS
 
 
-def infinitive(word):       ## Sozcugun Mastarini veriyor  
-    return word + ("mak" if major_harmony(word) == MajorHarmony.Back else "mek")
- 
+# --- Harmony functions ---
+def major_harmony(word: str) -> MajorHarmony | None:
+    """Determines major vowel harmony based on last vowel"""
+    for ch in reversed(word):
+        if ch in VOWELS:
+            return MajorHarmony.BACK if ch in BACK_VOWELS else MajorHarmony.FRONT
+    return None  # no vowels
 
-def isVerb(word):           ## girdinin sonuna mastar ekleyip var mi diye bakiyor. 
+
+def minor_harmony(word: str) -> MinorHarmony | None:
+    """Determines minor vowel harmony based on last vowel"""
+    for ch in reversed(word):
+        if ch not in VOWELS:
+            continue
+        if ch in ['o', 'u']:  return MinorHarmony.BACK_ROUND
+        if ch in ['a', 'ı']:  return MinorHarmony.BACK_WIDE
+        if ch in ['ö', 'ü']:  return MinorHarmony.FRONT_ROUND
+        if ch in ['e', 'i']:  return MinorHarmony.FRONT_WIDE
+    return None
+
+
+# --- Morphological utilities ---
+def infinitive(word: str) -> str:
+    """Returns the infinitive form of a verb root."""
+    suffix = "mak" if major_harmony(word) == MajorHarmony.BACK else "mek"
+    return word + suffix
+
+
+def can_be_verb(word: str) -> bool:
+    """Checks if a root is a verb by verifying its infinitive form."""
     return exists(infinitive(word))
 
-    
+
+def harden_consonant(ch: str) -> str:
+    """Returns the hardened version of a soft consonant if applicable."""
+    mapping = {'b': 'p', 'c': 'ç', 'd': 't', 'g': 'k', 'ğ': 'k'}
+    return mapping.get(ch, ch)
+
+
+def ends_with_vowel(word: str) -> bool:
+    """Check if word ends with a vowel"""
+    return word and word[-1] in VOWELS
+
+
+def ends_with_consonant(word: str) -> bool:
+    """Check if word ends with a consonant"""
+    return word and word[-1] not in VOWELS
+
+def has_no_vowels(word: str) -> bool:
+    """Return True if the given word contains no vowels."""
+    ret = True
+
+    for ch in word:
+        if ch in VOWELS:
+            ret = False
+            break
+    return ret
+
