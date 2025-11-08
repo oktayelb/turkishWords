@@ -27,8 +27,8 @@ Python 3.8+ sürümünün yüklü olması gerekir.
 
 1. Depoyu klonlayın:
 ```bash
-git clone https://github.com/oktayelb/turkishWords.git
-cd turkishWords
+git clone https://github.com/oktayelb/turkish-word-decomposer.git
+cd turkish-word-decomposer
 ```
 
 2. Bağımlılıkları yükleyin:
@@ -44,10 +44,7 @@ pip install torch numpy tqdm
 
 Temel ayrıştırma ve sıralama özelliklerini kullanmak için genellikle `decomposition.py` ve `ml_ranking_model.py` dosyalarındaki mantığı entegre etmeniz gerekir.
 
-```bash
-# Örnek ayrıştırma betiği çalıştırma (lütfen gerçek kullanımla değiştirin)
-# python decomposition.py --word "okuldakilerle"
-```
+
 
 ### 2. Etkileşimli Eğitim
 
@@ -109,8 +106,8 @@ You should have Python 3.8+ installed.
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/oktayelb/turkishWords.git
-cd turkishWords
+git clone https://github.com/oktayelb/turkish-word-decomposer.git
+cd turkish-word-decomposer
 ```
 
 2. Install dependencies:
