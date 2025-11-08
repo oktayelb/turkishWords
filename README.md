@@ -4,7 +4,7 @@
 
 ## Genel Bakış
 
-**turkishWords**, Türkçe kelimelerin morfolojik analizine ve ayrıştırılmasına odaklanmış bir Doğal Dil İşleme (DDİ) projesidir.
+**turkish-word-decomposer**, Türkçe kelimelerin morfolojik analizine ve ayrıştırılmasına odaklanmış bir Doğal Dil İşleme (DDİ) projesidir.
 
 Türkçe, kelimelerin bir kök kelimeye birden fazla ek (sonek) eklenerek oluşturulduğu eklemeli bir dildir. Bu depo, karmaşık Türkçe kelimeleri bir makine öğrenimi yaklaşımı kullanarak köklerine ve eklenmiş morfemlerine ayırmak için gerekli mantığı, modeli ve eğitim betiklerini sağlar.
 
