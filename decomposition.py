@@ -1,7 +1,7 @@
 import word_methods as wrd
 import suffixes as sfx
 import old_versions.print as display
-
+from rules.suffix_rules import validate_suffix_addition
 
 
 def find_suffix_chain(word, start_pos, root, visited=None):
@@ -33,8 +33,9 @@ def find_suffix_chain(word, start_pos, root, visited=None):
                 remaining = rest[len(suffix_form):]
                 subchains = find_suffix_chain(word, target_pos, next_root, visited) if remaining else [([], target_pos)]
                 for chain, final_pos in subchains:
-                    # Store suffix object instead of just form and position
-                    results.append(([suffix_obj] + chain, final_pos))
+                    # RULE VALIDATION: Check if adding this suffix violates any rules
+                    if validate_suffix_addition(chain, suffix_obj):
+                        results.append(([suffix_obj] + chain, final_pos))
     return results
 
 

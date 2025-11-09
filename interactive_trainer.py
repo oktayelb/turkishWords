@@ -20,10 +20,13 @@ class InteractiveTrainer:
     def __init__(self, model_path: str = "model_checkpoint.pt", vocab_path: str = "vocab.json"):
         self.model_path = model_path
         self.vocab_path = vocab_path
+        self.training_count_file = "training_count.txt" 
         
-        # Initialize vocabulary
-        print("Initializing vocabulary...")
+        # Initialize vocabulary and auto-save to JSON
+        print("Initializing vocabulary from suffixes.py...")
         self.vocab = SuffixVocabulary()
+        self.vocab.save(vocab_path)  # Always save/update the vocabulary file
+        print(f"✓ Vocabulary saved to {vocab_path}")
         
         # Initialize model
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -46,12 +49,12 @@ class InteractiveTrainer:
                 self.trainer.load_checkpoint(model_path)
                 print(f"✓ Loaded existing model from {model_path}")
             except Exception as e:
-                print(f"⚠ Could not load model: {e}")
+                print(f"⚠  Could not load model: {e}")
                 print("Starting with fresh model")
         else:
             print("Starting with fresh model")
         
-        self.training_count = 0
+        self.training_count = self.load_training_count()
     
     def display_decompositions(self, word: str, suffix_chains: List[List], 
                             scores: Optional[List[float]] = None):
@@ -174,7 +177,7 @@ class InteractiveTrainer:
         suffix_chains = get_suffix_object_lists(word)
         
         if not suffix_chains:
-            print(f"\n⚠ No valid decompositions found for '{word}'")
+            print(f"\n⚠  No valid decompositions found for '{word}'")
             return False
         
         if len(suffix_chains) == 1:
@@ -237,7 +240,7 @@ class InteractiveTrainer:
         suffix_chains = get_suffix_object_lists(word)
         
         if not suffix_chains:
-            print(f"\n⚠ No valid decompositions found for '{word}'")
+            print(f"\n⚠  No valid decompositions found for '{word}'")
             return
         
         if len(suffix_chains) == 1:
@@ -288,11 +291,32 @@ class InteractiveTrainer:
         print(f"Final POS: {final_pos}")
         print("="*70)
         
+    def load_training_count(self) -> int:
+        """Load training count from file, or start at 0 if not found."""
+        try:
+            if os.path.exists(self.training_count_file):
+                with open(self.training_count_file, "r") as f:
+                    return int(f.read().strip())
+        except Exception as e:
+            print(f"⚠  Could not read training_count.txt: {e}")
+        return 0  # default if missing or invalid
+
+    def save_training_count(self):
+        """Save current training count to file."""
+        try:
+            with open(self.training_count_file, "w") as f:
+                f.write(str(self.training_count))
+        except Exception as e:
+            print(f"⚠  Could not save training_count.txt: {e}")
+
+
     def save(self):
-        """Save model and vocabulary"""
+        """Save model, vocabulary, and training count"""
         self.trainer.save_checkpoint(self.model_path)
         self.vocab.save(self.vocab_path)
-        print(f"✓ Model and vocabulary saved")
+        self.save_training_count()
+        print(f"✓ Model, vocabulary, and training count saved")
+
 
     def interactive_loop(self):
         """Main interactive training loop"""
@@ -309,7 +333,7 @@ class InteractiveTrainer:
         
         while True:
             try:
-                user_input = input("\n🔤 Enter word or command: ").strip().lower()
+                user_input = input("\n📤 Enter word or command: ").strip().lower()
                 
                 if not user_input:
                     continue
@@ -354,7 +378,7 @@ class InteractiveTrainer:
                         break
             
             except KeyboardInterrupt:
-                print("\n\n⚠ Interrupted!")
+                print("\n\n⚠  Interrupted!")
                 if self.training_count > 0:
                     save_choice = input("Save model before quitting? (y/n): ").strip().lower()
                     if save_choice == 'y':

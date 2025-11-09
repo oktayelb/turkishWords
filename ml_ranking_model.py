@@ -9,7 +9,7 @@ import suffixes as sfx
 # ---------- Suffix to ID Mapping ----------
 class SuffixVocabulary:
     def __init__(self):
-        # Create mappings for all suffixes
+        # Create mappings for all suffixes dynamically from suffixes.py
         self.suffix_to_id = {}
         self.id_to_suffix = {}
         self.category_to_id = {
@@ -50,20 +50,22 @@ class SuffixVocabulary:
         """Save vocabulary to file"""
         data = {
             'suffix_to_id': self.suffix_to_id,
-            'id_to_suffix': self.id_to_suffix,
+            'id_to_suffix': {str(k): v for k, v in self.id_to_suffix.items()},  # Convert int keys to strings for JSON
             'category_to_id': self.category_to_id
         }
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+        print(f"✓ Vocabulary saved to {path}")
     
     def load(self, path: str):
         """Load vocabulary from file"""
         with open(path, 'r', encoding='utf-8') as f:
             data = json.load(f)
         self.suffix_to_id = data['suffix_to_id']
-        self.id_to_suffix = data['id_to_suffix']
+        self.id_to_suffix = {int(k): v for k, v in data['id_to_suffix'].items()}  # Convert string keys back to ints
         self.category_to_id = data['category_to_id']
         self.num_suffixes = len(self.suffix_to_id)
+        print(f"✓ Vocabulary loaded from {path} ({self.num_suffixes} suffixes)")
 
 
 # ---------- Model ----------
@@ -273,7 +275,7 @@ class DecompositionTrainer:
             'optimizer_state_dict': self.optimizer.state_dict(),
             'training_history': self.training_history
         }, path)
-        print(f"Checkpoint saved to {path}")
+        print(f"✓ Model checkpoint saved to {path}")
     
     def load_checkpoint(self, path: str):
         """Load model checkpoint"""
@@ -281,7 +283,7 @@ class DecompositionTrainer:
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         self.training_history = checkpoint.get('training_history', [])
-        print(f"Checkpoint loaded from {path}")
+        print(f"✓ Model checkpoint loaded from {path}")
 
     def train_step_pairwise(self, suffix_chains: List[List], better_idx: int, worse_idx: int):
         """Training step for pairwise preference"""
@@ -311,10 +313,25 @@ class DecompositionTrainer:
         return loss.item()
 
 
+# ---------- Initialization Helper ----------
+def initialize_vocabulary_and_save(vocab_path: str = "suffix_vocab.json") -> SuffixVocabulary:
+    """
+    Initialize vocabulary from suffixes.py and automatically save to JSON.
+    This ensures the JSON is always up-to-date with the current suffix definitions.
+    """
+    print("Initializing vocabulary from suffixes.py...")
+    vocab = SuffixVocabulary()
+    
+    # Always save/update the vocabulary file
+    vocab.save(vocab_path)
+    
+    return vocab
+
+
 # ---------- Example usage ----------
 if __name__ == "__main__":
-    # Initialize vocabulary
-    vocab = SuffixVocabulary()
+    # Initialize vocabulary and auto-save
+    vocab = initialize_vocabulary_and_save("suffix_vocab.json")
     
     # Initialize model
     model = DecompositionRanker(
