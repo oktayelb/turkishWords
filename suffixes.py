@@ -120,7 +120,7 @@ class Suffix():
 reflexive_is            = Suffix("reflexive_is", "iş", WType.Verb, WType.Verb, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
 reflexive_ik            = Suffix("reflexive_ik", "ik", WType.Verb, WType.Verb, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
 active_t                = Suffix("active_t", "it", WType.Verb, WType.Verb, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
-active_tir              = Suffix("active_tir", "dir", WType.Verb, WType.Verb, HasMajorHarmony.Yes, HasMinorHarmony.Yes) 
+active_tir              = Suffix("active_tir", "dir", WType.Verb, WType.Verb, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
 active_ir               = Suffix("active_ir", "ir", WType.Verb, WType.Verb, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
 passive_il              = Suffix("passive_il", "il", WType.Verb, WType.Verb, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
 passive_in              = Suffix("passive_in", "in", WType.Verb, WType.Verb, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
@@ -177,8 +177,11 @@ nounifier_gi            = Suffix("nounifier_gi", "gi", WType.Verb, WType.Noun, H
 nounifier_im            = Suffix("nounifier_im", "im", WType.Verb, WType.Noun, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
 nounifier_in            = Suffix("nounifier_in", "in", WType.Verb, WType.Noun, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
 nounifier_inç           = Suffix("nounifier_inç", "inç", WType.Verb, WType.Noun, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
+nounifier_inti          = Suffix("nounifier_inti", "inti", WType.Verb, WType.Noun, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
 toolifier_geç           = Suffix("toolifier_geç", "geç", WType.Verb, WType.Noun, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
 toolifier_eç            = Suffix("toolifier_eç", "eç", WType.Verb, WType.Noun, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
+neverfactative_mez      = Suffix("neverfactative_mez", "mez", WType.Verb, WType.Noun, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
+pastfactative_miş       = Suffix("pastfactative_miş", "miş", WType.Verb, WType.Noun, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
 
 # ============================================================================
 # AUTO-COLLECTED SUFFIX LISTS
