@@ -10,7 +10,7 @@ from typing import List, Optional, Tuple, Dict
 from dataclasses import dataclass
 
 # Import your modules
-from decomposition import decompose, get_suffix_object_lists
+from util.decomposition import decompose, get_suffix_object_lists
 from ml_ranking_model import (
     SuffixVocabulary, 
     DecompositionRanker, 
@@ -21,10 +21,10 @@ from ml_ranking_model import (
 @dataclass
 class TrainingConfig:
     """Configuration for the interactive trainer"""
-    model_path: str = "turkish_morph_model.pt"
-    vocab_path: str = "suffix_vocab.json"
-    training_count_file: str = "training_count.txt"
-    valid_decompositions_file: str = "valid_decompositions.jsonl"
+    model_path: str = "data/turkish_morph_model.pt"
+    vocab_path: str = "data/suffix_vocab.json"
+    training_count_file: str = "data/training_count.txt"
+    valid_decompositions_file: str = "data/valid_decompositions.jsonl"
     checkpoint_frequency: int = 10  # Save every N examples
     
     # Model hyperparameters
@@ -644,27 +644,13 @@ class InteractiveTrainer:
 
 def main():
     """Entry point for interactive training"""
-    import argparse
-    
-    parser = argparse.ArgumentParser(description='Interactive Turkish Morphological Analyzer Trainer')
-    parser.add_argument('--batch', action='store_true', 
-                       help='Automatically batch train on valid decompositions at startup')
-    parser.add_argument('--batch-file', type=str, 
-                       help='Specific file to batch train from at startup')
-    
-    args = parser.parse_args()
-    
+
     config = TrainingConfig(
-        model_path="turkish_morph_model.pt",
-        vocab_path="suffix_vocab.json"
+        model_path="data/turkish_morph_model.pt",
+        vocab_path="data/suffix_vocab.json"
     )
     
-    trainer = InteractiveTrainer(config, auto_batch_train=args.batch)
-    
-    # If specific batch file provided, train on it
-    if args.batch_file:
-        trainer.batch_train_from_file(args.batch_file)
-    
+    trainer = InteractiveTrainer(config)
     trainer.interactive_loop()
 
 
