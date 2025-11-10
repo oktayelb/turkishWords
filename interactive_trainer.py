@@ -197,7 +197,6 @@ class InteractiveTrainer:
                     entry = {
                         'word': word,
                         'root': root,
-                        'root_pos': pos,
                         'suffixes': suffix_info,
                         'final_pos': final_pos
                     }

@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import json
-import os
 from typing import List, Tuple
 import suffixes as sfx
 
@@ -157,10 +156,14 @@ def preference_loss(score_correct, score_incorrect, margin=1.0):
     return loss
 
 
-def contrastive_loss(score_correct, scores_incorrect, temperature=0.1):
+def contrastive_loss(score_correct, scores_incorrect, temperature=0.5):
     """
     Contrastive loss: treat correct as positive, all others as negatives
     More suitable when you have multiple incorrect candidates
+    
+    Temperature controls softmax sharpness:
+    - Higher (0.5-1.0): Smoother gradients, better learning on similar candidates
+    - Lower (0.1): Sharp distinctions, risk of vanishing gradients
     """
     # Concatenate correct and incorrect scores
     all_scores = torch.cat([score_correct.unsqueeze(1), scores_incorrect], dim=1)
@@ -174,15 +177,39 @@ def contrastive_loss(score_correct, scores_incorrect, temperature=0.1):
 
 
 class DecompositionTrainer:
-    def __init__(self, model, vocab, lr=1e-4, device='cpu'):
+    def __init__(self, model, vocab, lr=1e-4, device='cpu', accumulation_steps=4, warmup_steps=100):
         self.model = model.to(device)
         self.vocab = vocab
         self.device = device
+        self.base_lr = lr
+        
+        # Gradient accumulation for stable training
+        self.accumulation_steps = accumulation_steps
+        self.accumulated_loss = 0.0
+        self.step_count = 0
+        
+        # Learning rate warmup
+        self.warmup_steps = warmup_steps
+        self.current_step = 0
+        
         self.optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.01)
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             self.optimizer, mode='min', factor=0.5, patience=10
         )
         self.training_history = []
+    
+    def _update_learning_rate(self, loss=None):
+        """Apply learning rate warmup and scheduling"""
+        self.current_step += 1
+        
+        if self.current_step <= self.warmup_steps:
+            # Linear warmup
+            lr_scale = self.current_step / self.warmup_steps
+            for param_group in self.optimizer.param_groups:
+                param_group['lr'] = self.base_lr * lr_scale
+        elif loss is not None:
+            # Use scheduler after warmup
+            self.scheduler.step(loss)
     
     def prepare_batch(self, suffix_chains: List[List], correct_idx: int):
         """
@@ -226,7 +253,10 @@ class DecompositionTrainer:
         return obj_ids_batch, cat_ids_batch, mask_batch, correct_idx
     
     def train_step(self, suffix_chains: List[List], correct_idx: int):
-        """Single training step with one word's decompositions"""
+        """
+        Single training step with gradient accumulation
+        Accumulates gradients over multiple steps for stability
+        """
         self.model.train()
         
         # Prepare batch
@@ -242,16 +272,80 @@ class DecompositionTrainer:
         
         loss = contrastive_loss(score_correct, scores_incorrect)
         
-        # Backward pass
-        self.optimizer.zero_grad()
+        # Normalize loss by accumulation steps
+        loss = loss / self.accumulation_steps
+        
+        # Backward pass (accumulate gradients)
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
-        self.optimizer.step()
         
-        # Record
-        self.training_history.append(loss.item())
+        self.accumulated_loss += loss.item()
+        self.step_count += 1
         
-        return loss.item()
+        # Only update weights every N steps
+        if self.step_count % self.accumulation_steps == 0:
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
+            self.optimizer.step()
+            self.optimizer.zero_grad()
+            
+            # Update learning rate
+            self._update_learning_rate(loss=self.accumulated_loss)
+            
+            # Record actual accumulated loss
+            self.training_history.append(self.accumulated_loss)
+            final_loss = self.accumulated_loss
+            self.accumulated_loss = 0.0
+            
+            return final_loss
+        
+        # Return current accumulated loss (partial)
+        return self.accumulated_loss * self.accumulation_steps  # Scale back for display
+    
+    def train_step_pairwise(self, suffix_chains: List[List], better_idx: int, worse_idx: int):
+        """
+        Training step for pairwise preference with gradient accumulation
+        """
+        self.model.train()
+        
+        # Prepare batch
+        obj_ids, cat_ids, masks, _ = self.prepare_batch(suffix_chains, 0)
+        
+        # Forward pass
+        scores = self.model(obj_ids, cat_ids, masks)
+        
+        # Get scores for the pair
+        score_better = scores[better_idx]
+        score_worse = scores[worse_idx]
+        
+        # Pairwise margin ranking loss
+        loss = preference_loss(score_better.unsqueeze(0), score_worse.unsqueeze(0), margin=1.0)
+        
+        # Normalize loss by accumulation steps
+        loss = loss / self.accumulation_steps
+        
+        # Backward pass (accumulate gradients)
+        loss.backward()
+        
+        self.accumulated_loss += loss.item()
+        self.step_count += 1
+        
+        # Only update weights every N steps
+        if self.step_count % self.accumulation_steps == 0:
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
+            self.optimizer.step()
+            self.optimizer.zero_grad()
+            
+            # Update learning rate
+            self._update_learning_rate(loss=self.accumulated_loss)
+            
+            # Record actual accumulated loss
+            self.training_history.append(self.accumulated_loss)
+            final_loss = self.accumulated_loss
+            self.accumulated_loss = 0.0
+            
+            return final_loss
+        
+        # Return current accumulated loss (partial)
+        return self.accumulated_loss * self.accumulation_steps  # Scale back for display
     
     def predict(self, suffix_chains: List[List]) -> Tuple[int, List[float]]:
         """
@@ -269,48 +363,35 @@ class DecompositionTrainer:
         return best_idx, scores_list
     
     def save_checkpoint(self, path: str):
-        """Save model checkpoint"""
+        """Save model checkpoint with training state"""
         torch.save({
             'model_state_dict': self.model.state_dict(),
             'optimizer_state_dict': self.optimizer.state_dict(),
-            'training_history': self.training_history
+            'scheduler_state_dict': self.scheduler.state_dict(),
+            'training_history': self.training_history,
+            'current_step': self.current_step,
+            'step_count': self.step_count,
+            'accumulated_loss': self.accumulated_loss
         }, path)
         print(f"✓ Model checkpoint saved to {path}")
     
     def load_checkpoint(self, path: str):
-        """Load model checkpoint"""
+        """Load model checkpoint with training state"""
         checkpoint = torch.load(path, map_location=self.device)
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        
+        # Load scheduler state if available
+        if 'scheduler_state_dict' in checkpoint:
+            self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+        
         self.training_history = checkpoint.get('training_history', [])
+        self.current_step = checkpoint.get('current_step', 0)
+        self.step_count = checkpoint.get('step_count', 0)
+        self.accumulated_loss = checkpoint.get('accumulated_loss', 0.0)
+        
         print(f"✓ Model checkpoint loaded from {path}")
-
-    def train_step_pairwise(self, suffix_chains: List[List], better_idx: int, worse_idx: int):
-        """Training step for pairwise preference"""
-        self.model.train()
-        
-        # Prepare batch
-        obj_ids, cat_ids, masks, _ = self.prepare_batch(suffix_chains, 0)
-        
-        # Forward pass
-        scores = self.model(obj_ids, cat_ids, masks)
-        
-        # Get scores for the pair
-        score_better = scores[better_idx]
-        score_worse = scores[worse_idx]
-        
-        # Pairwise margin ranking loss
-        loss = preference_loss(score_better.unsqueeze(0), score_worse.unsqueeze(0), margin=1.0)
-        
-        # Backward pass
-        self.optimizer.zero_grad()
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
-        self.optimizer.step()
-        
-        self.training_history.append(loss.item())
-    
-        return loss.item()
+        print(f"  Resumed at step {self.current_step} (warmup: {self.warmup_steps})")
 
 
 # ---------- Initialization Helper ----------
@@ -342,9 +423,18 @@ if __name__ == "__main__":
         num_heads=8
     )
     
-    # Initialize trainer
+    # Initialize trainer with improved settings
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    trainer = DecompositionTrainer(model, vocab, lr=1e-4, device=device)
+    trainer = DecompositionTrainer(
+        model, 
+        vocab, 
+        lr=1e-4, 
+        device=device,
+        accumulation_steps=4,  # Accumulate 4 examples before updating
+        warmup_steps=100       # Warmup for first 100 steps
+    )
     
     print(f"Model initialized with {sum(p.numel() for p in model.parameters())} parameters")
     print(f"Training on device: {device}")
+    print(f"Gradient accumulation: {trainer.accumulation_steps} steps")
+    print(f"Learning rate warmup: {trainer.warmup_steps} steps")
