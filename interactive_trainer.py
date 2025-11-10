@@ -5,6 +5,7 @@ Integrates main.py decomposition with ML ranking model
 
 import torch
 import os
+import json
 from typing import List, Optional
 
 # Import your modules
@@ -20,7 +21,8 @@ class InteractiveTrainer:
     def __init__(self, model_path: str = "model_checkpoint.pt", vocab_path: str = "vocab.json"):
         self.model_path = model_path
         self.vocab_path = vocab_path
-        self.training_count_file = "training_count.txt" 
+        self.training_count_file = "training_count.txt"
+        self.valid_decompositions_file = "valid_decompositions.jsonl"  # New file for logging
         
         # Initialize vocabulary and auto-save to JSON
         print("Initializing vocabulary from suffixes.py...")
@@ -171,10 +173,48 @@ class InteractiveTrainer:
             except Exception as e:
                 print(f"Error parsing input: {e}. Please try again.")
 
+    def save_valid_decomposition(self, word: str, correct_indices: List[int], decompositions: List):
+        """Save validated decomposition(s) to file in JSONL format"""
+        try:
+            with open(self.valid_decompositions_file, 'a', encoding='utf-8') as f:
+                for idx in correct_indices:
+                    root, pos, chain, final_pos = decompositions[idx]
+                    
+                    # Build suffix information
+                    suffix_info = []
+                    if chain:
+                        current_word = root
+                        for suffix_obj in chain:
+                            suffix_form = suffix_obj.form(current_word)
+                            suffix_info.append({
+                                'name': suffix_obj.name,
+                                'form': suffix_form,
+                                'makes': suffix_obj.makes.name
+                            })
+                            current_word += suffix_form
+                    
+                    # Create the entry
+                    entry = {
+                        'word': word,
+                        'root': root,
+                        'root_pos': pos,
+                        'suffixes': suffix_info,
+                        'final_pos': final_pos
+                    }
+                    
+                    # Write as single line JSON
+                    f.write(json.dumps(entry, ensure_ascii=False) + '\n')
+            
+            print(f"📝 Saved {len(correct_indices)} valid decomposition(s) to {self.valid_decompositions_file}")
+        
+        except Exception as e:
+            print(f"⚠  Could not save valid decomposition: {e}")
+
     def train_on_word(self, word: str):
         """Interactive training on a single word"""
         # Get all decompositions
         suffix_chains = get_suffix_object_lists(word)
+        decompositions = decompose(word)
         
         if not suffix_chains:
             print(f"\n⚠  No valid decompositions found for '{word}'")
@@ -204,6 +244,9 @@ class InteractiveTrainer:
         
         # Map display choices to original indices
         correct_indices = [index_mapping[c + 1] for c in choices]
+        
+        # Save the valid decomposition(s)
+        self.save_valid_decomposition(word, correct_indices, decompositions)
         
         # Train on the example(s)
         if len(correct_indices) == 1:
@@ -309,14 +352,12 @@ class InteractiveTrainer:
         except Exception as e:
             print(f"⚠  Could not save training_count.txt: {e}")
 
-
     def save(self):
         """Save model, vocabulary, and training count"""
         self.trainer.save_checkpoint(self.model_path)
         self.vocab.save(self.vocab_path)
         self.save_training_count()
         print(f"✓ Model, vocabulary, and training count saved")
-
 
     def interactive_loop(self):
         """Main interactive training loop"""
@@ -333,7 +374,7 @@ class InteractiveTrainer:
         
         while True:
             try:
-                user_input = input("\n📤 Enter word or command: ").strip().lower()
+                user_input = input("\n🔤 Enter word or command: ").strip().lower()
                 
                 if not user_input:
                     continue
@@ -358,6 +399,15 @@ class InteractiveTrainer:
                         avg_loss = sum(recent_losses) / len(recent_losses)
                         print(f"  Recent average loss: {avg_loss:.4f}")
                         print(f"  Latest loss: {self.trainer.training_history[-1]:.4f}")
+                    
+                    # Show count of valid decompositions logged
+                    if os.path.exists(self.valid_decompositions_file):
+                        try:
+                            with open(self.valid_decompositions_file, 'r', encoding='utf-8') as f:
+                                line_count = sum(1 for _ in f)
+                            print(f"  Valid decompositions logged: {line_count}")
+                        except:
+                            pass
                 
                 elif user_input.startswith('eval '):
                     word = user_input[5:].strip()
