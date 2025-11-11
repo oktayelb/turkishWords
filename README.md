@@ -1,4 +1,4 @@
-# 🇹🇷 TÜRK KELİME ANALİZİ (Turkish Word Analysis)
+# 🇹🇷 TÜRKÇE KELİME ANALİZİ (Turkish Word Analysis)
 
 *Bu README dosyası, projenin Türkçe sürümünü takiben aşağıda İngilizce sürümünü içermektedir.*
 
