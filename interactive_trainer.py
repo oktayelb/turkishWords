@@ -10,7 +10,8 @@ from typing import List, Optional, Tuple, Dict
 from dataclasses import dataclass
 
 # Import your modules
-from util.decomposition import decompose, get_suffix_object_lists
+from util.decomposition import decompose
+import util.print as display
 from ml_ranking_model import (
     SuffixVocabulary, 
     DecompositionRanker, 
@@ -64,7 +65,7 @@ class DecompositionDisplay:
         lines.append(f"Final POS: {final_pos}")
         lines.append("-" * 70)
         
-        return "\n".join(lines)
+        return display.header("\n".join(lines))
     
     @staticmethod
     def _build_suffix_info(root: str, pos: str, chain: List) -> Tuple[List[str], List[str], List[str]]:
@@ -93,10 +94,9 @@ class DecompositionDisplay:
         Display all decompositions sorted by score
         Returns mapping from display index to original index
         """
-        print("\n" + "="*70)
-        print(f"DECOMPOSITION CANDIDATES FOR: {word}")
-        print("="*70)
-        
+
+        display.header(word)
+
         # Sort by score if available
         if scores:
             indexed_decomps = list(enumerate(zip(decompositions, scores)))
@@ -107,10 +107,9 @@ class DecompositionDisplay:
         # Display each decomposition
         index_mapping = {}
         for display_idx, (original_idx, (decomp, score)) in enumerate(indexed_decomps, 1):
-            formatted = DecompositionDisplay.format_decomposition(
+            DecompositionDisplay.format_decomposition(
                 word, decomp, score, display_idx, original_idx
             )
-            print(formatted)
             index_mapping[display_idx] = original_idx
         
         return index_mapping
@@ -120,7 +119,7 @@ class UserInputHandler:
     """Handles user input and validation"""
     
     @staticmethod
-    def get_choices(num_options: int) -> Optional[List[int]]:
+    def get_correct_choices(num_options: int) -> Optional[List[int]]:
         """
         Get user's choice(s) of correct decomposition(s)
         Returns: List of 0-indexed choices, [-1] for skip, or None for quit
@@ -316,6 +315,34 @@ class InteractiveTrainer:
         except Exception as e:
             print(f"⚠️  Could not save training_count.txt: {e}")
     
+    def _match_decompositions(self, correct_entries: List[Dict], 
+                             decompositions: List[Tuple]) -> List[int]:
+        """
+        Match logged decompositions to actual decomposition tuples
+        Returns list of indices in decompositions that match correct_entries
+        """
+        correct_indices = []
+        
+        for entry in correct_entries:
+            entry_root = entry['root']
+            entry_suffix_names = [s['name'] for s in entry.get('suffixes', [])]
+            
+            # Find matching decomposition
+            for idx, decomp in enumerate(decompositions):
+                root, pos, chain, final_pos = decomp
+                
+                if root != entry_root:
+                    continue
+                
+                chain_suffix_names = [s.name for s in chain] if chain else []
+                
+                if chain_suffix_names == entry_suffix_names:
+                    if idx not in correct_indices:
+                        correct_indices.append(idx)
+                    break
+        
+        return correct_indices
+   
     def save(self) -> None:
         """Save model, vocabulary, and training count"""
         self.trainer.save_checkpoint(self.config.model_path)
@@ -323,14 +350,39 @@ class InteractiveTrainer:
         self._save_training_count()
         print(f"✅ Model, vocabulary, and training count saved")
     
+    
+    def _train_on_choices(self, suffix_chains: List[List], correct_indices: List[int]) -> float:
+        """Train model on user's choices"""
+        if len(correct_indices) == 1:
+            # Single correct answer
+            return self.trainer.train_step(suffix_chains, correct_indices[0])
+        else:
+            # Multiple correct answers - train on preference pairs
+            total_loss = 0
+            pair_count = 0
+            
+            for i in range(len(correct_indices)):
+                for j in range(i + 1, len(correct_indices)):
+                    better_idx = correct_indices[i]
+                    worse_idx = correct_indices[j]
+                    loss = self.trainer.train_step_pairwise(suffix_chains, better_idx, worse_idx)
+                    total_loss += loss
+                    pair_count += 1
+            
+            return total_loss / pair_count if pair_count > 0 else 0
+    
     def train_on_word(self, word: str) -> Optional[bool]:
         """
         Interactive training on a single word
         Returns: True if trained, False if skipped, None if quit
         """
         # Get decompositions
-        suffix_chains = get_suffix_object_lists(word)
+        suffix_chains = []
         decompositions = decompose(word)
+
+        for root, pos, suffix_chain, final_pos in decompositions:
+        # suffix_chain already contains Suffix objects
+            suffix_chains.append(suffix_chain)
         
         # Handle edge cases
         if not suffix_chains:
@@ -349,7 +401,7 @@ class InteractiveTrainer:
         
         # Display options and get user choice
         index_mapping = self.display.display_all(word, decompositions, scores)
-        choices = self.input_handler.get_choices(len(suffix_chains))
+        choices = self.input_handler.get_correct_choices(len(suffix_chains))
         
         if choices is None:  # Quit
             return None
@@ -372,27 +424,7 @@ class InteractiveTrainer:
             self.save()
         
         return True
-    
-    def _train_on_choices(self, suffix_chains: List[List], correct_indices: List[int]) -> float:
-        """Train model on user's choices"""
-        if len(correct_indices) == 1:
-            # Single correct answer
-            return self.trainer.train_step(suffix_chains, correct_indices[0])
-        else:
-            # Multiple correct answers - train on preference pairs
-            total_loss = 0
-            pair_count = 0
-            
-            for i in range(len(correct_indices)):
-                for j in range(i + 1, len(correct_indices)):
-                    better_idx = correct_indices[i]
-                    worse_idx = correct_indices[j]
-                    loss = self.trainer.train_step_pairwise(suffix_chains, better_idx, worse_idx)
-                    total_loss += loss
-                    pair_count += 1
-            
-            return total_loss / pair_count if pair_count > 0 else 0
-    
+
     def _print_training_result(self, loss: float, num_choices: int) -> None:
         """Print training results"""
         if num_choices == 1:
@@ -413,9 +445,8 @@ class InteractiveTrainer:
             print(f"\n⚠️  No valid decompositions file found at {filepath}")
             return
         
-        print(f"\n{'='*70}")
-        print(f"BATCH TRAINING FROM: {filepath}")
-        print(f"{'='*70}")
+        display.header(filepath)
+
         
         # Load all entries
         entries = []
@@ -453,8 +484,12 @@ class InteractiveTrainer:
         for word_idx, (word, correct_entries) in enumerate(word_decompositions.items(), 1):
             try:
                 # Get all possible decompositions for this word
-                suffix_chains = get_suffix_object_lists(word)
+                suffix_chains = []
                 decompositions = decompose(word)
+
+                for root, pos, suffix_chain, final_pos in decompositions:
+                # suffix_chain already contains Suffix objects
+                    suffix_chains.append(suffix_chain)
                 
                 if not suffix_chains or len(suffix_chains) == 1:
                     skipped += 1
@@ -500,57 +535,28 @@ class InteractiveTrainer:
         if total_trained > 0:
             self.save()
     
-    def _match_decompositions(self, correct_entries: List[Dict], 
-                             decompositions: List[Tuple]) -> List[int]:
-        """
-        Match logged decompositions to actual decomposition tuples
-        Returns list of indices in decompositions that match correct_entries
-        """
-        correct_indices = []
-        
-        for entry in correct_entries:
-            entry_root = entry['root']
-            entry_suffix_names = [s['name'] for s in entry.get('suffixes', [])]
-            
-            # Find matching decomposition
-            for idx, decomp in enumerate(decompositions):
-                root, pos, chain, final_pos = decomp
-                
-                if root != entry_root:
-                    continue
-                
-                chain_suffix_names = [s.name for s in chain] if chain else []
-                
-                if chain_suffix_names == entry_suffix_names:
-                    if idx not in correct_indices:
-                        correct_indices.append(idx)
-                    break
-        
-        return correct_indices
-    
     def evaluate_word(self, word: str) -> None:
         """Evaluate model on a word without training - show only best prediction"""
-        suffix_chains = get_suffix_object_lists(word)
+        suffix_chains = []
         decompositions = decompose(word)
+
+        for root, pos, suffix_chain, final_pos in decompositions:
+        # suffix_chain already contains Suffix objects
+            suffix_chains.append(suffix_chain)
         
         if not suffix_chains:
             print(f"\n⚠️  No valid decompositions found for '{word}'")
             return
         
-        if len(suffix_chains) == 1:
-            print(f"\n✅ Only one decomposition exists for '{word}'")
-            self.display.display_all(word, decompositions)
-            return
         
         # Get predictions
         predicted_idx, scores = self.trainer.predict(suffix_chains)
         
         print(f"\n🤖 ML Model's top prediction:")
-        print("="*70)
-        print(self.display.format_decomposition(
+
+        self.display.format_decomposition(
             word, decompositions[predicted_idx], scores[predicted_idx], 1, predicted_idx
-        ))
-        print("="*70)
+        )
     
     def show_statistics(self) -> None:
         """Display training statistics"""
@@ -566,9 +572,16 @@ class InteractiveTrainer:
         logged_count = self.logger.count_entries()
         print(f"  Valid decompositions logged: {logged_count}")
     
+    def _handle_quit(self) -> bool:
+        """Handle quit command. Returns True if should exit"""
+        if self.training_count > 0 and self.input_handler.confirm_save():
+            self.save()
+        print("Goodbye!")
+        return True
+
     def interactive_loop(self) -> None:
         """Main interactive training loop"""
-        self._print_welcome()
+        display.welcome()
         
         while True:
             try:
@@ -618,28 +631,7 @@ class InteractiveTrainer:
                 print(f"\n❌ Error: {e}")
                 import traceback
                 traceback.print_exc()
-    
-    def _print_welcome(self) -> None:
-        """Print welcome message and instructions"""
-        print("\n" + "=" * 70)
-        print("INTERACTIVE MORPHOLOGICAL ANALYZER TRAINER")
-        print("=" * 70)
-        print("\nCommands:")
-        print("  - Enter a word to analyze and train")
-        print("  - 'batch' to train on all valid decompositions from file")
-        print("  - 'batch <filepath>' to train from a specific file")
-        print("  - 'eval <word>' to evaluate without training")
-        print("  - 'save' to save the model")
-        print("  - 'stats' to see training statistics")
-        print("  - 'quit' to exit")
-        print("="*70)
-    
-    def _handle_quit(self) -> bool:
-        """Handle quit command. Returns True if should exit"""
-        if self.training_count > 0 and self.input_handler.confirm_save():
-            self.save()
-        print("Goodbye!")
-        return True
+        
 
 
 def main():

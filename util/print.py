@@ -105,3 +105,19 @@ def compound_decomposition(head_decomp, tail_decomp, index):
     print("=" * 70)
     print(f"Total combinations shown: {combo_count}")
     print("=" * 70)
+
+
+def welcome():
+    """Print welcome message and instructions"""
+    print("\n" + "=" * 70)
+    print("INTERACTIVE MORPHOLOGICAL ANALYZER TRAINER")
+    print("=" * 70)
+    print("\nCommands:")
+    print("  - Enter a word to analyze and train")
+    print("  - 'batch' to train on all valid decompositions from file")
+    print("  - 'batch <filepath>' to train from a specific file")
+    print("  - 'eval <word>' to evaluate without training")
+    print("  - 'save' to save the model")
+    print("  - 'stats' to see training statistics")
+    print("  - 'quit' to exit")
+    print("="*70)

@@ -61,22 +61,6 @@ def decompose(word):
     return analyses
 
 
-def get_suffix_object_lists(word):
-    """
-    Return a list of lists, where each inner list contains 
-    the Suffix objects for a valid decomposition.
-    
-    Returns:
-        List[List[Suffix]]: Each inner list is a sequence of Suffix objects
-    """
-    decompositions = decompose(word)
-    result = []
-    
-    for root, pos, suffix_chain, final_pos in decompositions:
-        # suffix_chain already contains Suffix objects
-        result.append(suffix_chain)
-    
-    return result
 
 
 
@@ -86,7 +70,7 @@ def get_suffix_object_lists(word):
 # ANALYSIS LOGIC
 # =====================================================================
 
-#keeping this for future compound word 
+#LOGIC FOR COMPOUND WORDS.
 def analyze_word(word):
     """
     Analyze both full word and its possible compound splits.
@@ -101,21 +85,7 @@ def analyze_word(word):
 
     # Print results in order of priority
     if all_compounds:
-        display.header("COMPOSITE ANALYSIS RESULTS")
-        display.info_line("Total possible splits:", len(all_compounds))
         for idx, (head_d, tail_d) in enumerate(all_compounds, 1):
             display.compound_decomposition(head_d, tail_d, idx)
     
-    full = decompose(word)
-    if full:
-        display.header("SIMPLE WORD ANALYSIS RESULTS")
-        display.info_line("Total valid decompositions:", len(full))
-        for idx, (root, pos, chain, final_pos) in enumerate(full, 1):
-            display.single_decomposition(root, pos, chain, final_pos, idx)
-    else:
-        display.header("NO VALID SIMPLE DECOMPOSITIONS FOUND")
-    
-    # Return the suffix object lists
-    return get_suffix_object_lists(word)
-
 

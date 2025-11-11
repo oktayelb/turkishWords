@@ -10,6 +10,10 @@ HARD_CONSONANTS = ['f','s','t','k','ç','ş','h','p']  # fıstıkçı şahap
 vowels  = ['a','o','u','ı','e','ö','ü','i']
 fistikci_sahap = ['f','s','t','k','ç','ş','h','p']
 
+
+class Type(Enum):
+    NOUN = 'noun'
+    VERB = 'verb'
 # --- Enums ---
 class MajorHarmony(Enum):
     BACK = "back"
