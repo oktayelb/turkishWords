@@ -27,13 +27,30 @@ with open("data/words.txt", "r", encoding="utf-8") as f:
     WORDS = set(line.strip() for line in f if line.strip())
 
 def exists(word: str) -> bool:
-    """Checks if a word exists in words.txt"""
-    return word in WORDS or infinitive(word) in WORDS
+    """Checks if a word or its variant exists in words.txt"""
+    if not word:
+        return False
+
+    # Check basic forms
+    if word in WORDS or infinitive(word) in WORDS:
+        return True
+
+    # Check soft-l variant if word ends with 'l'
+    if word.endswith("l"):
+        soft_l = word[:-1] + "ł"
+        if soft_l in WORDS or infinitive(soft_l) in WORDS:
+            return True
+
+    return False
 
 
 # --- Harmony functions ---
 def major_harmony(word: str) -> MajorHarmony | None:
     """Determines major vowel harmony based on last vowel"""
+    if word.endswith("l"):              
+        soft_l = word[:-1] + "ł"
+        if exists(soft_l):
+            return MajorHarmony.FRONT
     for ch in reversed(word):
         if ch in VOWELS:
             return MajorHarmony.BACK if ch in BACK_VOWELS else MajorHarmony.FRONT
@@ -45,10 +62,10 @@ def minor_harmony(word: str) -> MinorHarmony | None:
     for ch in reversed(word):
         if ch not in VOWELS:
             continue
-        if ch in ['o', 'u']:  return MinorHarmony.BACK_ROUND
-        if ch in ['a', 'ı']:  return MinorHarmony.BACK_WIDE
-        if ch in ['ö', 'ü']:  return MinorHarmony.FRONT_ROUND
-        if ch in ['e', 'i']:  return MinorHarmony.FRONT_WIDE
+        if ch in ['o', 'u',"ö","ü"]:  
+            return MinorHarmony.BACK_ROUND if  major_harmony(word) == MajorHarmony.BACK else MinorHarmony.FRONT_ROUND
+        if ch in ['a', 'ı','e', 'i']:
+             return MinorHarmony.BACK_WIDE if  major_harmony(word) == MajorHarmony.BACK else MinorHarmony.FRONT_WIDE
     return None
 
 

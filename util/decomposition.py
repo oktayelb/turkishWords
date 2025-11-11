@@ -1,8 +1,7 @@
 import util.word_methods as wrd
 import util.suffixes as sfx
 import util.print as display
-
-from util.rules.suffix_rules import validate_suffix_addition
+from util.rules.suffix_rules import validate_suffix_addition as validate
 
 
 def find_suffix_chain(word, start_pos, root, visited=None):
@@ -24,7 +23,6 @@ def find_suffix_chain(word, start_pos, root, visited=None):
     # No suffix transitions available
     if start_pos not in sfx.SUFFIX_TRANSITIONS:
         return []
-
     results = []
     for target_pos, suffix_list in sfx.SUFFIX_TRANSITIONS[start_pos].items():
         for suffix_obj in suffix_list:
@@ -35,7 +33,7 @@ def find_suffix_chain(word, start_pos, root, visited=None):
                 subchains = find_suffix_chain(word, target_pos, next_root, visited) if remaining else [([], target_pos)]
                 for chain, final_pos in subchains:
                     # RULE VALIDATION: Check if adding this suffix violates any rules
-                    if validate_suffix_addition(chain, suffix_obj):
+                    if validate(chain, suffix_obj):
                         results.append(([suffix_obj] + chain, final_pos))
     return results
 
@@ -48,6 +46,7 @@ def decompose(word):
     for i in range(1, len(word) + 1):
         root = word[:i]
         if not wrd.exists(root):
+            
             continue
 
         pos = "verb" if wrd.can_be_verb(root) else "noun"
@@ -80,56 +79,19 @@ def get_suffix_object_lists(word):
     return result
 
 
-def get_all_decompositions_with_suffixes(word):
-    """
-    Return complete decomposition info including root and suffix objects.
-    
-    Returns:
-        List[dict]: Each dict contains:
-            - 'root': str
-            - 'pos': str  
-            - 'suffixes': List[Suffix]
-            - 'final_pos': str
-    """
-    decompositions = decompose(word)
-    result = []
-    
-    for root, pos, suffix_chain, final_pos in decompositions:
-        result.append({
-            'root': root,
-            'pos': pos,
-            'suffixes': suffix_chain,
-            'final_pos': final_pos
-        })
-    
-    return result
+
 
 
 # =====================================================================
 # ANALYSIS LOGIC
 # =====================================================================
 
-def word_info(word):
-    """Print basic info about a word."""
-    exists = wrd.exists(word)
-    major = wrd.major_harmony(word)
-    minor = wrd.minor_harmony(word)
-    display.info_line("Dictionary entry:", "Yes" if exists else "No")
-    display.info_line("Major harmony:", major.name if major else "None")
-    display.info_line("Minor harmony:", minor.name if minor else "None")
-    print("-" * 70)
-
-
+#keeping this for future compound word 
 def analyze_word(word):
     """
     Analyze both full word and its possible compound splits.
     If no valid decomposition found, report accordingly.
     """
-    display.header("TURKISH MORPHOLOGICAL ANALYZER")
-    display.info_line("Analyzing:", word)
-    print("-" * 70)
-    word_info(word)
-
     all_compounds = []
     for i in range(2, len(word) - 1):
         head, tail = word[:i], word[i:]
@@ -156,31 +118,4 @@ def analyze_word(word):
     # Return the suffix object lists
     return get_suffix_object_lists(word)
 
-
-# =====================================================================
-# MAIN LOOP
-# =====================================================================
-
-def main():
-
-    while True:
-        word = input("\nSözcük giriniz (Enter word): ").lower().strip()
-        if not word:
-            print("No word provided. Exiting.")
-            break
-        suffix_lists = analyze_word(word)
-        
-        # Optional: Print suffix object information
-        if suffix_lists:
-            display.header("SUFFIX OBJECTS EXTRACTED:")
-            for i, suffix_list in enumerate(suffix_lists, 1):
-                print(f"\nDecomposition {i}:")
-                for j, suffix_obj in enumerate(suffix_list, 1):
-                    print(f"  {j}. {suffix_obj.name} (suffix: '{suffix_obj.suffix}')")
-    return suffix_list
-
-
-if __name__ == "__main__":
-    display.header("Turkish Morphological Analyzer")
-    main()
 

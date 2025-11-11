@@ -79,3 +79,6 @@
 {"word": "başlamak", "root": "baş", "suffixes": [{"name": "aplicative_le", "form": "la", "makes": "Verb"}, {"name": "infinitive_mak", "form": "mak", "makes": "Noun"}], "final_pos": "noun"}
 {"word": "açmak", "root": "aç", "suffixes": [{"name": "infinitive_mak", "form": "mak", "makes": "Noun"}], "final_pos": "noun"}
 {"word": "şakalaşmak", "root": "şaka", "suffixes": [{"name": "transformative_les", "form": "laş", "makes": "Verb"}, {"name": "infinitive_mak", "form": "mak", "makes": "Noun"}], "final_pos": "noun"}
+{"word": "saplamak", "root": "sap", "suffixes": [{"name": "aplicative_le", "form": "la", "makes": "Verb"}, {"name": "infinitive_mak", "form": "mak", "makes": "Noun"}], "final_pos": "noun"}
+{"word": "kaçakçı", "root": "kaç", "suffixes": [{"name": "toolative_en", "form": "ak", "makes": "Noun"}, {"name": "actor_ci", "form": "çı", "makes": "Noun"}], "final_pos": "noun"}
+{"word": "kontrolsüzlük", "root": "kontrol", "suffixes": [{"name": "privative_siz", "form": "süz", "makes": "Noun"}, {"name": "suitative_lik", "form": "lük", "makes": "Noun"}], "final_pos": "noun"}

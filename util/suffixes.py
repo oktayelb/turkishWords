@@ -151,6 +151,10 @@ philicative_cil         = Suffix("philicative_cil", "cil", WType.Noun, WType.Nou
 composessive_li         = Suffix("composessive_li", "li", WType.Noun, WType.Noun, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
 suitative_lik           = Suffix("suitative_lik", "lik", WType.Noun, WType.Noun, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
 adjectiative_ay         = Suffix("adjectiative_ay", "ay", WType.Noun, WType.Noun, HasMajorHarmony.Yes, HasMinorHarmony.No)
+marking_ki              = Suffix("marking_ki", "ki", WType.Noun, WType.Noun, HasMajorHarmony.No, HasMinorHarmony.No)
+temporative_leyin       = Suffix("temporative_leyin", "leyin", WType.Noun, WType.Noun, HasMajorHarmony.Yes, HasMinorHarmony.Yes) ## buraya bak
+ideologicative_izm      = Suffix("ideologicative_izm", "izm", WType.Noun, WType.Noun, HasMajorHarmony.No, HasMinorHarmony.No) ## buraya bak
+locative_le             = Suffix("locative_le", "le", WType.Noun, WType.Noun, HasMajorHarmony.Yes, HasMinorHarmony.No) ## buraya bak
 
 # N2V suffixes (Noun to Verb)
 absentative_se          = Suffix("absentative_se", "se", WType.Noun, WType.Verb, HasMajorHarmony.Yes, HasMinorHarmony.No)
@@ -167,7 +171,7 @@ infinitive_ma           = Suffix("infinitive_ma"  , "me", WType.Verb, WType.Noun
 infinitive_mak          = Suffix("infinitive_mak" , "mek", WType.Verb, WType.Noun, HasMajorHarmony.Yes, HasMinorHarmony.No)
 factative_en            = Suffix("factative_en"   , "en", WType.Verb, WType.Noun, HasMajorHarmony.Yes, HasMinorHarmony.No, needs_y_buffer=True)  # Added y-buffer
 factative_er            = Suffix("factative_er", "er", WType.Verb, WType.Noun, HasMajorHarmony.Yes, HasMinorHarmony.No)
-toolative_ek            = Suffix("toolative_en", "ek", WType.Verb, WType.Noun, HasMajorHarmony.Yes, HasMinorHarmony.No)
+toolative_ek            = Suffix("toolative_ek", "ek", WType.Verb, WType.Noun, HasMajorHarmony.Yes, HasMinorHarmony.No)
 adverbial_e             = Suffix("adverbial_e", "e", WType.Verb, WType.Noun, HasMajorHarmony.Yes, HasMinorHarmony.No, needs_y_buffer=True)  # Added y-buffer
 constofactative_gen     = Suffix("constofactative_gen", "gen", WType.Verb, WType.Noun, HasMajorHarmony.Yes, HasMinorHarmony.No)
 constofactative_gin     = Suffix("constofactative_gin", "gin", WType.Verb, WType.Noun, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
