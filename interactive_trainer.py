@@ -3,116 +3,20 @@ Interactive training pipeline for Turkish morphological analyzer
 Integrates main.py decomposition with ML ranking model
 """
 
-import torch
 import os
 import json
 from typing import List, Optional, Tuple, Dict
-from dataclasses import dataclass
 
-# Import your modules
+
+# in project imports
+from data.config import TrainingConfig
 from util.decomposition import decompose
-import util.print as display
+from util.print import DecompositionDisplay , welcome ,header
+
 from ml_ranking_model import (
-    SuffixVocabulary, 
-    DecompositionRanker, 
-    DecompositionTrainer
+    Ranker, 
+    Trainer
 )
-
-
-@dataclass
-class TrainingConfig:
-    """Configuration for the interactive trainer"""
-    model_path: str = "data/turkish_morph_model.pt"
-    vocab_path: str = "data/suffix_vocab.json"
-    training_count_file: str = "data/training_count.txt"
-    valid_decompositions_file: str = "data/valid_decompositions.jsonl"
-    checkpoint_frequency: int = 10  # Save every N examples
-    
-    # Model hyperparameters
-    embed_dim: int = 128
-    num_layers: int = 4
-    num_heads: int = 8
-    learning_rate: float = 1e-4
-
-
-class DecompositionDisplay:
-    """Handles formatting and display of decompositions"""
-    
-    @staticmethod
-    def format_decomposition(word: str, decomp: Tuple, score: Optional[float] = None, 
-                            display_idx: int = 1, original_idx: int = 0) -> str:
-        """Format a single decomposition for display"""
-        root, pos, chain, final_pos = decomp
-        
-        lines = []
-        lines.append(f"\n[Option {display_idx}] (Original index: {original_idx + 1})")
-        
-        if score is not None:
-            lines.append(f"ML Score: {score:.4f}")
-        
-        lines.append(f"Root:      {root} ({pos})")
-        
-        if chain:
-            suffix_forms, suffix_names, formation_steps = DecompositionDisplay._build_suffix_info(
-                root, pos, chain
-            )
-            lines.append(f"Suffixes:  {' + '.join(suffix_forms)}")
-            lines.append(f"Names:     {' + '.join(suffix_names)}")
-            lines.append(f"Formation: {' → '.join(formation_steps)}")
-        else:
-            lines.append(f"Formation: {root + '-' if pos == 'verb' else root} (no suffixes)")
-        
-        lines.append(f"Final POS: {final_pos}")
-        lines.append("-" * 70)
-        
-        return display.header("\n".join(lines))
-    
-    @staticmethod
-    def _build_suffix_info(root: str, pos: str, chain: List) -> Tuple[List[str], List[str], List[str]]:
-        """Build suffix forms, names, and formation steps"""
-        current_word = root
-        suffix_forms = []
-        suffix_names = []
-        formation_steps = [root + ("-" if pos == "verb" else "")]
-        
-        for suffix_obj in chain:
-            suffix_form = suffix_obj.form(current_word)
-            suffix_forms.append(suffix_form)
-            suffix_names.append(suffix_obj.name)
-            
-            current_word += suffix_form
-            target_pos = "verb" if suffix_obj.makes.name == "Verb" else "noun"
-            word_display = current_word + ("-" if target_pos == "verb" else "")
-            formation_steps.append(word_display)
-        
-        return suffix_forms, suffix_names, formation_steps
-    
-    @staticmethod
-    def display_all(word: str, decompositions: List[Tuple], 
-                   scores: Optional[List[float]] = None) -> Dict[int, int]:
-        """
-        Display all decompositions sorted by score
-        Returns mapping from display index to original index
-        """
-
-        display.header(word)
-
-        # Sort by score if available
-        if scores:
-            indexed_decomps = list(enumerate(zip(decompositions, scores)))
-            indexed_decomps.sort(key=lambda x: x[1][1])  # Sort by score ascending
-        else:
-            indexed_decomps = [(i, (d, None)) for i, d in enumerate(decompositions)]
-        
-        # Display each decomposition
-        index_mapping = {}
-        for display_idx, (original_idx, (decomp, score)) in enumerate(indexed_decomps, 1):
-            DecompositionDisplay.format_decomposition(
-                word, decomp, score, display_idx, original_idx
-            )
-            index_mapping[display_idx] = original_idx
-        
-        return index_mapping
 
 
 class UserInputHandler:
@@ -181,9 +85,8 @@ class UserInputHandler:
 class DecompositionLogger:
     """Handles logging of valid decompositions"""
     
-    def __init__(self, filepath: str):
-        self.filepath = filepath
-    
+
+    filepath = TrainingConfig.valid_decompositions_file
     def log_decompositions(self, word: str, correct_indices: List[int], 
                           decompositions: List[Tuple]) -> None:
         """Save validated decomposition(s) to file in JSONL format"""
@@ -235,14 +138,12 @@ class DecompositionLogger:
 class InteractiveTrainer:
     """Main interactive training interface"""
     
-    def __init__(self, config: Optional[TrainingConfig] = None, auto_batch_train: bool = False):
-        self.config = config or TrainingConfig()
-        
-        # Initialize components
-        self.vocab = self._initialize_vocabulary()
-        self.model = self._initialize_model()
-        self.trainer = self._initialize_trainer()
-        self.logger = DecompositionLogger(self.config.valid_decompositions_file)
+    def __init__(self):
+
+        self.config = TrainingConfig()
+        self.model = Ranker()
+        self.trainer = Trainer()
+        self.logger = DecompositionLogger()
         self.display = DecompositionDisplay()
         self.input_handler = UserInputHandler()
         
@@ -250,41 +151,9 @@ class InteractiveTrainer:
         self.training_count = self._load_training_count()
         self._load_checkpoint_if_exists()
         
-        # Batch train if requested
-        if auto_batch_train:
-            self.batch_train_from_file()
+
     
-    def _initialize_vocabulary(self) -> SuffixVocabulary:
-        """Initialize and save vocabulary"""
-        print("Initializing vocabulary from suffixes.py...")
-        vocab = SuffixVocabulary()
-        vocab.save(self.config.vocab_path)
-        print(f"✅ Vocabulary saved to {self.config.vocab_path}")
-        return vocab
-    
-    def _initialize_model(self) -> DecompositionRanker:
-        """Initialize the ranking model"""
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        print(f"Using device: {device}")
-        
-        return DecompositionRanker(
-            vocab_size=self.vocab.num_suffixes,
-            num_categories=2,
-            embed_dim=self.config.embed_dim,
-            num_layers=self.config.num_layers,
-            num_heads=self.config.num_heads
-        )
-    
-    def _initialize_trainer(self) -> DecompositionTrainer:
-        """Initialize the trainer"""
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        return DecompositionTrainer(
-            self.model, 
-            self.vocab, 
-            lr=self.config.learning_rate, 
-            device=device
-        )
-    
+
     def _load_checkpoint_if_exists(self) -> None:
         """Load existing model checkpoint if available"""
         if os.path.exists(self.config.model_path):
@@ -346,7 +215,7 @@ class InteractiveTrainer:
     def save(self) -> None:
         """Save model, vocabulary, and training count"""
         self.trainer.save_checkpoint(self.config.model_path)
-        self.vocab.save(self.config.vocab_path)
+
         self._save_training_count()
         print(f"✅ Model, vocabulary, and training count saved")
     
@@ -445,7 +314,7 @@ class InteractiveTrainer:
             print(f"\n⚠️  No valid decompositions file found at {filepath}")
             return
         
-        display.header(filepath)
+        header(filepath)
 
         
         # Load all entries
@@ -581,7 +450,7 @@ class InteractiveTrainer:
 
     def interactive_loop(self) -> None:
         """Main interactive training loop"""
-        display.welcome()
+        welcome()
         
         while True:
             try:
@@ -636,13 +505,8 @@ class InteractiveTrainer:
 
 def main():
     """Entry point for interactive training"""
-
-    config = TrainingConfig(
-        model_path="data/turkish_morph_model.pt",
-        vocab_path="data/suffix_vocab.json"
-    )
     
-    trainer = InteractiveTrainer(config)
+    trainer = InteractiveTrainer()
     trainer.interactive_loop()
 
 

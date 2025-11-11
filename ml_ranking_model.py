@@ -11,130 +11,23 @@ Architecture:
     - Gradient accumulation for stable training
 """
 
+# torch imports 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import json
-from typing import List, Tuple, Dict
+
+# list etc imports
+from typing import List, Tuple
+
+# in project imports
 import util.suffixes as sfx
-
-
-# ============================================================================
-# VOCABULARY MANAGEMENT
-# ============================================================================
-
-class SuffixVocabulary:
-    """
-    Manages the mapping between suffix objects and numeric IDs for the model.
-    
-    This class creates a bidirectional mapping between:
-    - Suffix names (strings) and their numeric IDs
-    - POS categories (Noun/Verb) and their numeric IDs
-    
-    The vocabulary is built dynamically from all suffixes defined in suffixes.py
-    """
-    
-    def __init__(self):
-        """Initialize vocabulary from all registered suffixes in suffixes.py"""
-        # Initialize empty mappings
-        self.suffix_to_id: Dict[str, int] = {}
-        self.id_to_suffix: Dict[int, str] = {}
-        self.category_to_id: Dict[str, int] = {
-            'Noun': 0,
-            'Verb': 1
-        }
-        
-        # Build vocabulary from all registered suffixes
-        self._build_vocabulary()
-        
-        print(f"Loaded {self.num_suffixes} suffixes into vocabulary")
-    
-    def _build_vocabulary(self) -> None:
-        """Build suffix-to-ID mappings from suffixes.py"""
-        for idx, suffix in enumerate(sfx.ALL_SUFFIXES):
-            self.suffix_to_id[suffix.name] = idx
-            self.id_to_suffix[idx] = suffix.name
-        
-        self.num_suffixes = len(self.suffix_to_id)
-    
-    def encode_suffix_chain(self, suffix_objects: List) -> Tuple[torch.Tensor, torch.Tensor]:
-        """
-        Convert a list of Suffix objects to numeric tensor representations.
-        
-        Args:
-            suffix_objects: List of Suffix objects from a decomposition
-            
-        Returns:
-            Tuple of:
-                - object_ids: Tensor of suffix IDs
-                - category_ids: Tensor of POS category IDs (Noun/Verb)
-                
-        Note:
-            Empty chains return single padding tokens (ID 0)
-        """
-        # Handle empty suffix chains
-        if not suffix_objects:
-            return torch.tensor([0]), torch.tensor([0])
-        
-        object_ids = []
-        category_ids = []
-        
-        # Convert each suffix to its numeric representation
-        for suffix_obj in suffix_objects:
-            # Get suffix ID (default to 0 for unknown suffixes)
-            suffix_id = self.suffix_to_id.get(suffix_obj.name, 0)
-            
-            # Get category ID (Noun=0, Verb=1)
-            category_id = self.category_to_id.get(suffix_obj.makes.name, 0)
-            
-            object_ids.append(suffix_id)
-            category_ids.append(category_id)
-        
-        return torch.tensor(object_ids), torch.tensor(category_ids)
-    
-    def save(self, path: str) -> None:
-        """
-        Save vocabulary mappings to a JSON file.
-        
-        Args:
-            path: Filepath to save the vocabulary
-        """
-        # Convert integer keys to strings for JSON serialization
-        data = {
-            'suffix_to_id': self.suffix_to_id,
-            'id_to_suffix': {str(k): v for k, v in self.id_to_suffix.items()},
-            'category_to_id': self.category_to_id
-        }
-        
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        
-        print(f"✓ Vocabulary saved to {path}")
-    
-    def load(self, path: str) -> None:
-        """
-        Load vocabulary mappings from a JSON file.
-        
-        Args:
-            path: Filepath to load the vocabulary from
-        """
-        with open(path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        
-        self.suffix_to_id = data['suffix_to_id']
-        # Convert string keys back to integers
-        self.id_to_suffix = {int(k): v for k, v in data['id_to_suffix'].items()}
-        self.category_to_id = data['category_to_id']
-        self.num_suffixes = len(self.suffix_to_id)
-        
-        print(f"✓ Vocabulary loaded from {path} ({self.num_suffixes} suffixes)")
-
+from data.config import TrainingConfig
 
 # ============================================================================
 # NEURAL NETWORK MODEL
 # ============================================================================
 
-class DecompositionRanker(nn.Module):
+class Ranker(nn.Module):
     """
     Transformer-based neural network that scores morphological decompositions.
     
@@ -152,7 +45,6 @@ class DecompositionRanker(nn.Module):
     
     def __init__(
         self, 
-        vocab_size: int, 
         num_categories: int = 2, 
         embed_dim: int = 128, 
         num_layers: int = 4, 
@@ -162,19 +54,20 @@ class DecompositionRanker(nn.Module):
         Initialize the decomposition ranker model.
         
         Args:
-            vocab_size: Number of unique suffixes in vocabulary
             num_categories: Number of POS categories (default: 2 for Noun/Verb)
             embed_dim: Dimensionality of embeddings and hidden states
             num_layers: Number of Transformer encoder layers
             num_heads: Number of attention heads in Transformer
         """
         super().__init__()
-        self.embed_dim = embed_dim
+        self.embed_dim = TrainingConfig.embed_dim
+        self.num_layers=TrainingConfig.num_layers,
+        self.num_heads=TrainingConfig.num_heads
         
         # ---- Embedding Layers ----
         # +1 for padding token (ID 0)
         self.suffix_embed = nn.Embedding(
-            vocab_size + 1, 
+            len(sfx.ALL_SUFFIXES) + 1, 
             embed_dim, 
             padding_idx=0
         )
@@ -348,7 +241,7 @@ def contrastive_loss(
 # TRAINING MANAGER
 # ============================================================================
 
-class DecompositionTrainer:
+class Trainer:
     """
     Manages the training process for the DecompositionRanker model.
     
@@ -362,8 +255,7 @@ class DecompositionTrainer:
     
     def __init__(
         self, 
-        model: DecompositionRanker, 
-        vocab: SuffixVocabulary, 
+        model: Ranker = Ranker(), 
         lr: float = 1e-4, 
         device: str = 'cpu',
         accumulation_steps: int = 4,
@@ -380,10 +272,11 @@ class DecompositionTrainer:
             accumulation_steps: Number of steps to accumulate gradients (default: 4)
             warmup_steps: Number of warmup steps for learning rate (default: 100)
         """
+
         self.model = model.to(device)
-        self.vocab = vocab
-        self.device = device
         self.base_lr = lr
+        self.lr  = TrainingConfig.learning_rate
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         
         # ---- Gradient Accumulation ----
         # Accumulate gradients over multiple examples for stability
@@ -465,7 +358,11 @@ class DecompositionTrainer:
                 - correct_idx: Index of correct decomposition (unchanged)
         """
         # ---- Step 1: Encode all chains ----
-        encoded = [self.vocab.encode_suffix_chain(chain) for chain in suffix_chains]
+        encoded = []
+        for chain in suffix_chains:
+            object_ids, category_ids = sfx.encode_suffix_chain(chain)
+            encoded.append((torch.tensor(object_ids),torch.tensor(category_ids)))
+        
         
         # ---- Step 2: Find max length for padding ----
         max_len = max(len(obj_ids) for obj_ids, _ in encoded)
@@ -726,67 +623,3 @@ class DecompositionTrainer:
         
         print(f"✓ Model checkpoint loaded from {path}")
         print(f"  Resumed at step {self.current_step} (warmup: {self.warmup_steps})")
-
-
-# ============================================================================
-# UTILITY FUNCTIONS
-# ============================================================================
-
-def initialize_vocabulary_and_save(vocab_path: str = "data/suffix_vocab.json") -> SuffixVocabulary:
-    """
-    Initialize vocabulary from suffixes.py and automatically save to JSON.
-    
-    This ensures the JSON vocabulary file is always up-to-date with the
-    current suffix definitions in suffixes.py.
-    
-    Args:
-        vocab_path: Path to save the vocabulary JSON file
-        
-    Returns:
-        Initialized SuffixVocabulary object
-    """
-    print("Initializing vocabulary from suffixes.py...")
-    vocab = SuffixVocabulary()
-    
-    # Always save/update the vocabulary file
-    vocab.save(vocab_path)
-    
-    return vocab
-
-
-# ============================================================================
-# EXAMPLE USAGE
-# ============================================================================
-
-if __name__ == "__main__":
-
-    # ---- Step 1: Initialize vocabulary ----
-    vocab = initialize_vocabulary_and_save("data/suffix_vocab.json")
-    
-    # ---- Step 2: Initialize model ----
-    model = DecompositionRanker(
-        vocab_size=vocab.num_suffixes,
-        num_categories=2,        # Noun and Verb
-        embed_dim=128,           # Embedding dimension
-        num_layers=4,            # Transformer layers
-        num_heads=8              # Attention heads
-    )
-    
-    # ---- Step 3: Initialize trainer ----
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    trainer = DecompositionTrainer(
-        model, 
-        vocab, 
-        lr=1e-4,                 # Base learning rate
-        device=device,
-        accumulation_steps=4,    # Accumulate 4 examples before updating
-        warmup_steps=100         # Warmup for first 100 steps
-    )
-    
-    # ---- Display model info ----
-    num_params = sum(p.numel() for p in model.parameters())
-    print(f"\nModel initialized with {num_params:,} parameters")
-    print(f"Training on device: {device}")
-    print(f"Gradient accumulation: {trainer.accumulation_steps} steps")
-    print(f"Learning rate warmup: {trainer.warmup_steps} steps")
-    print("=" * 70)

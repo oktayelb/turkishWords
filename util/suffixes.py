@@ -1,6 +1,8 @@
 # suffixes.py
 
 from enum import Enum
+from typing import List, Tuple, Dict
+
 import util.word_methods as wrd
 
 class HasMajorHarmony(Enum):      
@@ -202,3 +204,52 @@ SUFFIX_TRANSITIONS = {
         'verb': [s for s in ALL_SUFFIXES if s.comes_to == wrd.Type.VERB and s.makes == wrd.Type.VERB]
     }
 }
+
+suffix_to_id = {}
+id_to_suffix = {}
+category_to_id: Dict[str, int] = {
+            'Noun': 0,
+            'Verb': 1
+        }
+for idx, suffix in enumerate(ALL_SUFFIXES):
+    suffix_to_id[suffix.name] = idx
+    id_to_suffix[idx] = suffix.name
+
+    
+def encode_suffix_chain( suffix_objects: List) -> Tuple[List, List]:
+    """
+    Convert a list of Suffix objects to numeric tensor representations.
+    
+    Args:
+        suffix_objects: List of Suffix objects from a decomposition
+        
+    Returns:
+        Tuple of:
+            - object_ids: Tensor of suffix IDs
+            - category_ids: Tensor of POS category IDs (Noun/Verb)
+            
+    Note:
+        Empty chains return single padding tokens (ID 0)
+    """
+    # Handle empty suffix chains
+    if not suffix_objects:
+        return [0], [0]
+    
+    object_ids = []
+    category_ids = []
+    
+    # Convert each suffix to its numeric representation
+    for suffix_obj in suffix_objects:
+        # Get suffix ID (default to 0 for unknown suffixes)
+        suffix_id = suffix_to_id.get(suffix_obj.name, 0)
+        
+        # Get category ID (Noun=0, Verb=1)
+        category_id = category_to_id.get(suffix_obj.makes.name, 0)
+        
+        object_ids.append(suffix_id)
+        category_ids.append(category_id)
+    
+    return object_ids, category_ids
+    
+
+    

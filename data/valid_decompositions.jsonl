@@ -104,3 +104,9 @@
 {"word": "pişmişler", "root": "piş", "suffixes": [{"name": "pastfactative_miş", "form": "miş", "makes": "NOUN"}, {"name": "plural_ler", "form": "ler", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "doyurgan", "root": "doy", "suffixes": [{"name": "active_ir", "form": "ur", "makes": "VERB"}, {"name": "constofactative_gen", "form": "gan", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "kapışmak", "root": "kap", "suffixes": [{"name": "reflexive_is", "form": "ış", "makes": "VERB"}, {"name": "infinitive_mak", "form": "mak", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "karşılaştırmak", "root": "karşı", "suffixes": [{"name": "transformative_les", "form": "laş", "makes": "VERB"}, {"name": "active_tir", "form": "tır", "makes": "VERB"}, {"name": "infinitive_mak", "form": "mak", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "çekici", "root": "çek", "suffixes": [{"name": "nounifier_i", "form": "i", "makes": "NOUN"}, {"name": "actor_ci", "form": "ci", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "çabalamak", "root": "çaba", "suffixes": [{"name": "aplicative_le", "form": "la", "makes": "VERB"}, {"name": "infinitive_mak", "form": "mak", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "kabalık", "root": "kaba", "suffixes": [{"name": "suitative_lik", "form": "lık", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "şakalaşmak", "root": "şaka", "suffixes": [{"name": "transformative_les", "form": "laş", "makes": "VERB"}, {"name": "infinitive_mak", "form": "mak", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "canlanmak", "root": "can", "suffixes": [{"name": "acquirative_len", "form": "lan", "makes": "VERB"}, {"name": "infinitive_mak", "form": "mak", "makes": "NOUN"}], "final_pos": "noun"}

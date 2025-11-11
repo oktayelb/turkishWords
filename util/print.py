@@ -1,3 +1,5 @@
+from typing import List, Optional, Tuple, Dict
+
 def header(title: str):
     print("\n" + "=" * 70)
     print(f"{title:^70}")
@@ -121,3 +123,82 @@ def welcome():
     print("  - 'stats' to see training statistics")
     print("  - 'quit' to exit")
     print("="*70)
+
+class DecompositionDisplay:
+    """Handles formatting and display of decompositions"""
+    
+    @staticmethod
+    def format_decomposition(word: str, decomp: Tuple, score: Optional[float] = None, 
+                            display_idx: int = 1, original_idx: int = 0) -> str:
+        """Format a single decomposition for display"""
+        root, pos, chain, final_pos = decomp
+        
+        lines = []
+        lines.append(f"\n[Option {display_idx}] (Original index: {original_idx + 1})")
+        
+        if score is not None:
+            lines.append(f"ML Score: {score:.4f}")
+        
+        lines.append(f"Root:      {root} ({pos})")
+        
+        if chain:
+            suffix_forms, suffix_names, formation_steps = DecompositionDisplay._build_suffix_info(
+                root, pos, chain
+            )
+            lines.append(f"Suffixes:  {' + '.join(suffix_forms)}")
+            lines.append(f"Names:     {' + '.join(suffix_names)}")
+            lines.append(f"Formation: {' → '.join(formation_steps)}")
+        else:
+            lines.append(f"Formation: {root + '-' if pos == 'verb' else root} (no suffixes)")
+        
+        lines.append(f"Final POS: {final_pos}")
+        lines.append("-" * 70)
+        
+        return header("\n".join(lines))
+    
+    @staticmethod
+    def _build_suffix_info(root: str, pos: str, chain: List) -> Tuple[List[str], List[str], List[str]]:
+        """Build suffix forms, names, and formation steps"""
+        current_word = root
+        suffix_forms = []
+        suffix_names = []
+        formation_steps = [root + ("-" if pos == "verb" else "")]
+        
+        for suffix_obj in chain:
+            suffix_form = suffix_obj.form(current_word)
+            suffix_forms.append(suffix_form)
+            suffix_names.append(suffix_obj.name)
+            
+            current_word += suffix_form
+            target_pos = "verb" if suffix_obj.makes.name == "Verb" else "noun"
+            word_display = current_word + ("-" if target_pos == "verb" else "")
+            formation_steps.append(word_display)
+        
+        return suffix_forms, suffix_names, formation_steps
+    
+    @staticmethod
+    def display_all(word: str, decompositions: List[Tuple], 
+                   scores: Optional[List[float]] = None) -> Dict[int, int]:
+        """
+        Display all decompositions sorted by score
+        Returns mapping from display index to original index
+        """
+
+        header(word)
+
+        # Sort by score if available
+        if scores:
+            indexed_decomps = list(enumerate(zip(decompositions, scores)))
+            indexed_decomps.sort(key=lambda x: x[1][1])  # Sort by score ascending
+        else:
+            indexed_decomps = [(i, (d, None)) for i, d in enumerate(decompositions)]
+        
+        # Display each decomposition
+        index_mapping = {}
+        for display_idx, (original_idx, (decomp, score)) in enumerate(indexed_decomps, 1):
+            DecompositionDisplay.format_decomposition(
+                word, decomp, score, display_idx, original_idx
+            )
+            index_mapping[display_idx] = original_idx
+        
+        return index_mapping
