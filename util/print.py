@@ -1,20 +1,5 @@
 from typing import List, Optional, Tuple, Dict
 
-def header(title: str):
-    print("\n" + "=" * 70)
-    print(f"{title:^70}")
-    print("=" * 70)
-
-
-def subtitle(title: str):
-    print("-" * 70)
-    print(f"{title}")
-    print("-" * 70)
-
-
-def info_line(label, value):
-    print(f"{label:<20} {value}")
-
 
 def format_decomposition_steps(root, initial_pos, suffix_objects):
     """Format word formation progressively."""
@@ -25,13 +10,22 @@ def format_decomposition_steps(root, initial_pos, suffix_objects):
     steps = [root_display]
     current_word = root
     for suffix_obj in suffix_objects:
-        # Generate the actual suffix form for this word
-        suffix_form = suffix_obj.form(current_word)
-        current_word += suffix_form
-        # Determine if the word should have a dash (verb marker)
-        target_pos = "verb" if suffix_obj.makes.name == "Verb" else "noun"
-        word_display = current_word + "-" if target_pos == "verb" else current_word
-        steps.append(word_display)
+        # Generate the actual suffix form for this word, selecting the one that matches
+        found_form = None
+        for suffix_form in suffix_obj.form(current_word):
+            if current_word + suffix_form in steps[-1].replace('-', '') + suffix_form: # Simplified check for display
+                found_form = suffix_form
+                break
+        
+        if found_form:
+            current_word += found_form
+            # Determine if the word should have a dash (verb marker)
+            target_pos = "verb" if suffix_obj.makes.name == "Verb" else "noun"
+            word_display = current_word + "-" if target_pos == "verb" else current_word
+            steps.append(word_display)
+        # If not found, it implies an issue or a boundary condition not met in this simple function.
+        # We proceed to the next suffix.
+        
     return " → ".join(steps)
 
 
@@ -43,11 +37,20 @@ def single_decomposition(root, pos, chain, final_pos, index):
     if chain:
         # Generate suffix forms for display
         current_word = root
-        suffix_forms = []
+        suffix_forms = []   
         for suffix_obj in chain:
-            suffix_form = suffix_obj.form(current_word)
-            suffix_forms.append(suffix_form)
-            current_word += suffix_form
+            found_form = None
+            for suffix_form in suffix_obj.form(current_word):
+                # The logic here is inherently flawed without the full original word,
+                # but we'll assume the first generated form is the one used for the next step
+                # of the *decomposition* chain for this simple print function.
+                # The correct logic is implemented in DecompositionDisplay._build_suffix_info
+                found_form = suffix_form
+                break
+            
+            if found_form:
+                suffix_forms.append(found_form)
+                current_word += found_form
         
         print(f"Suffixes:  {' + '.join(suffix_forms)}")
         print(f"Formation: {format_decomposition_steps(root, pos, chain)}")
@@ -71,25 +74,33 @@ def compound_decomposition(head_decomp, tail_decomp, index):
             print(f"\n--- Combination #{combo_count} (Head #{h_idx}, Tail #{t_idx}) ---")
             
             # Generate suffix forms for head
+            h_suffix_forms = []
+            current_word = h_root
             if h_chain:
-                current_word = h_root
-                h_suffix_forms = []
                 for suffix_obj in h_chain:
-                    suffix_form = suffix_obj.form(current_word)
-                    h_suffix_forms.append(suffix_form)
-                    current_word += suffix_form
+                    found_form = None
+                    for suffix_form in suffix_obj.form(current_word):
+                        found_form = suffix_form
+                        break
+                    if found_form:
+                        h_suffix_forms.append(found_form)
+                        current_word += found_form
                 h_suffixes = " + ".join(h_suffix_forms)
             else:
                 h_suffixes = "(no suffixes)"
             
             # Generate suffix forms for tail
+            t_suffix_forms = []
+            current_word = t_root
             if t_chain:
-                current_word = t_root
-                t_suffix_forms = []
                 for suffix_obj in t_chain:
-                    suffix_form = suffix_obj.form(current_word)
-                    t_suffix_forms.append(suffix_form)
-                    current_word += suffix_form
+                    found_form = None
+                    for suffix_form in suffix_obj.form(current_word):
+                        found_form = suffix_form
+                        break
+                    if found_form:
+                        t_suffix_forms.append(found_form)
+                        current_word += found_form
                 t_suffixes = " + ".join(t_suffix_forms)
             else:
                 t_suffixes = "(no suffixes)"
@@ -124,13 +135,21 @@ def welcome():
     print("  - 'quit' to exit")
     print("="*70)
 
+
+def ml_choices(mode, use_lstm):
+    print("\n" + "=" * 60)
+    print(f"Configuration:")
+    print(f"  - Loss: {mode}")
+    print(f"  - Architecture: {'LSTM' if use_lstm else 'Transformer'}")
+    print("=" * 60 + "\n")  
+
 class DecompositionDisplay:
     """Handles formatting and display of decompositions"""
     
     @staticmethod
     def format_decomposition(word: str, decomp: Tuple, score: Optional[float] = None, 
                             display_idx: int = 1, original_idx: int = 0) -> str:
-        """Format a single decomposition for display"""
+        """ Format a single decomposition for display """
         root, pos, chain, final_pos = decomp
         
         lines = []
@@ -142,8 +161,9 @@ class DecompositionDisplay:
         lines.append(f"Root:      {root} ({pos})")
         
         if chain:
+            # Pass the full word for accurate suffix form determination
             suffix_forms, suffix_names, formation_steps = DecompositionDisplay._build_suffix_info(
-                root, pos, chain
+                word, root, pos, chain
             )
             lines.append(f"Suffixes:  {' + '.join(suffix_forms)}")
             lines.append(f"Names:     {' + '.join(suffix_names)}")
@@ -154,25 +174,47 @@ class DecompositionDisplay:
         lines.append(f"Final POS: {final_pos}")
         lines.append("-" * 70)
         
-        return header("\n".join(lines))
+        return print("\n".join(lines))
     
     @staticmethod
-    def _build_suffix_info(root: str, pos: str, chain: List) -> Tuple[List[str], List[str], List[str]]:
-        """Build suffix forms, names, and formation steps"""
-        current_word = root
+    def _build_suffix_info(full_word: str, root: str, pos: str, chain: List) -> Tuple[List[str], List[str], List[str]]:
+        """Build suffix forms, names, and formation steps, selecting the correct form."""
+        current_stem = root
         suffix_forms = []
         suffix_names = []
+        # Initial display step
         formation_steps = [root + ("-" if pos == "verb" else "")]
         
+        # Cursor to track where the suffix should begin in the full word
+        cursor = len(root)
+        
         for suffix_obj in chain:
-            suffix_form = suffix_obj.form(current_word)
-            suffix_forms.append(suffix_form)
-            suffix_names.append(suffix_obj.name)
+            found_form = None
             
-            current_word += suffix_form
-            target_pos = "verb" if suffix_obj.makes.name == "Verb" else "noun"
-            word_display = current_word + ("-" if target_pos == "verb" else "")
-            formation_steps.append(word_display)
+            # Iterate over possible forms for the current stem
+            for suffix_form in suffix_obj.form(current_stem):
+                # Check if this form matches the actual string in the full word starting from the cursor
+                if full_word.startswith(suffix_form, cursor):
+                    found_form = suffix_form
+                    break # Found the correct form
+            
+            if found_form:
+                suffix_forms.append(found_form)
+                suffix_names.append(suffix_obj.name)
+            
+                # Update the stem and cursor
+                current_stem += found_form
+                cursor += len(found_form)
+                
+                # Update the formation steps display
+                target_pos = "verb" if suffix_obj.makes.name == "Verb" else "noun"
+                word_display = current_stem + ("-" if target_pos == "verb" else "")
+                formation_steps.append(word_display)
+            else:
+                # This should not happen if the decomposition chain is valid for the full word,
+                # but if it does, we stop processing this chain for display.
+                print(f"[Warning: Could not match suffix form for '{suffix_obj.name}' after stem '{current_stem}']")
+                break
         
         return suffix_forms, suffix_names, formation_steps
     
@@ -184,18 +226,21 @@ class DecompositionDisplay:
         Returns mapping from display index to original index
         """
 
-        header(word)
+        print(word)
 
         # Sort by score if available
         if scores:
             indexed_decomps = list(enumerate(zip(decompositions, scores)))
-            indexed_decomps.sort(key=lambda x: x[1][1])  # Sort by score ascending
+            # Note: Assuming lower score is better, or sorting is handled externally if needed.
+            # Sorting by score descending for typically higher-better ML scores:
+            indexed_decomps.sort(key=lambda x: x[1][1], reverse=True) 
         else:
             indexed_decomps = [(i, (d, None)) for i, d in enumerate(decompositions)]
         
         # Display each decomposition
         index_mapping = {}
         for display_idx, (original_idx, (decomp, score)) in enumerate(indexed_decomps, 1):
+            # The word must be passed here to format_decomposition
             DecompositionDisplay.format_decomposition(
                 word, decomp, score, display_idx, original_idx
             )

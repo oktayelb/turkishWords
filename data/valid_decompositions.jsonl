@@ -110,3 +110,99 @@
 {"word": "kabalık", "root": "kaba", "suffixes": [{"name": "suitative_lik", "form": "lık", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "şakalaşmak", "root": "şaka", "suffixes": [{"name": "transformative_les", "form": "laş", "makes": "VERB"}, {"name": "infinitive_mak", "form": "mak", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "canlanmak", "root": "can", "suffixes": [{"name": "acquirative_len", "form": "lan", "makes": "VERB"}, {"name": "infinitive_mak", "form": "mak", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "şebekeleşme", "root": "şebeke", "suffixes": [{"name": "transformative_les", "form": "leş", "makes": "VERB"}, {"name": "negative_me", "form": "me", "makes": "VERB"}], "final_pos": "verb"}
+{"word": "kapışmak", "root": "kap", "suffixes": [{"name": "reflexive_is", "form": "ış", "makes": "VERB"}, {"name": "infinitive_mak", "form": "mak", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "saygısızlık", "root": "say", "suffixes": [{"name": "nounifier_gi", "form": "gı", "makes": "NOUN"}, {"name": "privative_siz", "form": "sız", "makes": "NOUN"}, {"name": "suitative_lik", "form": "lık", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "farklılık", "root": "fark", "suffixes": [{"name": "composessive_li", "form": "lı", "makes": "NOUN"}, {"name": "suitative_lik", "form": "lık", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "çalıntı", "root": "çal", "suffixes": [{"name": "nounifier_inti", "form": "ıntı", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "inşaatçı", "root": "inşaat", "suffixes": [{"name": "actor_ci", "form": "çı", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "kutlamak", "root": "kut", "suffixes": [{"name": "aplicative_le", "form": "la", "makes": "VERB"}, {"name": "infinitive_mak", "form": "mak", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "tiksinilme", "root": "tiksin", "suffixes": [{"name": "passive_il", "form": "il", "makes": "VERB"}, {"name": "infinitive_ma", "form": "me", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "okşantı", "root": "okşantı", "suffixes": [], "final_pos": "noun"}
+{"word": "içirilme", "root": "iç", "suffixes": [{"name": "active_ir", "form": "ir", "makes": "VERB"}, {"name": "passive_il", "form": "il", "makes": "VERB"}, {"name": "negative_me", "form": "me", "makes": "VERB"}], "final_pos": "verb"}
+{"word": "voyvoda", "root": "voyvoda", "suffixes": [], "final_pos": "noun"}
+{"word": "harcayış", "root": "harca", "suffixes": [{"name": "nounifier_iş", "form": "yış", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "yordamlı", "root": "yordam", "suffixes": [{"name": "composessive_li", "form": "lı", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "tarımcı", "root": "tarım", "suffixes": [{"name": "actor_ci", "form": "cı", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "pürçekli", "root": "pürçekli", "suffixes": [], "final_pos": "noun"}
+{"word": "bağırtma", "root": "bağır", "suffixes": [{"name": "active_t", "form": "t", "makes": "VERB"}, {"name": "infinitive_ma", "form": "ma", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "Mısırlı", "root": "Mısır", "suffixes": [{"name": "composessive_li", "form": "lı", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "kanıksamak", "root": "kan", "suffixes": [{"name": "perfectative_ik", "form": "ık", "makes": "NOUN"}, {"name": "absentative_se", "form": "sa", "makes": "VERB"}, {"name": "infinitive_mak", "form": "mak", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "kaplı", "root": "kap", "suffixes": [{"name": "composessive_li", "form": "lı", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "ispirtolu", "root": "ispirto", "suffixes": [{"name": "composessive_li", "form": "lu", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "keresteli", "root": "kereste", "suffixes": [{"name": "composessive_li", "form": "li", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "haydutluk", "root": "haydut", "suffixes": [{"name": "suitative_lik", "form": "luk", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "bilgici", "root": "bil", "suffixes": [{"name": "nounifier_gi", "form": "gi", "makes": "NOUN"}, {"name": "actor_ci", "form": "ci", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "ürküntü", "root": "ürk", "suffixes": [{"name": "nounifier_inti", "form": "üntü", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "fokurdak", "root": "fokurda", "suffixes": [{"name": "toolative_ek", "form": "k", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "kenarcı", "root": "kenar", "suffixes": [{"name": "actor_ci", "form": "cı", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "eylemci", "root": "eylem", "suffixes": [{"name": "actor_ci", "form": "ci", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "ıtriyatçı", "root": "ıtriyat", "suffixes": [{"name": "actor_ci", "form": "çı", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "esprisiz", "root": "espri", "suffixes": [{"name": "privative_siz", "form": "siz", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "bozma", "root": "boz", "suffixes": [{"name": "infinitive_ma", "form": "ma", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "jeofizikçi", "root": "jeofizik", "suffixes": [{"name": "actor_ci", "form": "çi", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "sövülmek", "root": "sövül", "suffixes": [{"name": "infinitive_mak", "form": "mek", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "sakarlık", "root": "sakar", "suffixes": [{"name": "suitative_lik", "form": "lık", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "yıkımcı", "root": "yık", "suffixes": [{"name": "nounifier_im", "form": "ım", "makes": "NOUN"}, {"name": "actor_ci", "form": "cı", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "İtalyanca", "root": "İtalyan", "suffixes": [{"name": "relative_ce", "form": "ca", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "toplanan", "root": "top", "suffixes": [{"name": "acquirative_len", "form": "lan", "makes": "VERB"}, {"name": "factative_en", "form": "an", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "toplanan", "root": "top", "suffixes": [{"name": "aplicative_le", "form": "la", "makes": "VERB"}, {"name": "passive_in", "form": "n", "makes": "VERB"}, {"name": "factative_en", "form": "an", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "boyutsuzluk", "root": "boyut", "suffixes": [{"name": "privative_siz", "form": "suz", "makes": "NOUN"}, {"name": "suitative_lik", "form": "luk", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "canilik", "root": "cani", "suffixes": [{"name": "suitative_lik", "form": "lik", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "kaydırak", "root": "kay", "suffixes": [{"name": "active_tir", "form": "dır", "makes": "VERB"}, {"name": "toolative_ek", "form": "ak", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "spiritüalizm", "root": "spiritüal", "suffixes": [{"name": "ideologicative_izm", "form": "izm", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "lektörlük", "root": "lektör", "suffixes": [{"name": "suitative_lik", "form": "lük", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "örgütleyiş", "root": "örgüt", "suffixes": [{"name": "aplicative_le", "form": "le", "makes": "VERB"}, {"name": "nounifier_iş", "form": "yiş", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "mahkemeli", "root": "mahkeme", "suffixes": [{"name": "composessive_li", "form": "li", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "benek", "root": "ben", "suffixes": [{"name": "dimunitive_ek_archaic", "form": "ek", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "yosunlu", "root": "yosun", "suffixes": [{"name": "composessive_li", "form": "lu", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "şaşı", "root": "şaş", "suffixes": [{"name": "nounifier_i", "form": "ı", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "muşta", "root": "muşta", "suffixes": [], "final_pos": "noun"}
+{"word": "konukluk", "root": "kon", "suffixes": [{"name": "perfectative_ik", "form": "uk", "makes": "NOUN"}, {"name": "suitative_lik", "form": "luk", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "yüzdürme", "root": "yüz", "suffixes": [{"name": "active_tir", "form": "dür", "makes": "VERB"}, {"name": "infinitive_ma", "form": "me", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "strateji", "root": "strateji", "suffixes": [], "final_pos": "noun"}
+{"word": "özümsenmek", "root": "öz", "suffixes": [{"name": "genitive_im", "form": "üm", "makes": "NOUN"}, {"name": "absentative_se", "form": "se", "makes": "VERB"}, {"name": "passive_in", "form": "n", "makes": "VERB"}, {"name": "infinitive_mak", "form": "mek", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "bıkış", "root": "bık", "suffixes": [{"name": "nounifier_iş", "form": "ış", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "davranma", "root": "davran", "suffixes": [{"name": "infinitive_ma", "form": "ma", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "etkileşimli", "root": "et", "suffixes": [{"name": "nounifier_gi", "form": "ki", "makes": "NOUN"}, {"name": "transformative_les", "form": "leş", "makes": "VERB"}, {"name": "nounifier_im", "form": "im", "makes": "NOUN"}, {"name": "composessive_li", "form": "li", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "aynalık", "root": "ayna", "suffixes": [{"name": "suitative_lik", "form": "lık", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "dünden", "root": "dün", "suffixes": [{"name": "locative_den", "form": "den", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "kumsu", "root": "kum", "suffixes": [{"name": "approximative_si", "form": "su", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "cıvıldaşma", "root": "cıvılda", "suffixes": [{"name": "reflexive_is", "form": "ş", "makes": "VERB"}, {"name": "infinitive_ma", "form": "ma", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "yapılış", "root": "yap", "suffixes": [{"name": "passive_il", "form": "ıl", "makes": "VERB"}, {"name": "nounifier_iş", "form": "ış", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "çarpılan", "root": "çarp", "suffixes": [{"name": "passive_il", "form": "ıl", "makes": "VERB"}, {"name": "factative_en", "form": "an", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "dalgın", "root": "dal", "suffixes": [{"name": "constofactative_gin", "form": "gın", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "doktoralı", "root": "doktora", "suffixes": [{"name": "composessive_li", "form": "lı", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "romantiklik", "root": "romantik", "suffixes": [{"name": "suitative_lik", "form": "lik", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "batmak", "root": "bat", "suffixes": [{"name": "infinitive_mak", "form": "mak", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "virajsız", "root": "viraj", "suffixes": [{"name": "privative_siz", "form": "sız", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "gönenme", "root": "gönen", "suffixes": [{"name": "infinitive_ma", "form": "me", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "kalma", "root": "kal", "suffixes": [{"name": "infinitive_ma", "form": "ma", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "şangırdama", "root": "şangırda", "suffixes": [{"name": "infinitive_ma", "form": "ma", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "zeminlik", "root": "zemin", "suffixes": [{"name": "suitative_lik", "form": "lik", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "kökten", "root": "kök", "suffixes": [{"name": "locative_den", "form": "ten", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "nezaretli", "root": "nezaret", "suffixes": [{"name": "composessive_li", "form": "li", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "demlik", "root": "dem", "suffixes": [{"name": "suitative_lik", "form": "lik", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "haberlik", "root": "haber", "suffixes": [{"name": "suitative_lik", "form": "lik", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "sığırcık", "root": "sığır", "suffixes": [{"name": "dimunitive_cik", "form": "cık", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "yansıtma", "root": "yansı", "suffixes": [{"name": "active_t", "form": "t", "makes": "VERB"}, {"name": "infinitive_ma", "form": "ma", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "dingilsiz", "root": "dingil", "suffixes": [{"name": "privative_siz", "form": "siz", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "seyreltme", "root": "seyrel", "suffixes": [{"name": "active_t", "form": "t", "makes": "VERB"}, {"name": "infinitive_ma", "form": "me", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "efildemek", "root": "efilde", "suffixes": [{"name": "infinitive_mak", "form": "mek", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "geğiriş", "root": "geğir", "suffixes": [{"name": "nounifier_iş", "form": "iş", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "çapaçulcu", "root": "çapaçul", "suffixes": [{"name": "actor_ci", "form": "cu", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "bireşim", "root": "bir", "suffixes": [{"name": "verbifier_e", "form": "e", "makes": "VERB"}, {"name": "reflexive_is", "form": "ş", "makes": "VERB"}, {"name": "nounifier_im", "form": "im", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "latiflik", "root": "latif", "suffixes": [{"name": "suitative_lik", "form": "lik", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "ilerici", "root": "ileri", "suffixes": [{"name": "actor_ci", "form": "ci", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "boğmak", "root": "boğ", "suffixes": [{"name": "infinitive_mak", "form": "mak", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "hafifletici", "root": "hafif", "suffixes": [{"name": "grantative_let", "form": "let", "makes": "VERB"}, {"name": "nounifier_i", "form": "i", "makes": "NOUN"}, {"name": "actor_ci", "form": "ci", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "hafifletici", "root": "hafif", "suffixes": [{"name": "aplicative_le", "form": "le", "makes": "VERB"}, {"name": "active_t", "form": "t", "makes": "VERB"}, {"name": "nounifier_i", "form": "i", "makes": "NOUN"}, {"name": "actor_ci", "form": "ci", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "uyanıklık", "root": "uyan", "suffixes": [{"name": "perfectative_ik", "form": "ık", "makes": "NOUN"}, {"name": "suitative_lik", "form": "lık", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "jambonluk", "root": "jambon", "suffixes": [{"name": "suitative_lik", "form": "luk", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "damlı", "root": "dam", "suffixes": [{"name": "composessive_li", "form": "lı", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "kalleşlik", "root": "kalleş", "suffixes": [{"name": "suitative_lik", "form": "lik", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "koniklik", "root": "konik", "suffixes": [{"name": "suitative_lik", "form": "lik", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "slalomcu", "root": "slalom", "suffixes": [{"name": "actor_ci", "form": "cu", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "günahsız", "root": "günah", "suffixes": [{"name": "privative_siz", "form": "sız", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "inceletiş", "root": "ince", "suffixes": [{"name": "grantative_let", "form": "let", "makes": "VERB"}, {"name": "nounifier_iş", "form": "iş", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "güneş", "root": "gün", "suffixes": [{"name": "verbifier_e", "form": "e", "makes": "VERB"}, {"name": "reflexive_is", "form": "ş", "makes": "VERB"}], "final_pos": "verb"}
