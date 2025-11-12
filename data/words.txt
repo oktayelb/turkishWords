@@ -2428,7 +2428,6 @@ ayna
 aynabakar
 aynacı
 aynalı
-aynalık
 aynasız
 aynaz
 aynen
@@ -3396,7 +3395,6 @@ batkı
 batkın
 batkınlık
 batma
-batmak
 Batman
 batman
 batonsale
@@ -3703,7 +3701,6 @@ bendehane
 benden
 bendezade
 bendir
-benek
 benekli
 bengi
 bengilik
@@ -4268,7 +4265,6 @@ birdirbir
 birebir
 Birecik
 birer
-bireşim
 bireşimli
 birey
 bireyci
@@ -4663,7 +4659,6 @@ boyunsuz
 boyut
 boyutlu
 boyutsuz
-boyutsuzluk
 boz
 boza
 bozacı
@@ -4694,7 +4689,6 @@ Bozkır
 Bozkurt
 bozkurt
 bozlak
-bozma
 bozmak
 Bozova
 bozördek
@@ -5349,7 +5343,6 @@ canıgönülden
 canıyürekten
 cani
 canice
-canilik
 canip
 caniyane
 cankulağı
@@ -6127,7 +6120,6 @@ cüzzamlı
 çapa
 çapacı
 çapaçul
-çapaçulcu
 çapaçulculuk
 çapaçulluk
 çapak
@@ -6605,7 +6597,6 @@ cüzzamlı
 çeyrek
 çıban
 çıbanbaşı
-
 çıdam
 çıfıt
 Çıfıt
@@ -7289,7 +7280,6 @@ dalgasız
 dalgı
 dalgıç
 dalgıçlık
-dalgın
 dalgınca
 dalgınlık
 dalgır
@@ -7351,7 +7341,6 @@ damızlık
 damla
 damlacık
 damlalık
-damlı
 damper
 damperli
 dampersiz
@@ -7764,7 +7753,6 @@ demirsiz
 demiurgos
 demkeş
 demli
-demlik
 demode
 demograf
 demografi
@@ -8344,7 +8332,6 @@ dingildeklik
 dingildeme
 dingildemek
 dingilli
-dingilsiz
 dingin
 dinginlik
 Dingo
@@ -8660,7 +8647,6 @@ doksanıncı
 doksanlık
 doktor
 doktora
-doktoralı
 doktorasız
 doktorculuk
 doktorluk
@@ -9245,7 +9231,6 @@ dümenevi
 dümensiz
 dümtek
 dün
-dünden
 dünit
 dünkü
 dünür
@@ -10432,7 +10417,6 @@ espressivo
 espresso
 espri
 esprili
-esprisiz
 espritüel
 esrar
 esrarcı
@@ -10553,7 +10537,6 @@ etken
 etkenlik
 etki
 etkileşim
-etkileşimli
 etkileyici
 etkili
 etkime
@@ -10683,7 +10666,6 @@ eyersiz
 eyitme
 eyitmek
 eylem
-eylemci
 eylemli
 eylemlik
 eylemsi
@@ -12683,7 +12665,6 @@ gönenç
 gönençli
 gönendirilme
 gönendirilmek
-gönenme
 gönenmek
 gönlünce
 gönül
@@ -13135,7 +13116,6 @@ günah
 günahkâr
 günahkârlık
 günahlı
-günahsız
 günâşık
 günaşırı
 günaydın
@@ -13165,11 +13145,6 @@ gündüzün
 günebakan
 güneç
 güneğik
-güneş
-güneşli
-güneşlik
-güneşsel
-güneşsiz
 güneştopu
 güney
 Güney
@@ -13295,7 +13270,6 @@ haberdarlık
 haberleşilme
 haberleşilmek
 haberli
-haberlik
 habersiz
 habersizce
 Habeş
@@ -13367,7 +13341,6 @@ hafızlık
 hafi
 hafif
 hafifçe
-hafifletici
 hafifleyiş
 hafiflik
 hafifmeşrep
@@ -13970,7 +13943,6 @@ haydin
 haydindi
 haydisene
 haydut
-haydutluk
 hayfa
 hayhay
 hayhuy
@@ -15040,7 +15012,6 @@ Isparta
 ıtrışahi
 ıtri
 ıtriyat
-ıtriyatçı
 ıttıla
 ıttırat
 ıydiye
@@ -15450,7 +15421,6 @@ ile
 ilelebet
 ilenç
 ileri
-ilerici
 ileride
 ilerlek
 ilerleyici
@@ -15670,7 +15640,6 @@ ince
 incecik
 incecikten
 inceden
-inceletiş
 inceleyici
 incelik
 inceliş
@@ -16057,7 +16026,6 @@ ispir
 ispiralya
 ispirto
 ispirtocu
-ispirtolu
 ispirtoluk
 ispirtosuz
 ispit
@@ -16502,7 +16470,6 @@ jaluzi
 jaluzili
 jaluzisiz
 jambon
-jambonluk
 jandarma
 jandarmalık
 janjan
@@ -16530,7 +16497,6 @@ jenosit
 jeodezi
 jeodinamik
 jeofizik
-jeofizikçi
 jeokimya
 jeokimyacı
 jeolog
@@ -17058,8 +17024,6 @@ kalkolitik
 kallavi
 kalleş
 kalleşçe
-kalleşlik
-kalma
 kalmak
 kalmalı
 kaloma
@@ -17245,7 +17209,6 @@ kanıklık
 kanıkma
 kanıkmak
 kanıksama
-kanıksamak
 kanıksayış
 kanırma
 kanırmak
@@ -17380,7 +17343,6 @@ kaplan
 kaplanboğan
 kaplatış
 kaplayış
-kaplı
 kaplıca
 kaplıcalık
 kaplık
@@ -18119,7 +18081,6 @@ kaydetme
 kaydetmek
 kaydıhayat
 kaydıihtiyat
-kaydırak
 kaydırış
 kaydırtma
 kaydırtmak
@@ -18454,7 +18415,6 @@ kemoterapi
 kemre
 kemrelik
 kenar
-kenarcı
 kenarlı
 kenarlık
 kenarortay
@@ -18525,7 +18485,6 @@ kerempe
 keres
 kereste
 keresteci
-keresteli
 kerestelik
 kerevet
 kerevit
@@ -18771,6 +18730,7 @@ kılkapan
 kılkıran
 kılkuyruk
 kıllı
+kılmak
 kılsız
 kılükał
 kımıl
@@ -19709,7 +19669,6 @@ kongövdeli
 kongre
 koni
 konik
-koniklik
 konjonktür
 konkasör
 konkav
@@ -20125,7 +20084,6 @@ köksel
 köksü
 köksüz
 köksüzlük
-kökten
 köktenci
 kökteş
 Köktürk
@@ -20512,7 +20470,6 @@ kumru
 Kumru
 kumrucu
 kumsal
-kumsu
 kumsuz
 kumuç
 Kumuk
@@ -21190,7 +21147,6 @@ latif
 latifçe
 latife
 latifeci
-latiflik
 latifundia
 latilokum
 Latin
@@ -21279,7 +21235,6 @@ leksikolog
 leksikoloji
 leksikolojik
 lektör
-lektörlük
 lemis
 lenduha
 lenf
@@ -21717,7 +21672,6 @@ mahirane
 mahiye
 mahiyet
 mahkeme
-mahkemeli
 mahkemelik
 mahkûk
 mahkûkât
@@ -24887,7 +24841,6 @@ nezaketli
 nezaketsiz
 nezaret
 nezarethane
-nezaretli
 nezaretsiz
 nezdinde
 nezetme
@@ -26139,7 +26092,6 @@ ozuga
 örgütçülük
 örgütlendirilme
 örgütlendirilmek
-örgütleyiş
 örgütlü
 örgütsel
 örgütsüz
@@ -26330,7 +26282,6 @@ ozuga
 özümseme
 özümsemek
 özümsenme
-özümsenmek
 özümsetme
 özümsetmek
 özünlü
@@ -28238,7 +28189,6 @@ Romanoloji
 romans
 romansı
 romantik
-romantiklik
 romantizm
 Romanya
 Romanyalı
@@ -28618,7 +28568,6 @@ sakarca
 sakarimetre
 sakarimetri
 sakarin
-sakarlık
 Sakarya
 sakat
 sakatat
@@ -29843,7 +29792,6 @@ sığınmak
 sığıntı
 sığır
 sığırcı
-sığırcık
 sığırdili
 sığırgözü
 sığırkuyruğu
@@ -30381,7 +30329,6 @@ skleroz
 skolastik
 skor
 slalom
-slalomcu
 slap
 Slav
 Slavca
@@ -30811,7 +30758,6 @@ spikerlik
 spirał
 spiril
 spiritüał
-spiritüalizm
 sponsor
 sponsorluk
 spontane
@@ -32590,7 +32536,6 @@ tarhanalık
 tarhun
 Tarık
 tarım
-tarımcı
 tarımsal
 tarif
 tarife
@@ -34001,7 +33946,6 @@ topik
 topla
 toplaç
 toplam
-toplanan
 toplanık
 toplantı
 toplardamar
@@ -35714,7 +35658,6 @@ vinyet
 vira
 viraj
 virajlı
-virajsız
 viran
 virane
 viranelik
@@ -36129,7 +36072,6 @@ yansımalı
 yansımasız
 yansıtaç
 yansıtıcı
-yansıtma
 yansıtmak
 yansız
 yanşak
@@ -36991,7 +36933,6 @@ yosmaca
 yosmalık
 yosun
 yosuncul
-yosunlu
 yoz
 Yozgat
 yozluk
@@ -37236,7 +37177,6 @@ yüzbeyüz
 yüzde
 yüzdelik
 yüzden
-yüzdürme
 yüzdürmek
 yüzdürülme
 yüzdürülmek
@@ -37450,7 +37390,6 @@ zembil
 zemheri
 zemin
 zeminli
-zeminlik
 zemmetme
 zemmetmek
 zemzem

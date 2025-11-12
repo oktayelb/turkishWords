@@ -4,6 +4,7 @@ from enum import Enum
 from typing import List, Tuple, Dict
 
 import util.word_methods as wrd
+from util.rules.suffix_rules import validate_suffix_addition as validate
 
 class HasMajorHarmony(Enum):      
     Yes = 0                      
@@ -26,7 +27,7 @@ class Suffix():
         
         # Auto-determine major harmony if not specified
         if major_harmony is None:
-            self.major_harmony = HasMajorHarmony.Yes if suffix not in ['trak','ki','yor','gil','leyin','man'] else HasMajorHarmony.No
+            self.major_harmony = HasMajorHarmony.Yes if suffix not in ['trak','ki','yor','gil','leyin','man',"izm"] else HasMajorHarmony.No
         else:
             self.major_harmony = major_harmony
         
@@ -41,51 +42,9 @@ class Suffix():
     
     def form(self, word):
         """Generate harmonized suffix form for given word"""
-        if not word:
-            return self.suffix
-            
+        result_list = []
         result = self.suffix
-        
-        # Y-buffer: Add 'y' before vowel-initial suffixes when word ends in vowel
-        # This applies to specific suffixes that need y-buffer (marked with #)
-        if self.needs_y_buffer and word and word[-1] in wrd.VOWELS and result and result[0] in wrd.VOWELS:
-            result = 'y' + result
-            # Skip the normal vowel drop logic for y-buffer suffixes
-            # Apply harmonies and return
-            if self.major_harmony == HasMajorHarmony.Yes:
-                word_harmony = wrd.major_harmony(word)
-                if word_harmony == wrd.MajorHarmony.BACK:
-                    result = result.replace("e", "a")
-                    result = result.replace("i", "ı")
-                    result = result.replace("ü", "u")
-                    result = result.replace("ö", "o")
-            
-            if self.minor_harmony == HasMinorHarmony.Yes:
-                word_harmony = wrd.minor_harmony(word)
-                if word_harmony == wrd.MinorHarmony.BACK_ROUND:
-                    result = result.replace("ı", "u")
-                elif word_harmony == wrd.MinorHarmony.FRONT_ROUND:
-                    result = result.replace("i", "ü")
-            
-            return result
-        
-        # Consonant hardening: g->k, d->t, c->ç when word ends in hard consonant
-        if word[-1] in wrd.HARD_CONSONANTS and result and result[0] in ['g','c','d']:
-            if result[0] == 'g':
-                result = 'k' + result[1:]
-            elif result[0] == 'd':
-                result = 't' + result[1:]
-            elif result[0] == 'c':
-                result = 'ç' + result[1:]
-        
-        # Vowel drop: if word ends in vowel and suffix starts with vowel
-        if result and word[-1] in wrd.VOWELS and result[0] in wrd.VOWELS and len(result) > 1:
-            result = result[1:]
-            # If suffix becomes consonant-only after dropping first vowel, return as is
-            if not result or wrd.has_no_vowels(result) or len(result) == 1:
-                return result
-        
-        # Major vowel harmony (back/front)
+
         if self.major_harmony == HasMajorHarmony.Yes:
             word_harmony = wrd.major_harmony(word)
             if word_harmony == wrd.MajorHarmony.BACK:
@@ -94,7 +53,7 @@ class Suffix():
                 result = result.replace("i", "ı")
                 result = result.replace("ü", "u")
                 result = result.replace("ö", "o")
-        
+
         # Minor vowel harmony (round/unround)
         if self.minor_harmony == HasMinorHarmony.Yes:
             word_harmony = wrd.minor_harmony(word)
@@ -105,8 +64,29 @@ class Suffix():
             elif word_harmony == wrd.MinorHarmony.FRONT_ROUND:
                 # ö, ü -> change i to ü
                 result = result.replace("i", "ü")
-        
-        return result
+
+
+
+                # Consonant hardening: g->k, d->t, c->ç when word ends in hard consonant
+        if word[-1] in wrd.HARD_CONSONANTS and result and result[0] in ['g','c','d']:
+            if result[0] == 'g':
+                result = 'k' + result[1:]
+            elif result[0] == 'd':
+                result = 't' + result[1:]
+            elif result[0] == 'c':
+                result = 'ç' + result[1:]
+        # Y-buffer: Add 'y' before vowel-initial suffixes when word ends in vowel
+        # This applies to specific suffixes that need y-buffer (marked with #)
+            
+        result_list.append(result)
+        if word and  word[-1] in wrd.VOWELS and result[0] in wrd.VOWELS and result:
+            if self.needs_y_buffer:
+                result_list.append('y'+result)
+                result_list.append('ğ'+result)
+            if len(result) > 1:
+                result_list.append(result[1:])
+ 
+        return result_list
 
 
 # ============================================================================
@@ -116,7 +96,8 @@ class Suffix():
 # V2V suffixes (Verb to Verb)
 reflexive_is            = Suffix("reflexive_is", "iş", wrd.Type.VERB, wrd.Type.VERB, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
 reflexive_ik            = Suffix("reflexive_ik", "ik", wrd.Type.VERB, wrd.Type.VERB, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
-active_t                = Suffix("active_t", "it", wrd.Type.VERB, wrd.Type.VERB, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
+active_it               = Suffix("active_it", "it", wrd.Type.VERB, wrd.Type.VERB, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
+active_t                = Suffix("active_t", "t", wrd.Type.VERB, wrd.Type.VERB, HasMajorHarmony.No, HasMinorHarmony.No)
 active_tir              = Suffix("active_tir", "dir", wrd.Type.VERB, wrd.Type.VERB, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
 active_ir               = Suffix("active_ir", "ir", wrd.Type.VERB, wrd.Type.VERB, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
 passive_il              = Suffix("passive_il", "il", wrd.Type.VERB, wrd.Type.VERB, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
@@ -152,7 +133,7 @@ marking_ki              = Suffix("marking_ki", "ki", wrd.Type.NOUN, wrd.Type.NOU
 temporative_leyin       = Suffix("temporative_leyin", "leyin", wrd.Type.NOUN, wrd.Type.NOUN, HasMajorHarmony.Yes, HasMinorHarmony.Yes) ## buraya bak
 ideologicative_izm      = Suffix("ideologicative_izm", "izm", wrd.Type.NOUN, wrd.Type.NOUN, HasMajorHarmony.No, HasMinorHarmony.No) ## buraya bak
 locative_le             = Suffix("locative_le", "le", wrd.Type.NOUN, wrd.Type.NOUN, HasMajorHarmony.Yes, HasMinorHarmony.No) ## buraya bak
-
+eventative_tay          = Suffix("eventative_tay", "tay", wrd.Type.NOUN, wrd.Type.NOUN, HasMajorHarmony.No, HasMinorHarmony.No) ## buraya bak
 # N2V suffixes (Noun to Verb)
 absentative_se          = Suffix("absentative_se", "se", wrd.Type.NOUN, wrd.Type.VERB, HasMajorHarmony.Yes, HasMinorHarmony.No)
 verbifier_e             = Suffix("verbifier_e", "e", wrd.Type.NOUN, wrd.Type.VERB, HasMajorHarmony.Yes, HasMinorHarmony.No)
@@ -174,7 +155,7 @@ constofactative_gen     = Suffix("constofactative_gen", "gen", wrd.Type.VERB, wr
 constofactative_gin     = Suffix("constofactative_gin", "gin", wrd.Type.VERB, wrd.Type.NOUN, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
 nounifier_iş            = Suffix("nounifier_iş", "iş", wrd.Type.VERB, wrd.Type.NOUN, HasMajorHarmony.Yes, HasMinorHarmony.Yes, needs_y_buffer=True)  # Added y-buffer
 perfectative_ik         = Suffix("perfectative_ik", "ik", wrd.Type.VERB, wrd.Type.NOUN, HasMajorHarmony.Yes, HasMinorHarmony.Yes, needs_y_buffer=True)  # Added y-buffer
-nounifier_i             = Suffix("nounifier_i", "i", wrd.Type.VERB, wrd.Type.NOUN, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
+nounifier_i             = Suffix("nounifier_i", "i", wrd.Type.VERB, wrd.Type.NOUN, HasMajorHarmony.Yes, HasMinorHarmony.Yes, needs_y_buffer=True)
 nounifier_gi            = Suffix("nounifier_gi", "gi", wrd.Type.VERB, wrd.Type.NOUN, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
 nounifier_im            = Suffix("nounifier_im", "im", wrd.Type.VERB, wrd.Type.NOUN, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
 nounifier_in            = Suffix("nounifier_in", "in", wrd.Type.VERB, wrd.Type.NOUN, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
@@ -250,6 +231,42 @@ def encode_suffix_chain( suffix_objects: List) -> Tuple[List, List]:
         category_ids.append(category_id)
     
     return object_ids, category_ids
+
+
+
+def find_suffix_chain(word, start_pos, root, visited=None):
+    """Recursively find valid suffix chains after a root."""
+    if visited is None:
+        visited = set()
+
+    state_key = (len(root), start_pos)
+    if state_key in visited:
+        return []
+
+    visited = visited | {state_key}
+    rest = word[len(root):]
+
+    # Base case: fully matched word
+    if not rest:
+        return [([], start_pos)]
+
+    # No suffix transitions available
+    if start_pos not in SUFFIX_TRANSITIONS:
+        return []
+    results = []
+    for target_pos, suffix_list in SUFFIX_TRANSITIONS[start_pos].items():
+        for suffix_obj in suffix_list:
+            for suffix_form in suffix_obj.form(root):
+                if rest.startswith(suffix_form):
+                    next_root = root + suffix_form
+                    remaining = rest[len(suffix_form):]
+                    subchains = find_suffix_chain(word, target_pos, next_root, visited) if remaining else [([], target_pos)]
+                    for chain, final_pos in subchains:
+                        # RULE VALIDATION: Check if adding this suffix violates any rules
+                        if validate(chain, suffix_obj):
+                            results.append(([suffix_obj] + chain, final_pos))
+                    break   
+    return results
     
 
     

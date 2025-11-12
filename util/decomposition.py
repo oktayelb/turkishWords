@@ -1,41 +1,7 @@
 import util.word_methods as wrd
-import util.suffixes as sfx
-import util.print as display
-from util.rules.suffix_rules import validate_suffix_addition as validate
+from util.suffixes import find_suffix_chain  
 
 
-def find_suffix_chain(word, start_pos, root, visited=None):
-    """Recursively find valid suffix chains after a root."""
-    if visited is None:
-        visited = set()
-
-    state_key = (len(root), start_pos)
-    if state_key in visited:
-        return []
-
-    visited = visited | {state_key}
-    rest = word[len(root):]
-
-    # Base case: fully matched word
-    if not rest:
-        return [([], start_pos)]
-
-    # No suffix transitions available
-    if start_pos not in sfx.SUFFIX_TRANSITIONS:
-        return []
-    results = []
-    for target_pos, suffix_list in sfx.SUFFIX_TRANSITIONS[start_pos].items():
-        for suffix_obj in suffix_list:
-            suffix_form = suffix_obj.form(root)
-            if rest.startswith(suffix_form):
-                next_root = root + suffix_form
-                remaining = rest[len(suffix_form):]
-                subchains = find_suffix_chain(word, target_pos, next_root, visited) if remaining else [([], target_pos)]
-                for chain, final_pos in subchains:
-                    # RULE VALIDATION: Check if adding this suffix violates any rules
-                    if validate(chain, suffix_obj):
-                        results.append(([suffix_obj] + chain, final_pos))
-    return results
 
 
 def decompose(word):
@@ -63,13 +29,6 @@ def decompose(word):
 
 
 
-
-
-
-# =====================================================================
-# ANALYSIS LOGIC
-# =====================================================================
-
 #LOGIC FOR COMPOUND WORDS.
 def analyze_word(word):
     """
@@ -86,6 +45,7 @@ def analyze_word(word):
     # Print results in order of priority
     if all_compounds:
         for idx, (head_d, tail_d) in enumerate(all_compounds, 1):
-            display.compound_decomposition(head_d, tail_d, idx)
-    
+            pass
+        ##    display.compound_decomposition(head_d, tail_d, idx)
+
 
