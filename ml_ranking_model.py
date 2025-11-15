@@ -18,7 +18,7 @@ import math
 
 # Assuming these exist in your project
 import util.suffixes as sfx
-
+from data.config import TrainingConfig
 
 # ============================================================================
 # IMPROVED NEURAL NETWORK MODEL
@@ -278,6 +278,11 @@ class ImprovedTrainer:
         self.best_val_loss = float('inf')
         self.epochs_without_improvement = 0
         self.global_step = 0
+        try:
+            self.load_checkpoint(TrainingConfig.model_path)
+            print(f"✅ Loaded existing model from {TrainingConfig.model_path}")
+        except Exception as e:
+            print(f"⚠️  Could not load model: {e}")
     
     def prepare_batch(
         self,
