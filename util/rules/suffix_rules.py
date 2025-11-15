@@ -189,7 +189,23 @@ class SuffixRuleEngine:
             ['plural_ler'],
             "Plural suffix cannot occur twice"
         ))
+        self.add_rule(ForbiddenSequenceRule(["aplicative_le","active_ir"]))
 
+        self.add_rule(ForbiddenSequenceRule(["negative_me","reflexive_ik"]))
+        self.add_rule(ForbiddenSequenceRule(["negative_me","reflexive_is"]))
+        self.add_rule(ForbiddenSequenceRule(["negative_me","active_it"]))
+        self.add_rule(ForbiddenSequenceRule(["negative_me","passive_il"]))
+        self.add_rule(ForbiddenSequenceRule(["negative_me","active_ir"]))
+        self.add_rule(ForbiddenSequenceRule(["negative_me","active_t"]))
+        self.add_rule(ForbiddenSequenceRule(["negative_me","passive_il"]))
+        self.add_rule(ForbiddenSequenceRule(["negative_me","passive_in"]))
+        self.add_rule(ForbiddenSequenceRule(["negative_me","perfectative_ik"]))
+        self.add_rule(ForbiddenSequenceRule(["negative_me","toolative_ek"]))
+        self.add_rule(ForbiddenSequenceRule(["infinitive_me","dimunitive_ek_archaic"]))
+
+        
+
+        
 
 
 # Global rule engine instance

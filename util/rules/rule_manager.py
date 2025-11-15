@@ -13,7 +13,7 @@ from suffix_rules import (
     add_rule
 )
 import util.suffixes as sfx
-from util.decomposition import decompose
+from depracated.decomposition import decompose
 
 
 def list_all_rules():
