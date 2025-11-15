@@ -1,175 +1,247 @@
 """
-Interactive training pipeline for Turkish morphological analyzer
-Updated to work with improved ML ranking model
-Added AUTO MODE for random word training
+Refactored interactive training pipeline for Turkish morphological analyzer
+Split into two focused classes: InteractiveTrainer (logic) and TrainerDisplay (UI)
 """
 
 import os
 import json
-
 from typing import List, Optional, Tuple, Dict
 
-
-# in project imports
 from data.config import TrainingConfig
 from util.decomposition import decompose
-import  util.print as display 
 import util.word_methods as wrd
+from ml_ranking_model import ImprovedRanker, ImprovedTrainer, DataAugmenter
 
-from ml_ranking_model import (
-    ImprovedRanker, 
-    ImprovedTrainer,
-    DataAugmenter
-)
 
-class UserInputHandler:
-    """Handles user input and validation"""
+class TrainerDisplay:
+    """Handles all user interaction and display formatting"""
     
     @staticmethod
-    def get_correct_choices(num_options: int) -> Optional[List[int]]:
+    def welcome():
+        """Show welcome message and available commands"""
+        print("\n💡 Commands:")
+        print("  - Enter a word to analyze and train")
+        print("  - 'auto' - Start auto mode (random words from dictionary)")
+        print("  - 'eval <word>' - Evaluate model on a word")
+        print("  - 'batch' - Train on all logged decompositions")
+        print("  - 'stats' - Show training statistics")
+        print("  - 'save' - Save model")
+        print("  - 'quit' - Exit")
+    
+    @staticmethod
+    def show_config(mode: str, use_lstm: bool):
+        """Display model configuration"""
+        print("\n" + "=" * 60)
+        print(f"Configuration:")
+        print(f"  - Loss: {mode}")
+        print(f"  - Architecture: {'LSTM' if use_lstm else 'Transformer'}")
+        print("=" * 60 + "\n")
+    
+    @staticmethod
+    def show_decompositions(word: str, decompositions: List[Tuple], 
+                           scores: Optional[List[float]] = None) -> Dict[int, int]:
         """
-        Get user's choice(s) of correct decomposition(s)
-        Returns: List of 0-indexed choices, [-1] for skip, or None for quit
+        Display all decompositions sorted by score.
+        Returns mapping from display index to original index.
         """
+        print(f"\n{word}")
+        
+        # Sort by score (lower is better)
+        if scores:
+            indexed = list(enumerate(zip(decompositions, scores)))
+            indexed.sort(key=lambda x: x[1][1])
+        else:
+            indexed = [(i, (d, None)) for i, d in enumerate(decompositions)]
+        
+        # Display each option
+        index_mapping = {}
+        for display_idx, (orig_idx, (decomp, score)) in enumerate(indexed, 1):
+            TrainerDisplay._show_single_decomposition(
+                word, decomp, score, display_idx, orig_idx
+            )
+            index_mapping[display_idx] = orig_idx
+        
+        return index_mapping
+    
+    @staticmethod
+    def _show_single_decomposition(word: str, decomp: Tuple, score: Optional[float],
+                                   display_idx: int, orig_idx: int):
+        """Format and print a single decomposition"""
+        root, pos, chain, final_pos = decomp
+        
+        print(f"\n[Option {display_idx}] (Original index: {orig_idx + 1})")
+        if score is not None:
+            print(f"ML Score: {score:.4f}")
+        
+        print(f"Root:      {root} ({pos})")
+        
+        if chain:
+            suffix_forms, suffix_names, formation = TrainerDisplay._build_suffix_chain(
+                word, root, pos, chain
+            )
+            print(f"Suffixes:  {' + '.join(suffix_forms)}")
+            print(f"Names:     {' + '.join(suffix_names)}")
+            print(f"Formation: {' → '.join(formation)}")
+        else:
+            verb_marker = "-" if pos == "verb" else ""
+            print(f"Formation: {root}{verb_marker} (no suffixes)")
+        
+        print(f"Final POS: {final_pos}")
+        print("-" * 70)
+    
+    @staticmethod
+    def _build_suffix_chain(word: str, root: str, pos: str, 
+                           chain: List) -> Tuple[List[str], List[str], List[str]]:
+        """Build suffix forms, names, and formation steps"""
+        current_stem = root
+        suffix_forms = []
+        suffix_names = []
+        formation = [root + ("-" if pos == "verb" else "")]
+        cursor = len(root)
+        
+        for suffix_obj in chain:
+            # Find matching suffix form
+            found_form = None
+            for form in suffix_obj.form(current_stem):
+                if word.startswith(form, cursor):
+                    found_form = form
+                    break
+            
+            if not found_form:
+                print(f"[Warning: Could not match suffix '{suffix_obj.name}']")
+                break
+            
+            suffix_forms.append(found_form)
+            suffix_names.append(suffix_obj.name)
+            current_stem += found_form
+            cursor += len(found_form)
+            
+            # Add formation step
+            verb_marker = "-" if suffix_obj.makes.name == "Verb" else ""
+            formation.append(current_stem + verb_marker)
+        
+        return suffix_forms, suffix_names, formation
+    
+    @staticmethod
+    def get_user_choices(num_options: int) -> Optional[List[int]]:
+        """Get user's choice of correct decomposition(s)"""
         while True:
-            try:
-                choice = input(
-                    f"\nSelect correct decomposition(s) (1-{num_options}, 's' to skip, 'q' to quit): "
-                ).strip().lower()
-                
-                if choice == 'q':
-                    return None
-                elif choice == 's':
-                    return [-1]
-                
-                # Parse multiple numbers
-                choices = UserInputHandler._parse_number_input(choice, num_options)
-                
-                if choices is not None:
-                    return [c - 1 for c in choices]  # Convert to 0-indexed
-                    
-            except Exception as e:
-                print(f"Error parsing input: {e}. Please try again.")
+            choice = input(
+                f"\nSelect correct (1-{num_options}, 's'=skip, 'q'=quit): "
+            ).strip().lower()
+            
+            if choice == 'q':
+                return None
+            if choice == 's':
+                return [-1]
+            
+            parsed = TrainerDisplay._parse_numbers(choice, num_options)
+            if parsed is not None:
+                return [c - 1 for c in parsed]  # Convert to 0-indexed
     
     @staticmethod
-    def _parse_number_input(input_str: str, max_value: int) -> Optional[List[int]]:
-        """Parse comma/space separated numbers from input string"""
-        # Replace common separators with spaces
-        normalized = input_str.replace(',', ' ').replace('-', ' ').replace('/', ' ').replace(';', ' ')
-        parts = [p.strip() for p in normalized.split() if p.strip()]
+    def _parse_numbers(input_str: str, max_value: int) -> Optional[List[int]]:
+        """Parse comma/space separated numbers"""
+        normalized = input_str.replace(',', ' ').replace('-', ' ').replace('/', ' ')
+        parts = normalized.split()
         
         if not parts:
-            print("No input provided. Please try again.")
+            print("No input provided.")
             return None
         
-        # Convert to integers
         try:
-            choices = [int(part) for part in parts]
-        except ValueError as e:
-            print(f"Invalid number in input: {e}")
+            choices = [int(p) for p in parts]
+        except ValueError:
+            print("Invalid number in input.")
             return None
         
-        # Validate range
         invalid = [c for c in choices if c < 1 or c > max_value]
         if invalid:
-            print(f"Invalid choice(s): {invalid}. Please enter numbers between 1 and {max_value}")
+            print(f"Invalid choices: {invalid}. Use 1-{max_value}")
             return None
         
-        # Remove duplicates while preserving order
-        return list(dict.fromkeys(choices))
+        return list(dict.fromkeys(choices))  # Remove duplicates
     
     @staticmethod
     def confirm_save() -> bool:
-        """Ask user if they want to save before quitting"""
-        choice = input("Save model before quitting? (y/n): ").strip().lower()
-        return choice == 'y'
+        """Ask if user wants to save before quitting"""
+        return input("Save model before quitting? (y/n): ").strip().lower() == 'y'
     
     @staticmethod
     def get_training_mode() -> str:
-        """Ask user which training mode to use"""
+        """Ask user to choose training mode"""
         print("\nSelect training mode:")
-        print("  1. Contrastive learning (default, good for single correct answer)")
-        print("  2. Triplet loss (better margins, good for ranking)")
+        print("  1. Contrastive learning (default)")
+        print("  2. Triplet loss (better margins)")
         choice = input("Enter 1 or 2 (default: 1): ").strip()
         return 'triplet' if choice == '2' else 'contrastive'
     
     @staticmethod
-    def get_arch_mode():
+    def get_architecture() -> bool:
+        """Ask user to choose architecture (returns True for LSTM)"""
         print("\nSelect model architecture:")
         print("  1. Transformer (more accurate, slower)")
         print("  2. LSTM (faster, good accuracy)")
-        arch_choice = input("Enter 1 or 2 (default: 1): ").strip()
-        return  (arch_choice == '2')
-
-
-
-class DecompositionLogger:
-    """Handles logging of valid decompositions"""
+        choice = input("Enter 1 or 2 (default: 1): ").strip()
+        return choice == '2'
     
-    filepath = TrainingConfig.valid_decompositions_file
-    
-    def log_decompositions(self, word: str, correct_indices: List[int], 
-                          decompositions: List[Tuple]) -> None:
-        """Save validated decomposition(s) to file in JSONL format"""
-        try:
-            with open(self.filepath, 'a', encoding='utf-8') as f:
-                for idx in correct_indices:
-                    entry = self._create_entry(word, decompositions[idx])
-                    f.write(json.dumps(entry, ensure_ascii=False) + '\n')
-            
-            print(f"📝 Saved {len(correct_indices)} valid decomposition(s) to {self.filepath}")
+    @staticmethod
+    def show_statistics(trainer: 'InteractiveTrainer'):
+        """Display comprehensive training statistics"""
+        print(f"\n📊 Training Statistics:")
+        print(f"  Total examples: {trainer.training_count}")
         
-        except Exception as e:
-            print(f"⚠️  Could not save valid decomposition: {e}")
-    
-    def _create_entry(self, word: str, decomp: Tuple) -> Dict:
-        """Create a log entry for a decomposition"""
-        root, pos, chain, final_pos = decomp
+        if trainer.trainer.training_history:
+            recent = trainer.trainer.training_history[-20:]
+            print(f"  Recent avg loss: {sum(recent)/len(recent):.4f}")
+            print(f"  Latest loss: {trainer.trainer.training_history[-1]:.4f}")
         
-        suffix_info = []
-        if chain:
-            current_word = root
-            for suffix_obj in chain:
-                suffix_form = suffix_obj.form(current_word)
-                suffix_info.append({
-                    'name': suffix_obj.name,
-                    'form': suffix_form,
-                    'makes': suffix_obj.makes.name
-                })
-                current_word += suffix_form
+        if trainer.trainer.validation_history:
+            print(f"  Best validation: {trainer.trainer.best_val_loss:.4f}")
         
-        return {
-            'word': word,
-            'root': root,
-            'suffixes': suffix_info,
-            'final_pos': final_pos
-        }
+        if trainer.auto_stats['words_processed'] > 0:
+            print(f"\n  Auto mode:")
+            print(f"    - Processed: {trainer.auto_stats['words_processed']}")
+            print(f"    - Deleted: {trainer.auto_stats['words_deleted']}")
+            print(f"    - Skipped: {trainer.auto_stats['words_skipped']}")
+        
+        print(f"\n  Model config:")
+        print(f"    - Architecture: {'LSTM' if trainer.model.use_lstm else 'Transformer'}")
+        print(f"    - Loss: {'Triplet' if trainer.trainer.use_triplet_loss else 'Contrastive'}")
+        print(f"    - Batch size: {trainer.trainer.batch_size}")
     
-    def count_entries(self) -> int:
-        """Count total logged entries"""
-        if not os.path.exists(self.filepath):
-            return 0
-        try:
-            with open(self.filepath, 'r', encoding='utf-8') as f:
-                return sum(1 for _ in f)
-        except:
-            return 0
+    @staticmethod
+    def show_auto_summary(stats: Dict):
+        """Show auto mode summary"""
+        print(f"\n{'='*70}")
+        print(f"AUTO MODE SUMMARY")
+        print(f"{'='*70}")
+        print(f"✅ Processed: {stats['words_processed']}")
+        print(f"🗑️  Deleted: {stats['words_deleted']}")
+        print(f"⭐️  Skipped: {stats['words_skipped']}")
+        print(f"{'='*70}\n")
+    
+    @staticmethod
+    def show_batch_summary(trained: int, skipped: int, final_loss: float, total: int):
+        """Show batch training summary"""
+        print(f"\n{'='*70}")
+        print(f"BATCH TRAINING COMPLETE")
+        print(f"{'='*70}")
+        print(f"✅ Trained: {trained} examples")
+        print(f"⭐️  Skipped: {skipped} words")
+        print(f"📊 Final loss: {final_loss:.4f}")
+        print(f"📈 Total examples: {total}")
+        print(f"{'='*70}\n")
 
 
 class InteractiveTrainer:
-    """Main interactive training interface with improved ML model"""
+    """Handles training logic and model management"""
     
     def __init__(self, use_triplet_loss: bool = False, use_lstm: bool = False):
-        """
-        Initialize interactive trainer with improved model.
-        
-        Args:
-            use_triplet_loss: Use triplet loss instead of contrastive
-            use_lstm: Use LSTM encoder instead of Transformer (faster)
-        """
         self.config = TrainingConfig()
+        self.display = TrainerDisplay()
         
-        # Create improved model
+        # Initialize model
         self.model = ImprovedRanker(
             embed_dim=128,
             num_layers=4,
@@ -177,43 +249,31 @@ class InteractiveTrainer:
             use_lstm=use_lstm
         )
         
-        # Create improved trainer with batching
         self.trainer = ImprovedTrainer(
             model=self.model,
             lr=1e-4,
-            batch_size=16,  # Smaller batch for interactive mode
+            batch_size=16,
             use_triplet_loss=use_triplet_loss,
             patience=10
         )
         
-        self.logger = DecompositionLogger()
-        self.input_handler = UserInputHandler()
-        self.augmenter = DataAugmenter()
-
-        
-        # Load state
         self.training_count = self._load_training_count()
-        self._load_checkpoint_if_exists()
+        self._load_checkpoint()
         
-        # Track training examples for batch training
-        self.pending_examples: List[Tuple[str, List[List], int]] = []
-        
-        # Auto mode statistics
-        self.auto_mode_stats = {
+        self.auto_stats = {
             'words_processed': 0,
             'words_deleted': 0,
             'words_skipped': 0
         }
     
-    def _load_checkpoint_if_exists(self) -> None:
-        """Load existing model checkpoint if available"""
+    def _load_checkpoint(self):
+        """Load existing model if available"""
         if os.path.exists(self.config.model_path):
             try:
                 self.trainer.load_checkpoint(self.config.model_path)
-                print(f"✅ Loaded existing model from {self.config.model_path}")
+                print(f"✅ Loaded model from {self.config.model_path}")
             except Exception as e:
                 print(f"⚠️  Could not load model: {e}")
-                print("Starting with fresh model")
         else:
             print("Starting with fresh model")
     
@@ -223,580 +283,363 @@ class InteractiveTrainer:
             if os.path.exists(self.config.training_count_file):
                 with open(self.config.training_count_file, "r") as f:
                     return int(f.read().strip())
-        except Exception as e:
-            print(f"⚠️  Could not read training_count.txt: {e}")
+        except Exception:
+            pass
         return 0
     
-    def _save_training_count(self) -> None:
-        """Save current training count to file"""
-        try:
-            with open(self.config.training_count_file, "w") as f:
-                f.write(str(self.training_count))
-        except Exception as e:
-            print(f"⚠️  Could not save training_count.txt: {e}")
-    
-    def _match_decompositions(self, correct_entries: List[Dict], 
-                             decompositions: List[Tuple]) -> List[int]:
-        """
-        Match logged decompositions to actual decomposition tuples
-        Returns list of indices in decompositions that match correct_entries
-        """
-        correct_indices = []
-        
-        for entry in correct_entries:
-            entry_root = entry['root']
-            entry_suffix_names = [s['name'] for s in entry.get('suffixes', [])]
-            
-            # Find matching decomposition
-            for idx, decomp in enumerate(decompositions):
-                root, pos, chain, final_pos = decomp
-                
-                if root != entry_root:
-                    continue
-                
-                chain_suffix_names = [s.name for s in chain] if chain else []
-                
-                if chain_suffix_names == entry_suffix_names:
-                    if idx not in correct_indices:
-                        correct_indices.append(idx)
-                    break
-        
-        return correct_indices
-   
-    def save(self) -> None:
+    def save(self):
         """Save model and training count"""
         self.trainer.save_checkpoint(self.config.model_path)
-        self._save_training_count()
-        print(f"✅ Model and training count saved")
+        with open(self.config.training_count_file, "w") as f:
+            f.write(str(self.training_count))
+        print(f"✅ Model saved")
     
-    def _add_to_batch(self, root: str, suffix_chains: List[List], correct_idx: int) -> None:
-        """Add training example to pending batch"""
-        self.pending_examples.append((root, suffix_chains, correct_idx))
-    
-    def _train_batch(self) -> Optional[float]:
-        """Train on accumulated batch of examples"""
-        if not self.pending_examples:
-            return None
-        
-        # Train one epoch on the batch
-        avg_loss = self.trainer.train_epoch(self.pending_examples)
-        
-        # Clear pending examples
-        num_examples = len(self.pending_examples)
-        self.pending_examples = []
-        
-        return avg_loss
-    
-    def _train_on_single_example(self, root: str, suffix_chains: List[List], 
-                                 correct_idx: int) -> float:
+    def train_on_word(self, word: str) -> Optional[bool]:
         """
-        Train on a single example immediately (for interactive feedback).
-        Uses the improved trainer's batch processing with batch_size=1.
-        """
-        # Create a mini-batch with just this example
-        training_data = [(root, suffix_chains, correct_idx)]
-        
-        # Train one epoch on this single example
-        loss = self.trainer.train_epoch(training_data)
-        
-        return loss
-    
-    def _train_on_choices(self, root: str, suffix_chains: List[List], 
-                         correct_indices: List[int], interactive: bool = True) -> float:
-        """
-        Train model on user's choices.
-        
-        Args:
-            root: Word root
-            suffix_chains: All candidate suffix chains
-            correct_indices: Indices of correct decompositions
-            interactive: If True, train immediately for feedback; if False, add to batch
-        
-        Returns:
-            Loss value (or 0 if added to batch)
-        """
-        if len(correct_indices) == 1:
-            # Single correct answer
-            correct_idx = correct_indices[0]
-            
-            if interactive:
-                # Train immediately for user feedback
-                return self._train_on_single_example(root, suffix_chains, correct_idx)
-            else:
-                # Add to batch for later training
-                self._add_to_batch(root, suffix_chains, correct_idx)
-                return 0.0
-        
-        else:
-            # Multiple correct answers - train on each as separate example
-            total_loss = 0.0
-            
-            for correct_idx in correct_indices:
-                if interactive:
-                    loss = self._train_on_single_example(root, suffix_chains, correct_idx)
-                    total_loss += loss
-                else:
-                    self._add_to_batch(root, suffix_chains, correct_idx)
-            
-            return total_loss / len(correct_indices) if interactive else 0.0
-    
-    def _check_and_delete_word(self, word: str, correct_indices: List[int], 
-                               decompositions: List[Tuple]) -> bool:
-        """
-        Check if the word should be deleted from words.txt based on chosen decompositions.
-        Delete if ANY of the chosen roots exist in the dictionary.
-        
-        Returns: True if word was deleted, False otherwise
-        """
-        word_lower = word.lower()
-        
-        # Check each correct decomposition
-        for idx in correct_indices:
-            root, pos, chain, final_pos = decompositions[idx]
-            root_lower = root.lower()   
-            
-            # Skip if root is the same as the word (no suffixes)
-            if root_lower == word_lower:
-                continue
-            
-            # Check if root exists in dictionary
-            if wrd.exists(root_lower):
-                # Delete the word from dictionary
-
-                deleted_elemet = word_lower if wrd.exists(root_lower) == 1 else wrd.infinitive(word_lower)
-
-                if wrd.delete(deleted_elemet):
-                    print(f"🗑️  Deleted '{word}' from words.txt (root '{root}' exists in dictionary)")
-                    return True
-                else:
-                    print(f"⚠️  Could not delete '{word}' from words.txt")
-                    return False
-        
-        return False
-    
-    def train_on_word(self, word: str, auto_mode: bool = False) -> Optional[bool]:
-        """
-        Interactive training on a single word
-        
-        Args:
-            word: Word to analyze
-            auto_mode: If True, handle auto mode logic (deletion, etc.)
-        
+        Train on a single word.
         Returns: True if trained, False if skipped, None if quit
         """
         # Get decompositions
-        suffix_chains = []
         decompositions = decompose(word)
-        
-        # Extract root from first decomposition for feature extraction
-        root = decompositions[0][0] if decompositions else word
-
-        for root_d, pos, suffix_chain, final_pos in decompositions:
-            # suffix_chain already contains Suffix objects
-            suffix_chains.append(suffix_chain)
-        
-        # Handle edge cases
-        if not suffix_chains:
-            print(f"\n⚠️  No valid decompositions found for '{word}'")
-            if auto_mode:
-                self.auto_mode_stats['words_skipped'] += 1
+        if not decompositions:
+            print(f"\n⚠️  No decompositions found for '{word}'")
             return False
+        
+        suffix_chains = [chain for _, _, chain, _ in decompositions]
         
         if len(suffix_chains) == 1:
-            print(f"\n✅ Only one decomposition exists for '{word}' - no training needed")
-            if auto_mode:
-                self.auto_mode_stats['words_skipped'] += 1
+            print(f"\n✅ Only one decomposition for '{word}' - skipping")
             return False
         
-        # Get ML predictions if model has been trained
+        # Get predictions
+        root = decompositions[0][0]
         scores = None
         if self.training_count > 0:
             try:
-                predicted_idx, scores = self.trainer.predict(root, suffix_chains)
-                print(f"\n🤖 ML Model predicts option with highest score")
-            except Exception as e:
-                print(f"\n⚠️  Could not get model predictions: {e}")
-                scores = None
+                _, scores = self.trainer.predict(root, suffix_chains)
+                print(f"\n🤖 ML Model predictions shown")
+            except Exception:
+                pass
         
-        # Display options and get user choice
-        index_mapping = display.DecompositionDisplay.display_all(word, decompositions, scores)
-        choices = self.input_handler.get_correct_choices(len(suffix_chains))
+        # Display and get user choice
+        index_mapping = self.display.show_decompositions(word, decompositions, scores)
+        choices = self.display.get_user_choices(len(suffix_chains))
         
         if choices is None:  # Quit
             return None
-        elif choices == [-1]:  # Skip
-            if auto_mode:
-                self.auto_mode_stats['words_skipped'] += 1
+        if choices == [-1]:  # Skip
             return False
         
         # Map display choices to original indices
         correct_indices = [index_mapping[c + 1] for c in choices]
         
         # Log valid decompositions
-        self.logger.log_decompositions(word, correct_indices, decompositions)
+        self._log_decompositions(word, correct_indices, decompositions)
         
-        # Check if word should be deleted (auto mode only)
-        if auto_mode:
-            self.auto_mode_stats['words_processed'] += 1
-            if self._check_and_delete_word(word, correct_indices, decompositions):
-                self.auto_mode_stats['words_deleted'] += 1
+        # Delete word if its root exists in dictionary
+        if self._delete_word_if_root_exists(word, correct_indices, decompositions):
+            # If deleted, we don't want to process the word further in auto_mode stats
+            # This logic is handled by the caller (auto_mode)
+            pass 
         
-        # Train the model (interactive mode = immediate feedback)
-        loss = self._train_on_choices(root, suffix_chains, correct_indices, interactive=True)
-        self._print_training_result(loss, len(correct_indices))
+        # Train the model
+        loss = self._train_on_choices(root, suffix_chains, correct_indices)
+        print(f"\n✅ Training complete. Loss: {loss:.4f}")
+        print(f"Total examples: {self.training_count}")
         
-        # Update and save periodically
+        # Periodic save
         self.training_count += 1
         if self.training_count % self.config.checkpoint_frequency == 0:
             self.save()
         
         return True
-
-    def _print_training_result(self, loss: float, num_choices: int) -> None:
-        """Print training results"""
-        if num_choices == 1:
-            print(f"\n✅ Training step completed. Loss: {loss:.4f}")
-        else:
-            print(f"\n✅ Training completed on {num_choices} examples. Avg Loss: {loss:.4f}")
-        
-        print(f"Total training examples: {self.training_count}")
     
-    def batch_train_from_file(self, filepath: Optional[str] = None) -> None:
-        """
-        Load all valid decompositions from file and train on them in batch.
-        Uses true batch processing for efficiency.
-        """
-        filepath = filepath or self.config.valid_decompositions_file
+    def _train_on_choices(self, root: str, suffix_chains: List[List], 
+                         correct_indices: List[int]) -> float:
+        """Train on user's choices"""
+        training_data = [(root, suffix_chains, idx) for idx in correct_indices]
+        return self.trainer.train_epoch(training_data)
+    
+    def _log_decompositions(self, word: str, correct_indices: List[int], 
+                           decompositions: List[Tuple]):
+        """Save validated decompositions to file"""
+        try:
+            with open(self.config.valid_decompositions_file, 'a', encoding='utf-8') as f:
+                for idx in correct_indices:
+                    entry = self._create_log_entry(word, decompositions[idx])
+                    f.write(json.dumps(entry, ensure_ascii=False) + '\n')
+            print(f"📝 Saved {len(correct_indices)} decompositions")
+        except Exception as e:
+            print(f"⚠️  Could not save: {e}")
+    
+    def _create_log_entry(self, word: str, decomp: Tuple) -> Dict:
+        """Create a log entry for a decomposition"""
+        root, pos, chain, final_pos = decomp
+        suffix_info = []
         
-        if not os.path.exists(filepath):
-            print(f"\n⚠️  No valid decompositions file found at {filepath}")
+        if chain:
+            current = root
+            for suffix in chain:
+                forms = suffix.form(current)
+                used_form = forms[0] if forms else ""
+                suffix_info.append({
+                    'name': suffix.name,
+                    'form': used_form,
+                    'makes': suffix.makes.name
+                })
+                current += used_form
+        
+        return {
+            'word': word,
+            'root': root,
+            'suffixes': suffix_info,
+            'final_pos': final_pos
+        }
+    
+    def _delete_word_if_root_exists(self, word: str, correct_indices: List[int], 
+                           decompositions: List[Tuple]) -> bool:
+        """
+        Check if word should be deleted (root exists in dictionary) and perform deletion.
+        Returns True if the word was successfully deleted.
+        """
+        word_lower = word.lower()
+        
+        for idx in correct_indices:
+            root = decompositions[idx][0].lower()
+            
+            if root == word_lower:  # No suffixes
+                continue
+            
+            # wrd.exists returns: 0=no, 1=infinitive, 2=non-infinitive
+            if wrd.exists(root) > 0:
+                # The word to be deleted is the word itself if its root is a non-infinitive form,
+                # otherwise delete the infinitive form.
+                ## bruada hata var ex'sts sira onceigi veriyo noun a Bunu duzelt.
+                to_be_deleted = word_lower if wrd.exists(word_lower) == 1 else wrd.infinitive(word_lower)
+                
+                if to_be_deleted and wrd.delete(to_be_deleted):
+                    print(f"🗑️  Deleted '{word}' (root '{root}' exists)")
+                    return True 
+                else:
+                    print(f"Could not delete word '{to_be_deleted or word_lower}'")
+        
+        return False
+    
+    def evaluate_word(self, word: str):
+        """Evaluate model on a word without training"""
+        decompositions = decompose(word)
+        if not decompositions:
+            print(f"\n⚠️  No decompositions found")
             return
         
-   
+        root = decompositions[0][0]
+        suffix_chains = [chain for _, _, chain, _ in decompositions]
         
-        # Load all entries
+        try:
+            pred_idx, scores = self.trainer.predict(root, suffix_chains)
+            print(f"\n🤖 ML Model's top prediction:")
+            self.display._show_single_decomposition(
+                word, decompositions[pred_idx], scores[pred_idx], 1, pred_idx
+            )
+        except Exception as e:
+            print(f"\n❌ Error: {e}")
+    
+    def batch_train_from_file(self, filepath: Optional[str] = None):
+        """Train on all logged decompositions"""
+        # ... (lines before remain the same) ...
+        
+        # Load entries
         entries = []
         try:
-            with open(filepath, 'r', encoding='utf-8') as f:
-                for line in f:
+            with open(self.config.valid_decompositions_file, 'r', encoding='utf-8') as f:
+                for i, line in enumerate(f, 1):
                     line = line.strip()
                     if line:
-                        entries.append(json.loads(line))
+                        try:
+                            entries.append(json.loads(line))
+                        except json.JSONDecodeError as e:
+                            print(f"❌ JSON Decode Error on line {i}: {e}. Skipping line.")
+                        except Exception as e:
+                            print(f"❌ Unexpected Error on line {i}: {e}. Skipping line.")
         except Exception as e:
             print(f"❌ Error loading file: {e}")
             return
         
         if not entries:
-            print("⚠️  No entries found in file")
+            print("⚠️  No entries found")
             return
         
-        print(f"📖 Loaded {len(entries)} valid decompositions")
+        print(f"📖 Loaded {len(entries)} decompositions")
         
-        # Group by word to find correct decompositions
-        word_decompositions = {}
+        # Group by word and prepare training data
+        word_groups = {}
         for entry in entries:
             word = entry['word']
-            if word not in word_decompositions:
-                word_decompositions[word] = []
-            word_decompositions[word].append(entry)
+            word_groups.setdefault(word, []).append(entry)
         
-        print(f"📊 Found {len(word_decompositions)} unique words")
-        
-        # Collect all training examples
         training_data = []
         skipped = 0
         
-        for word, correct_entries in word_decompositions.items():
+        for word, correct_entries in word_groups.items():
             try:
-                # Get all possible decompositions for this word
-                suffix_chains = []
                 decompositions = decompose(word)
-                
-                # Extract root
-                root = decompositions[0][0] if decompositions else word
-
-                for root_d, pos, suffix_chain, final_pos in decompositions:
-                    suffix_chains.append(suffix_chain)
-                
-                if not suffix_chains or len(suffix_chains) == 1:
+                if not decompositions or len(decompositions) == 1:
                     skipped += 1
                     continue
                 
-                # Find indices of correct decompositions
+                root = decompositions[0][0]
+                suffix_chains = [chain for _, _, chain, _ in decompositions]
+                
+                # Match logged entries to decompositions
                 correct_indices = self._match_decompositions(correct_entries, decompositions)
-                
                 if not correct_indices:
-                    print(f"⚠️  Could not match decomposition for '{word}' - skipping")
                     skipped += 1
                     continue
                 
-                # Add each correct decomposition as a training example
-                for correct_idx in correct_indices:
-                    training_data.append((root, suffix_chains, correct_idx))
+                # Add to training data
+                for idx in correct_indices:
+                    training_data.append((root, suffix_chains, idx))
             
-            except Exception as e:
-                print(f"❌ Error preparing '{word}': {e}")
+            except Exception:
                 skipped += 1
-                continue
         
         if not training_data:
-            print("⚠️  No valid training data collected")
+            print("⚠️  No valid training data")
             return
         
-        print(f"\n🚀 Training on {len(training_data)} examples in batches of {self.trainer.batch_size}...")
+        print(f"\n🚀 Training on {len(training_data)} examples...")
         
-        # Train using the improved trainer's batch processing
-        try:
-            history = self.trainer.train(
-                training_data=training_data,
-                num_epochs=5,  # Multiple passes over the data
-                verbose=True
-            )
-            
-            avg_loss = history['training_history'][-1] if history['training_history'] else 0.0
-            
-            # Update training count
-            self.training_count += len(training_data)
-            
-            # Final summary
-            print(f"\n{'='*70}")
-            print(f"BATCH TRAINING COMPLETE")
-            print(f"{'='*70}")
-            print(f"✅ Successfully trained on: {len(training_data)} examples")
-            print(f"⭐️  Skipped: {skipped} words")
-            print(f"📊 Final loss: {avg_loss:.4f}")
-            print(f"📈 Total training examples: {self.training_count}")
-            print(f"{'='*70}\n")
-            
-            # Save the updated model
-            self.save()
+        # Train
+        history = self.trainer.train(training_data, num_epochs=5, verbose=True)
+        final_loss = history['training_history'][-1] if history['training_history'] else 0.0
         
-        except Exception as e:
-            print(f"\n❌ Error during batch training: {e}")
-            import traceback
-            traceback.print_exc()
+        self.training_count += len(training_data)
+        self.display.show_batch_summary(len(training_data), skipped, final_loss, self.training_count)
+        self.save()
     
-    def evaluate_word(self, word: str) -> None:
-        """Evaluate model on a word without training - show only best prediction"""
-        suffix_chains = []
-        decompositions = decompose(word)
-        
-        # Extract root
-        root = decompositions[0][0] if decompositions else word
-
-        for root_d, pos, suffix_chain, final_pos in decompositions:
-            suffix_chains.append(suffix_chain)
-        
-        if not suffix_chains:
-            print(f"\n⚠️  No valid decompositions found for '{word}'")
-            return
-        
-        # Get predictions
-        try:
-            predicted_idx, scores = self.trainer.predict(root, suffix_chains)
+    def _match_decompositions(self, entries: List[Dict], 
+                             decompositions: List[Tuple]) -> List[int]:
+        """Match logged entries to decomposition indices"""
+        indices = []
+        for entry in entries:
+            entry_root = entry['root']
+            entry_suffixes = [s['name'] for s in entry.get('suffixes', [])]
             
-            print(f"\n🤖 ML Model's top prediction:")
-            display.DecompositionDisplay.format_decomposition(
-                word, decompositions[predicted_idx], scores[predicted_idx], 1, predicted_idx
-            )
-            
+            for idx, (root, _, chain, _) in enumerate(decompositions):
+                if root != entry_root:
+                    continue
+                chain_suffixes = [s.name for s in chain] if chain else []
+                if chain_suffixes == entry_suffixes and idx not in indices:
+                    indices.append(idx)
+                    break
         
-        except Exception as e:
-            print(f"\n❌ Error getting predictions: {e}")
-            import traceback
-            traceback.print_exc()
+        return indices
     
-    def show_statistics(self) -> None:
-        """Display training statistics"""
-        print(f"\n📊 Training Statistics:")
-        print(f"  Total examples trained: {self.training_count}")
-        
-        if self.trainer.training_history:
-            recent_losses = self.trainer.training_history[-20:]
-            avg_loss = sum(recent_losses) / len(recent_losses)
-            print(f"  Recent average loss: {avg_loss:.4f}")
-            print(f"  Latest loss: {self.trainer.training_history[-1]:.4f}")
-        
-        if self.trainer.validation_history:
-            print(f"  Best validation loss: {self.trainer.best_val_loss:.4f}")
-        
-        logged_count = self.logger.count_entries()
-        print(f"  Valid decompositions logged: {logged_count}")
-        
-
-        
-        # Auto mode stats
-        if self.auto_mode_stats['words_processed'] > 0:
-            print(f"\n  Auto mode statistics:")
-            print(f"    - Words processed: {self.auto_mode_stats['words_processed']}")
-            print(f"    - Words deleted: {self.auto_mode_stats['words_deleted']}")
-            print(f"    - Words skipped: {self.auto_mode_stats['words_skipped']}")
-        
-        print(f"\n  Model configuration:")
-        print(f"    - Architecture: {'LSTM' if self.model.use_lstm else 'Transformer'}")
-        print(f"    - Loss function: {'Triplet' if self.trainer.use_triplet_loss else 'Contrastive'}")
-        print(f"    - Batch size: {self.trainer.batch_size}")
-        print(f"    - Embedding dim: {self.model.embed_dim}")
-    
-    def _handle_quit(self) -> bool:
-        """Handle quit command. Returns True if should exit"""
-        # Train any pending batch examples before quitting
-        if self.pending_examples:
-            print(f"\n🚀 Training on {len(self.pending_examples)} pending examples...")
-            self._train_batch()
-        
-        if self.training_count > 0 and self.input_handler.confirm_save():
-            self.save()
-        print("Goodbye!")
-        return True
-    
-    def auto_mode(self) -> None:
-        """
-        Auto mode: continuously present random words from words.txt for training.
-        Deletes words from dictionary if their root exists in it.
-        """
-
-        
-        print(f"💡 Words will be deleted if their root exists in the dictionary")
-        print(f"   Press 'q' during selection to exit auto mode\n")
+    def auto_mode(self):
+        """Continuously train on random words from dictionary"""
+        print(f"💡 Words deleted if root exists in dictionary")
+        print(f"   Press 'q' to exit\n")
         
         consecutive_errors = 0
-        max_consecutive_errors = 5
         
         while True:
             try:
-                # Get random word
                 word = wrd.random_word()
-                
                 if not word:
-                    print("\n✅ No more words in dictionary!")
+                    print("\n✅ No more words!")
                     break
                 
-                # Reset error counter on successful word retrieval
+                self.auto_stats['words_processed'] += 1
                 consecutive_errors = 0
                 
-                # Show progress
-
-                # Train on this word
-                result = self.train_on_word(word, auto_mode=True)
+                result = self.train_on_word(word)
                 
-                if result is None:  # User quit
+                if result is None:  # Quit
+                    # Already counted as processed, but not trained/skipped
+                    self.auto_stats['words_processed'] -= 1 
                     print("\n👋 Exiting auto mode...")
                     break
                 
-                # Periodic save
+                if result is False: # Skipped
+                    # If train_on_word skipped, it means no decomposition or only one.
+                    # If it was deleted, result would have been True (training happened).
+                    # This is for words that could not be processed due to decomposition issues.
+                    self.auto_stats['words_skipped'] += 1
+                
+                # Check for deletion by seeing if the word still exists in the dictionary.
+                # If the word was deleted by _delete_word_if_root_exists, it's counted here.
+                if wrd.exists(word.lower()) == 0: 
+                    self.auto_stats['words_deleted'] += 1
+                    
                 if self.training_count % self.config.checkpoint_frequency == 0:
                     self.save()
             
             except KeyboardInterrupt:
-                print("\n\n⚠️  Interrupted! Exiting auto mode...")
+                print("\n\n⚠️  Interrupted!")
                 break
-            
             except Exception as e:
                 consecutive_errors += 1
-                print(f"\n❌ Error in auto mode: {e}")
-                
-                if consecutive_errors >= max_consecutive_errors:
-                    print(f"\n❌ Too many consecutive errors ({max_consecutive_errors}). Exiting auto mode...")
+                print(f"\n❌ Error: {e}")
+                if consecutive_errors >= 5:
+                    print("\n❌ Too many errors. Exiting...")
                     break
-                
-                # Continue to next word
-                continue
         
-        # Show final statistics
-        print(f"\n{'='*70}")
-        print(f"AUTO MODE SUMMARY")
-        print(f"{'='*70}")
-        print(f"✅ Words processed: {self.auto_mode_stats['words_processed']}")
-        print(f"🗑️  Words deleted: {self.auto_mode_stats['words_deleted']}")
-        print(f"⏭️  Words skipped: {self.auto_mode_stats['words_skipped']}")
-        print(f"{'='*70}\n")
-
-    def interactive_loop(self) -> None:
+        # Processed words count should only include successfully checked words
+        self.auto_stats['words_processed'] -= self.auto_stats['words_skipped'] + self.auto_stats['words_deleted']
+        self.display.show_auto_summary(self.auto_stats)
+    
+    def interactive_loop(self):
         """Main interactive training loop"""
-        display.welcome()
-        
-        print("\n💡 Commands:")
-        print("  - Enter a word to analyze and train")
-        print("  - 'auto' - Start auto mode (random words from dictionary)")
-        print("  - 'eval <word>' - Evaluate model on a word")
-        print("  - 'batch' - Train on all logged decompositions")
-        print("  - 'stats' - Show training statistics")
-        print("  - 'save' - Save model")
-        print("  - 'quit' - Exit")
+        self.display.welcome()
         
         while True:
             try:
-                user_input = input("\n🔤 Enter word or command: ").strip().lower()
+                cmd = input("\n📤 Enter word or command: ").strip().lower()
                 
-                if not user_input:
+                if not cmd:
                     continue
                 
-                # Handle commands
-                if user_input == 'quit':
-                    if self._handle_quit():
-                        break
-                
-                elif user_input == 'save':
+                if cmd == 'quit':
+                    if self.training_count > 0 and self.display.confirm_save():
+                        self.save()
+                    print("Goodbye!")
+                    break
+                elif cmd == 'save':
                     self.save()
-                
-                elif user_input == 'stats':
-                    self.show_statistics()
-                
-                elif user_input == 'auto':
+                elif cmd == 'stats':
+                    self.display.show_statistics(self)
+                elif cmd == 'auto':
                     self.auto_mode()
-                
-                elif user_input == 'batch':
+                elif cmd == 'batch':
                     self.batch_train_from_file()
-                
-                elif user_input.startswith('batch '):
-                    filepath = user_input[6:].strip()
-                    if filepath:
-                        self.batch_train_from_file(filepath)
-                
-                elif user_input.startswith('eval '):
-                    word = user_input[5:].strip()
-                    if word:
-                        self.evaluate_word(word)
-                
+                elif cmd.startswith('batch '):
+                    self.batch_train_from_file(cmd[6:].strip())
+                elif cmd.startswith('eval '):
+                    self.evaluate_word(cmd[5:].strip())
                 else:
-                    # Treat as word to analyze and train
-                    result = self.train_on_word(user_input, auto_mode=False)
-                    
-                    if result is None:  # User chose to quit during training
-                        if self._handle_quit():
-                            break
+                    result = self.train_on_word(cmd)
+                    if result is None and self.display.confirm_save():
+                        self.save()
+                        break
             
             except KeyboardInterrupt:
                 print("\n\n⚠️  Interrupted!")
-                if self._handle_quit():
-                    break
-            
+                if self.display.confirm_save():
+                    self.save()
+                break
             except Exception as e:
                 print(f"\n❌ Error: {e}")
-                import traceback
-                traceback.print_exc()
 
 
 def main():
-    """Entry point for interactive training"""
-    # Ask user for training configuration
-
-
-    print(decompose("güneş"))
-    handler = UserInputHandler()
-    # Get training mode preference
-    mode = handler.get_training_mode()
-    use_triplet = (mode == 'triplet')
+    """Entry point"""
+    display = TrainerDisplay()
+    mode = display.get_training_mode()
+    use_lstm = display.get_architecture()
+    display.show_config(mode, use_lstm)
     
-    # Ask about architecture
-
-    use_lstm = handler.get_arch_mode()
-
-    display.ml_choices(mode,use_lstm)
-    # Create and run trainer
     trainer = InteractiveTrainer(
-        use_triplet_loss=use_triplet,
+        use_triplet_loss=(mode == 'triplet'),
         use_lstm=use_lstm
     )
     trainer.interactive_loop()

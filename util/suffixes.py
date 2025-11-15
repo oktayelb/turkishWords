@@ -134,6 +134,7 @@ temporative_leyin       = Suffix("temporative_leyin", "leyin", wrd.Type.NOUN, wr
 ideologicative_izm      = Suffix("ideologicative_izm", "izm", wrd.Type.NOUN, wrd.Type.NOUN, HasMajorHarmony.No, HasMinorHarmony.No) ## buraya bak
 locative_le             = Suffix("locative_le", "le", wrd.Type.NOUN, wrd.Type.NOUN, HasMajorHarmony.Yes, HasMinorHarmony.No) ## buraya bak
 eventative_tay          = Suffix("eventative_tay", "tay", wrd.Type.NOUN, wrd.Type.NOUN, HasMajorHarmony.No, HasMinorHarmony.No) ## buraya bak
+scientist_olog          = Suffix("scientist_olog","olog",wrd.Type.NOUN, wrd.Type.NOUN, HasMajorHarmony.No, HasMinorHarmony.No)
 # N2V suffixes (Noun to Verb)
 absentative_se          = Suffix("absentative_se", "se", wrd.Type.NOUN, wrd.Type.VERB, HasMajorHarmony.Yes, HasMinorHarmony.No)
 verbifier_e             = Suffix("verbifier_e", "e", wrd.Type.NOUN, wrd.Type.VERB, HasMajorHarmony.Yes, HasMinorHarmony.No)
@@ -141,7 +142,7 @@ aplicative_le           = Suffix("aplicative_le", "le", wrd.Type.NOUN, wrd.Type.
 grantative_let          = Suffix("grantative_let", "let", wrd.Type.NOUN, wrd.Type.VERB, HasMajorHarmony.Yes, HasMinorHarmony.No)
 transformative_les      = Suffix("transformative_les", "leş", wrd.Type.NOUN, wrd.Type.VERB, HasMajorHarmony.Yes, HasMinorHarmony.No)
 acquirative_len         = Suffix("acquirative_len", "len", wrd.Type.NOUN, wrd.Type.VERB, HasMajorHarmony.Yes, HasMinorHarmony.No)
-verbifier_ik            = Suffix("verbifier_ik", "ik", wrd.Type.VERB, wrd.Type.VERB, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
+reflexive_ik            = Suffix("reflexive_ik", "ik", wrd.Type.VERB, wrd.Type.VERB, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
 
 # V2N suffixes (Verb to Noun)
 nounifier_ecek          = Suffix("nounifier_ecek" , "ecek", wrd.Type.VERB, wrd.Type.NOUN, HasMajorHarmony.Yes, HasMinorHarmony.No, needs_y_buffer=True)  # Added y-buffer
@@ -149,6 +150,7 @@ infinitive_ma           = Suffix("infinitive_ma"  , "me", wrd.Type.VERB, wrd.Typ
 infinitive_mak          = Suffix("infinitive_mak" , "mek", wrd.Type.VERB, wrd.Type.NOUN, HasMajorHarmony.Yes, HasMinorHarmony.No)
 factative_en            = Suffix("factative_en"   , "en", wrd.Type.VERB, wrd.Type.NOUN, HasMajorHarmony.Yes, HasMinorHarmony.No, needs_y_buffer=True)  # Added y-buffer
 factative_er            = Suffix("factative_er", "er", wrd.Type.VERB, wrd.Type.NOUN, HasMajorHarmony.Yes, HasMinorHarmony.No)
+factative_ir            = Suffix("factative_ir", "ir", wrd.Type.VERB, wrd.Type.NOUN, HasMajorHarmony.Yes, HasMinorHarmony.Yes)
 toolative_ek            = Suffix("toolative_ek", "ek", wrd.Type.VERB, wrd.Type.NOUN, HasMajorHarmony.Yes, HasMinorHarmony.No)
 adverbial_e             = Suffix("adverbial_e", "e", wrd.Type.VERB, wrd.Type.NOUN, HasMajorHarmony.Yes, HasMinorHarmony.No, needs_y_buffer=True)  # Added y-buffer
 constofactative_gen     = Suffix("constofactative_gen", "gen", wrd.Type.VERB, wrd.Type.NOUN, HasMajorHarmony.Yes, HasMinorHarmony.No)

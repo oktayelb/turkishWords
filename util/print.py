@@ -122,18 +122,14 @@ def compound_decomposition(head_decomp, tail_decomp, index):
 
 def welcome():
     """Print welcome message and instructions"""
-    print("\n" + "=" * 70)
-    print("INTERACTIVE MORPHOLOGICAL ANALYZER TRAINER")
-    print("=" * 70)
-    print("\nCommands:")
+    print("\n💡 Commands:")
     print("  - Enter a word to analyze and train")
-    print("  - 'batch' to train on all valid decompositions from file")
-    print("  - 'batch <filepath>' to train from a specific file")
-    print("  - 'eval <word>' to evaluate without training")
-    print("  - 'save' to save the model")
-    print("  - 'stats' to see training statistics")
-    print("  - 'quit' to exit")
-    print("="*70)
+    print("  - 'auto' - Start auto mode (random words from dictionary)")
+    print("  - 'eval <word>' - Evaluate model on a word")
+    print("  - 'batch' - Train on all logged decompositions")
+    print("  - 'stats' - Show training statistics")
+    print("  - 'save' - Save model")
+    print("  - 'quit' - Exit")
 
 
 def ml_choices(mode, use_lstm):
@@ -231,9 +227,10 @@ class DecompositionDisplay:
         # Sort by score if available
         if scores:
             indexed_decomps = list(enumerate(zip(decompositions, scores)))
+            
             # Note: Assuming lower score is better, or sorting is handled externally if needed.
             # Sorting by score descending for typically higher-better ML scores:
-            indexed_decomps.sort(key=lambda x: x[1][1], reverse=True) 
+            indexed_decomps.sort(key=lambda x: x[1][1], reverse= False) 
         else:
             indexed_decomps = [(i, (d, None)) for i, d in enumerate(decompositions)]
         
