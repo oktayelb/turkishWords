@@ -196,16 +196,17 @@ class SuffixRuleEngine:
         self.add_rule(ForbiddenSequenceRule(["negative_me","active_it"]))
         self.add_rule(ForbiddenSequenceRule(["negative_me","passive_il"]))
         self.add_rule(ForbiddenSequenceRule(["negative_me","active_ir"]))
-        self.add_rule(ForbiddenSequenceRule(["negative_me","active_t"]))
         self.add_rule(ForbiddenSequenceRule(["negative_me","passive_il"]))
         self.add_rule(ForbiddenSequenceRule(["negative_me","passive_in"]))
         self.add_rule(ForbiddenSequenceRule(["negative_me","perfectative_ik"]))
         self.add_rule(ForbiddenSequenceRule(["negative_me","toolative_ek"]))
         self.add_rule(ForbiddenSequenceRule(["infinitive_me","dimunitive_ek_archaic"]))
+        self.add_rule(ForbiddenSequenceRule(["accusative","dimunitive_ek_archaic"]))
+        self.add_rule(ForbiddenSequenceRule(["composessive_li","dimunitive_ek_archaic"]))
+        self.add_rule(ForbiddenSequenceRule(["approximative_si","pluralizer_archaic_iz"]))
 
         
-
-        
+         
 
 
 # Global rule engine instance

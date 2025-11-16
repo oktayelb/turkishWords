@@ -2638,7 +2638,6 @@ bağlam
 bağlamsal
 bağlanak
 bağlanım
-bağlantı
 bağlantılı
 bağlantısız
 bağlaşık
@@ -2968,7 +2967,6 @@ barınak
 barınma
 barınmak
 barış
-barışçı
 barışçıl
 barışık
 barışıklık
@@ -6788,7 +6786,6 @@ cüzzamlı
 çizgisel
 çizgisiz
 çizi
-çizici
 çizik
 çizikli
 çiziksiz
@@ -12028,7 +12025,6 @@ gerici
 gerilek
 gerileyici
 gerileyiş
-gerili
 gerilik
 gerilim
 gerilimli
@@ -12566,7 +12562,6 @@ gösterilme
 gösterilmek
 gösterim
 gösteriş
-gösterişçi
 gösterişli
 gösterişlice
 gösterişsiz
@@ -12643,7 +12638,6 @@ gözgü
 gözleği
 gözlem
 gözlemci
-gözleyici
 gözleyiş
 gözlü
 gözlük
@@ -14344,7 +14338,6 @@ hortlak
 hortum
 hortumlu
 horul
-horuldayış
 horultu
 hostes
 hoş
@@ -14621,7 +14614,6 @@ Iraklı
 ırganmak
 ırgat
 ırgatbaşı
-ırgatlık
 ırıp
 ırk
 ırkçı
@@ -16120,7 +16112,6 @@ izam
 izamik
 izan
 izanlı
-izansız
 izansızca
 izaz
 izazuikram
@@ -17478,7 +17469,6 @@ kasınç
 kasınma
 kasınmak
 kasıntı
-kasıntılı
 kasıntısız
 kasır
 kasırga
@@ -17494,7 +17484,6 @@ kask
 kaskatı
 kasket
 kasketçi
-kasketsiz
 kasko
 kaslı
 kasma
@@ -17584,16 +17573,6 @@ kategorize
 katetme
 katetmek
 katgüt
-katı
-katık
-katıklı
-katıksız
-katılık
-katılım
-katılımcı
-katılış
-katıltma
-katıltmak
 katım
 katımlık
 katıntı
@@ -17947,7 +17926,6 @@ kazıtmak
 kazıyış
 kaziye
 kazkanadı
-kazma
 kazmaç
 kazmak
 kazolit
@@ -18481,7 +18459,6 @@ kır
 kıraat
 kıraathane
 kıraathaneci
-kıracak
 kıraç
 kıraçlık
 kırağı
@@ -18521,7 +18498,6 @@ kırım
 Kırımlı
 kırınım
 kırınma
-kırınmak
 kırıntı
 kırıntılı
 kırışık
@@ -18809,7 +18785,6 @@ kızılyaprak
 kızılyara
 kızılyörük
 kızış
-kızışık
 kızıştırış
 kızkalbi
 kızlık
@@ -19577,7 +19552,6 @@ koruculuk
 korugan
 koruk
 koruluk
-koruma
 korumak
 korun
 korunak
@@ -19764,7 +19738,6 @@ Köktürk
 Köktürkçe
 kölçer
 köle
-köleci
 köleli
 kölelik
 kölesiz
@@ -20442,8 +20415,6 @@ Küçükayı
 küçükbaş
 küçükçe
 Küçükçekmece
-küçüklük
-küçülme
 küçülmek
 küçültme
 küçültmek
@@ -20891,7 +20862,6 @@ lejyoner
 leke
 lekeci
 lekeli
-lekesiz
 leksikograf
 leksikografi
 leksikolog
@@ -25323,7 +25293,6 @@ ovulma
 ovunma
 ovunmak
 ovuşturma
-ovuşturmak
 oy
 oya
 oyacı
@@ -28780,7 +28749,6 @@ seçik
 seçiliş
 seçilme
 seçilmek
-seçilmiş
 seçilmişlik
 seçim
 seçimlik
@@ -28868,7 +28836,6 @@ sekizer
 sekizgen
 sekizinci
 sekizli
-sekizlik
 sekiztek
 seklem
 sekme
@@ -29264,7 +29231,6 @@ seyrek
 seyrekçe
 seyreklik
 seyrelme
-seyrelmek
 seyreltici
 seyreltik
 seyreltiklik
@@ -29928,7 +29894,6 @@ softalık
 sofu
 sofuca
 soğan
-soğancı
 soğancık
 soğanımsı
 soğanlı
@@ -30101,7 +30066,6 @@ sorgusuz
 sorit
 sorma
 sormaca
-sormak
 sormuk
 sorti
 soru
@@ -30128,7 +30092,6 @@ sorutma
 sorutmak
 sos
 sosis
-sosluk
 sosyał
 sosyalist
 sosyalistik
@@ -31229,7 +31192,6 @@ süzüntü
 şeref
 şerefe
 şerefiye
-şereflendirilme
 şerefli
 Şereflikoçhisar
 şerefsiz
@@ -34463,7 +34425,6 @@ uzviyet
 üdeba
 üfleç
 üfleyici
-üfürme
 üfürmek
 üfürük
 üfürükçü
@@ -35214,7 +35175,6 @@ vurgun
 vurguncu
 vurgunluk
 vurgusuz
-vurma
 vurmak
 vurmalı
 vurtut
@@ -35687,7 +35647,6 @@ yasalı
 yasama
 yasamak
 yasamalı
-yasasız
 yasemin
 Yasin
 yaslı
@@ -36088,7 +36047,6 @@ yetingenlik
 yetinmek
 yetişek
 yetişilme
-yetişilmek
 yetişim
 yetişkin
 yetişmiş
