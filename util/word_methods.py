@@ -1,5 +1,4 @@
 from enum import Enum
-import random
 from pathlib import Path
 
 DATA_FILE = Path(__file__).resolve().parent.parent / "data" / "words.txt"
@@ -18,14 +17,10 @@ FRONT_VOWELS = FRONT_FLAT + FRONT_ROUND
 VOWELS = BACK_VOWELS + FRONT_VOWELS
 
 
-
-
 HARD_CONSONANTS = ['f','s','t','k','ç','ş','h','p']  # fıstıkçı şahap
 
 
-class Type(Enum):
-    NOUN = 'noun'
-    VERB = 'verb'
+
 # --- Enums ---
 class MajorHarmony(Enum):
     BACK = "back"
@@ -64,38 +59,6 @@ def exists(word: str) -> bool:
 
     return False
 
-## delete from words.txt
-def delete(word: str) -> bool:
-    """
-    Deletes the given word from the file 'words.txt'.
-    Returns True if the word was found and deleted, False otherwise.
-    """
-    try:
-        # Read all words (strip whitespace)
-        
-        # Check if the word exists
-        if word not in WORDS:
-            return False
-        
-        # Remove the word and rewrite the file
-        WORDS.remove(word)
-        with open(DATA_FILE, "w",encoding="utf-8") as file:
-            for w in WORDS:
-                file.write(w + "\n")
-        
-        return True
-
-    except FileNotFoundError:
-        print("Error: words.txt not found.")
-        return False
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return False
-    
-def random_word() -> str:
-    return random.choice(list(WORDS))
-
-
 def can_be_verb(word: str) -> bool:
     """Checks if a root is a verb by verifying its infinitive form."""
     return exists(infinitive(word))
@@ -112,7 +75,6 @@ def major_harmony(word: str) -> MajorHarmony | None:
         if ch in VOWELS:
             return MajorHarmony.BACK if ch in BACK_VOWELS else MajorHarmony.FRONT
     return None  # no vowels
-
 
 def minor_harmony(word: str) -> MinorHarmony | None:
     """Determines minor vowel harmony based on last vowel"""
@@ -132,12 +94,9 @@ def infinitive(word: str) -> str:
     suffix = "mak" if major_harmony(word) == MajorHarmony.BACK else "mek"
     return word + suffix
 
-
-
 def ends_with_vowel(word: str) -> bool:
     """Check if word ends with a vowel"""
     return word and word[-1] in VOWELS
-
 
 def ends_with_consonant(word: str) -> bool:
     """Check if word ends with a consonant"""
