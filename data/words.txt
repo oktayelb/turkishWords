@@ -464,7 +464,6 @@ ahkâm
 ahlaf
 ahlak
 ahlakça
-ahlakçı
 ahlaken
 ahlaki
 ahlakiyat
@@ -3628,7 +3627,6 @@ bendehane
 benden
 bendezade
 bendir
-benekli
 bengi
 beniâdem
 benibeşer
@@ -4960,7 +4958,6 @@ burslu
 burssuz
 burtlak
 buru
-buruk
 burukça
 burukluk
 buruksu
@@ -6325,7 +6322,6 @@ cüzzamlı
 çembalo
 çember
 çemberli
-çembersiz
 çemçe
 çemen
 çemenli
@@ -6595,7 +6591,6 @@ cüzzamlı
 çırpıntı
 çırpıntılı
 çırpış
-çırpma
 çırpmak
 çıt
 çıta
@@ -7607,7 +7602,6 @@ demirleblebi
 demirli
 Demirözü
 Demirperde
-demirsiz
 demiurgos
 demkeş
 demli
@@ -8757,7 +8751,6 @@ dönüm
 dönümlük
 dönüş
 dönüşlü
-dönüşme
 dönüşmek
 dönüşsüz
 dönüşsüzlük
@@ -9409,7 +9402,6 @@ eğinmek
 eğinti
 eğir
 Eğirdir
-eğirme
 eğirmek
 eğirmen
 eğirtme
@@ -10230,7 +10222,6 @@ esnaflık
 esnasında
 esnek
 esneklik
-esneme
 esnemek
 esnetme
 esnetmek
@@ -10977,7 +10968,6 @@ fırçalık
 fırdolayı
 fırdöndü
 fırfır
-fırfırsız
 fırıldak
 fırıldakçı
 fırıldanma
@@ -12053,7 +12043,6 @@ geviş
 gevme
 gevmek
 gevrecik
-gevrek
 gevrekçi
 gevreklik
 gevreme
@@ -12104,7 +12093,6 @@ gıcıklayış
 gıcır
 gıcır
 gıcırdatma
-gıcırdatmak
 gıcırdayış
 gıcırtı
 gıcırtılı
@@ -12424,7 +12412,6 @@ gönçlük
 gönder
 gönderge
 gönderi
-gönderici
 gönderiliş
 gönderilme
 gönderilmek
@@ -12743,7 +12730,6 @@ gübür
 gübürcü
 gübürlük
 Güce
-gücendirici
 gücenik
 güceniklik
 gücenilme
@@ -12862,7 +12848,6 @@ gümeç
 gümrah
 gümrahlık
 gümrük
-gümrükçü
 gümrükçülük
 gümrüklü
 gümrüksüz
@@ -13517,7 +13502,6 @@ hasıraltı
 hasırcı
 hasırlı
 hasis
-hasislik
 hasiyet
 hasiyetli
 Hasköy
@@ -14458,7 +14442,6 @@ huysuzca
 huysuzluk
 huzur
 huzurevi
-huzurlu
 huzursuz
 huzursuzca
 huzursuzluk
@@ -14849,7 +14832,6 @@ içre
 içrek
 içsel
 içsiz
-içten
 içtenlik
 içtenlikli
 içtenliksiz
@@ -15570,7 +15552,6 @@ ipoteksiz
 ipotetik
 İpsala
 ipsi
-ipsiz
 iptał
 iptida
 iptidai
@@ -18781,7 +18762,6 @@ kızış
 kızıştırış
 kızkalbi
 kızlık
-kızma
 kızmabirader
 kızmaca
 kızmak
@@ -24539,7 +24519,6 @@ nitelendirilme
 nitelendirilmek
 niteleyiş
 nitelik
-nitelikli
 niteliksiz
 nitramit
 nitrat
@@ -25513,7 +25492,6 @@ ozuga
 ölçünlü
 ölçünme
 ölçünmek
-ölçüsüz
 ölçüsüzlük
 ölçüşmek
 ölçüştürme
@@ -26134,7 +26112,6 @@ parter
 parti
 partici
 partikül
-partili
 partisip
 partisiz
 partisyon
@@ -28102,7 +28079,6 @@ sakınca
 sakıncalı
 sakıncasız
 sakıngan
-sakınganlık
 sakınım
 sakınımlı
 sakınış
@@ -28315,7 +28291,6 @@ sandviç
 sandviççi
 sanem
 sangı
-sangılık
 sanı
 sanık
 sanıklık
@@ -29085,7 +29060,6 @@ sermayedar
 sermayeli
 sermayesiz
 serme
-sermek
 sermest
 sermestane
 sermestî
@@ -30203,7 +30177,7 @@ sövüşme
 sövüşmek
 sövüştürme
 sövüştürmek
-söylem
+söylemek
 söylemseme
 söylemsemek
 söylence
@@ -31927,7 +31901,6 @@ tapınak
 tapıncak
 tapınış
 tapınma
-tapınmak
 tapır
 tapırtı
 tapış
@@ -34036,7 +34009,6 @@ uğranmak
 uğraş
 uğraşı
 uğraşma
-uğraşmak
 uğratma
 uğratmak
 uğru
@@ -34804,7 +34776,6 @@ vasati
 vasektomi
 vasıf
 vasıflı
-vasıfsız
 vasıl
 vasıta
 vasıtalı
@@ -35527,7 +35498,6 @@ yapraksı
 yapraksız
 yapsatçı
 yaptırım
-yaptırtma
 yaptırtmak
 yapyakın
 yapyalnız
@@ -35630,7 +35600,6 @@ yasal
 yasalı
 yasama
 yasamak
-yasamalı
 yasemin
 Yasin
 yaslı
@@ -35952,7 +35921,6 @@ yenişememe
 yenişememek
 yenli
 yenme
-yenmek
 yenmek
 yensiz
 yepelek

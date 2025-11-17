@@ -21,7 +21,6 @@ from typing import List, Tuple, Optional, Dict
 
 #TODO triplets ve lsm her zaman false olacak\ duzelt. artik oyle. Bu yuzden sildim
 class Ranker(nn.Module):
-    """Transformer or LSTM-based ranker for morphological decompositions."""
     
     def __init__(
         self, 

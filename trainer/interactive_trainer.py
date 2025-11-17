@@ -332,7 +332,7 @@ class InteractiveTrainer:
                 if error_count <= 5:
                     print(f"   ⚠️  Error processing '{word}': {e}")
         
-        output_text = ' '.join(decomposed_words)
+        output_text = '\n'.join(decomposed_words)
         self.data_manager.write_decomposed_text(output_text)
         
         print(f"\n✅ Text processing complete!")

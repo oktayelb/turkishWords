@@ -12,6 +12,7 @@ class TrainerDisplay:
         print("  - 'eval <word>' - Evaluate model on a word")
         print("  - 'batch' - Train on all logged decompositions")
         print("  - 'stats' - Show training statistics")
+        print("  - 'text' - Analyze a text.")
         print("  - 'save' - Save model")
         print("  - 'quit' - Exit")
     
