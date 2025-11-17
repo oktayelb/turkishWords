@@ -19,7 +19,7 @@ from typing import List, Tuple, Optional, Dict
 # ============================================================================
 
 
-#TODO triplets ve lsm her zaman false olacak\ duzelt.
+#TODO triplets ve lsm her zaman false olacak\ duzelt. artik oyle. Bu yuzden sildim
 class Ranker(nn.Module):
     """Transformer or LSTM-based ranker for morphological decompositions."""
     
@@ -30,12 +30,10 @@ class Ranker(nn.Module):
         embed_dim: int = 128,
         num_layers: int = 4,
         num_heads: int = 8,
-        use_lstm: bool = False,
         dropout: float = 0.1
     ):
         super().__init__()
         self.embed_dim = embed_dim
-        self.use_lstm = use_lstm
         
         # Embeddings (concatenated: suffix + category + position)
         self.suffix_embed = nn.Embedding(suffix_vocab_size + 1, embed_dim, padding_idx=0)
@@ -45,20 +43,12 @@ class Ranker(nn.Module):
         # Project concatenated embeddings
         self.input_proj = nn.Linear(embed_dim * 3, embed_dim)
         
-        # Encoder
-        if use_lstm:
-            self.encoder = nn.LSTM(
-                embed_dim, embed_dim // 2, num_layers=num_layers,
-                dropout=dropout if num_layers > 1 else 0,
-                bidirectional=True, batch_first=True
-            )
-        else:
-            layer = nn.TransformerEncoderLayer(
-                d_model=embed_dim, nhead=num_heads,
-                dim_feedforward=embed_dim * 4, dropout=dropout,
-                batch_first=True, activation='gelu'
-            )
-            self.encoder = nn.TransformerEncoder(layer, num_layers=num_layers)
+        layer = nn.TransformerEncoderLayer(
+            d_model=embed_dim, nhead=num_heads,
+            dim_feedforward=embed_dim * 4, dropout=dropout,
+            batch_first=True, activation='gelu'
+        )
+        self.encoder = nn.TransformerEncoder(layer, num_layers=num_layers)
         
         # Scoring head
         self.scorer = nn.Sequential(
@@ -98,10 +88,8 @@ class Ranker(nn.Module):
         x = self.input_proj(x)
         
         # Encode
-        if self.use_lstm:
-            x, _ = self.encoder(x)
-        else:
-            x = self.encoder(x, src_key_padding_mask=mask)
+        
+        x = self.encoder(x, src_key_padding_mask=mask)
         
         # Mean pool (mask-aware)
         if mask is not None:
@@ -111,51 +99,6 @@ class Ranker(nn.Module):
             pooled = x.mean(dim=1)
         
         return self.scorer(pooled).squeeze(-1)
-
-
-# ============================================================================
-# DATA UTILITIES
-# ============================================================================
-
-class DataAugmenter:
-    """Generate negative examples for contrastive learning."""
-    
-    @staticmethod
-    def corrupt_chain(suffix_chain: List[Tuple[int, int]], num_negatives: int = 3) -> List[List[Tuple[int, int]]]:
-        """
-        Corrupt a valid suffix chain to create negative examples.
-        
-        Args:
-            suffix_chain: List of (suffix_id, category_id) tuples
-            num_negatives: Number of corrupted versions to generate
-            
-        Returns:
-            List of corrupted chains
-        """
-        if not suffix_chain:
-            return []
-        
-        negatives = []
-        
-        # Strategy 1: Remove random suffix
-        if len(suffix_chain) > 1:
-            for i in range(min(num_negatives, len(suffix_chain))):
-                corrupted = suffix_chain[:i] + suffix_chain[i+1:]
-                if corrupted:
-                    negatives.append(corrupted)
-        
-        # Strategy 2: Swap adjacent suffixes
-        if len(suffix_chain) > 1:
-            for i in range(min(num_negatives - len(negatives), len(suffix_chain) - 1)):
-                corrupted = suffix_chain[:i] + [suffix_chain[i+1], suffix_chain[i]] + suffix_chain[i+2:]
-                negatives.append(corrupted)
-        
-        # Strategy 3: Duplicate a suffix
-        if len(negatives) < num_negatives and suffix_chain:
-            negatives.append(suffix_chain + [suffix_chain[0]])
-        
-        return negatives[:num_negatives]
-
 
 # ============================================================================
 # TRAINER
@@ -173,14 +116,12 @@ class Trainer:
         batch_size: int = 32,
         device: Optional[str] = None,
         patience: int = 10,
-        use_triplet_loss: bool = False
     ):
         self.model = model
         self.batch_size = batch_size
         self.device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
         self.model.to(self.device)
         self.patience = patience
-        self.use_triplet_loss = use_triplet_loss
         self.path = model_path
         
         self.optimizer = torch.optim.AdamW(
@@ -263,19 +204,11 @@ class Trainer:
             word_scores = scores[start:end]
             word_labels = labels[start:end]
             
-            if self.use_triplet_loss:
-                pos_idx = (word_labels == 1.0).nonzero(as_tuple=True)[0]
-                neg_idx = (word_labels == 0.0).nonzero(as_tuple=True)[0]
-                
-                if len(pos_idx) > 0 and len(neg_idx) > 0:
-                    pos_score = word_scores[pos_idx[0]]
-                    neg_score = word_scores[neg_idx].min()
-                    losses.append(F.relu(neg_score - pos_score + 1.0))
-            else:
-                # Softmax cross-entropy
-                probs = F.softmax(word_scores / 0.7, dim=0)
-                correct_prob = (probs * word_labels).sum()
-                losses.append(-torch.log(correct_prob + 1e-8))
+
+            # Softmax cross-entropy
+            probs = F.softmax(word_scores / 0.7, dim=0)
+            correct_prob = (probs * word_labels).sum()
+            losses.append(-torch.log(correct_prob + 1e-8))
             
             start = end
         

@@ -8,7 +8,7 @@ from ml_ranking_model import Ranker, Trainer
 class InteractiveTrainer:
     """Handles training logic and model management with pre-encoded suffix data"""
     
-    def __init__(self, use_triplet_loss: bool = False, use_lstm: bool = False):
+    def __init__(self):
         
         self.data_manager = DataManager()
         self.config = self.data_manager.config
@@ -25,7 +25,6 @@ class InteractiveTrainer:
             embed_dim=128,
             num_layers=4,
             num_heads=8,
-            use_lstm=use_lstm
         )
 
         self.trainer = Trainer(
@@ -33,7 +32,6 @@ class InteractiveTrainer:
             model_path=self.config.model_path,
             lr=1e-4,
             batch_size=16,
-            use_triplet_loss=use_triplet_loss,
             patience=10
         )
         

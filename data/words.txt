@@ -3351,7 +3351,6 @@ Bavyera
 Bavyeralı
 bay
 bayağı
-bayağılık
 bayan
 bayat
 Bayat
@@ -4734,7 +4733,6 @@ brik
 briket
 briketçi
 briyantin
-briyantinli
 briyantinsiz
 briz
 brizbiz
@@ -4885,7 +4883,6 @@ bulut
 bulutçuk
 bulutsu
 bulutsuz
-bulutsuzluk
 bulvar
 bulvarlı
 bumbar
@@ -6972,7 +6969,6 @@ cüzzamlı
 çözük
 çözülme
 çözülmek
-çözülüm
 çözülüş
 çözüm
 çözümleyici
@@ -7778,7 +7774,6 @@ derhatır
 deri
 Derik
 derili
-derilme
 derilmek
 derin
 derince
@@ -12853,6 +12848,7 @@ gülütçü
 Gülyalı
 güm
 gümbedek
+gümbür
 gümbürdeme
 gümbürdemek
 gümbürdetme
@@ -16442,7 +16438,6 @@ kadro
 kadrocu
 kadroculuk
 kadrolu
-kadrosuz
 kadrosuzluk
 kadük
 kadüklük
@@ -16886,7 +16881,6 @@ kandil
 kandilci
 kandilisa
 kandilli
-kandillik
 kandilsiz
 kanepe
 kangal
@@ -18751,7 +18745,6 @@ kızartma
 kızartmak
 kızcağız
 kızevi
-kızgın
 kızgınlık
 Kızık
 kızıl
@@ -22544,7 +22537,6 @@ mezgit
 mezhep
 meziyet
 meziyetli
-meziyetsiz
 mezkûr
 mezmur
 mezoderm
@@ -25278,7 +25270,6 @@ ova
 Ovacık
 ovał
 ovalı
-ovalık
 ovasız
 ovdurma
 ovdurmak
@@ -25329,7 +25320,6 @@ oynaşma
 oynaşmak
 oynatım
 oynatımcı
-oynatış
 oynatma
 oynatmak
 oynayış
@@ -29126,7 +29116,6 @@ sertap
 sertelme
 sertelmek
 sertifika
-sertifikalı
 sertifikasız
 sertifikasyon
 serum
@@ -30639,7 +30628,6 @@ sürçmek
 sürçtürme
 sürçtürmek
 sürçülisan
-sürdürme
 sürdürmek
 sürdürüm
 sürdürüş
@@ -30801,7 +30789,6 @@ süzüntü
 Şabanözü
 şablon
 şabloncu
-şablonculuk
 şad
 şadırvan
 şafak
@@ -31161,7 +31148,6 @@ süzüntü
 şemsî
 şemsiye
 şemsiyeci
-şemsiyelik
 şen
 şenaat
 şendere
@@ -32197,7 +32183,6 @@ tavsama
 tavsamak
 tavsatma
 tavsatmak
-tavsız
 tavsif
 tavsiye
 tavsiyeli
@@ -34323,7 +34308,6 @@ uysal
 uysalca
 uyulma
 uyulmak
-uyum
 uyuma
 uyumak
 uyumlu
@@ -35714,7 +35698,6 @@ yatırım
 yatırımcı
 yatısız
 yatış
-yatıştırıcı
 yatkın
 yatkınlık
 yatmak

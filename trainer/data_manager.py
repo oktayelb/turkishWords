@@ -1,7 +1,8 @@
 import os
 import json
-from typing import List, Tuple, Dict, Optional
 import random
+from typing import List, Optional, Tuple, Dict
+
 
 from data.config import TrainingConfig
 import util.suffixes as sfx
