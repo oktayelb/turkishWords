@@ -92,13 +92,6 @@ negative_me = Suffix("negative_me", "me", Type.VERB, Type.VERB, major_harmony=Ha
 
 
 VERB2VERB =   [
-
-    reflexive_is,
-    reflexive_ik,
-    active_it,
-    active_dir,
-    active_ir,
-    passive_il,
-    reflexive_in,
-    negative_me
+    value for name, value in globals().items() 
+    if isinstance(value, Suffix) and name != "Suffix"
 ]

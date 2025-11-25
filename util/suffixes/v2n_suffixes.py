@@ -263,31 +263,10 @@ pastfactative_miş = Suffix("pastfactative_miş", "miş", Type.VERB, Type.NOUN, 
 adjectiative_ay_v2n = Suffix("adjectiative_ay", "ay", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 nounifier_anak = Suffix("nounifier_anak", "anak", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 nounifier_amak = Suffix("nounifier_amak", "amak", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
+adverbial_erek =Suffix("adverbial_erek", "erek", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
+adverbial_ip =Suffix("adverbial_ip", "ip", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
 
 VERB2NOUN = [
-    nounifier_ecek,
-    infinitive_me,
-    infinitive_mek,
-    factative_en,
-    factative_ir,
-    toolative_ek,
-    adverbial_e,
-    constofactative_gen,
-    constofactative_gin,
-    nounifier_iş,
-    perfectative_ik,
-    nounifier_i,
-    nounifier_gi,
-    nounifier_ge,
-    nounifier_im,
-    nounifier_in,
-    nounifier_it,
-    nounifier_inç,
-    nounifier_inti,
-    toolifier_geç,
-    neverfactative_mez,
-    pastfactative_miş,
-    adjectiative_ay_v2n,
-    nounifier_anak,
-    nounifier_amak
+    value for name, value in globals().items() 
+    if isinstance(value, Suffix) and name != "Suffix"
 ]

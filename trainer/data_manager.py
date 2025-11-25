@@ -17,7 +17,6 @@ class DataManager:
         self.words = self._load_words()
         self.suffixes = sfx.ALL_SUFFIXES
 
-
     def _load_words(self) -> List[str]:
         """Load words from the dictionary file"""
         try:
@@ -234,7 +233,9 @@ class DataManager:
     def get_decomposed_text_path(self) -> str:
         """Get the path to the output decomposed text file"""
         return self.config.sample_decomposed_file
-    
+
+
+ ###3 these functions dont really go here   
     def decompose(self, word): ## cheap wrapper to free interactivetrainer from suffix import
         return sfx.decompose(word)
     

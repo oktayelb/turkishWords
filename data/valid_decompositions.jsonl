@@ -1069,3 +1069,4 @@
 {"word": "pişirilme", "root": "piş", "suffixes": [{"name": "active_ir", "form": "ir", "makes": "VERB"}, {"name": "passive_il", "form": "il", "makes": "VERB"}, {"name": "infinitive_me", "form": "me", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "gocundurmak", "root": "gocun", "suffixes": [{"name": "active_dir", "form": "dur", "makes": "VERB"}, {"name": "infinitive_mek", "form": "mak", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "kafiyesiz", "root": "kafiye", "suffixes": [{"name": "privative_siz", "form": "siz", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "karışıklık", "root": "kar", "suffixes": [{"name": "reflexive_is", "form": "ış", "makes": "VERB"}, {"name": "perfectative_ik", "form": "ık", "makes": "NOUN"}, {"name": "suitative_lik", "form": "lık", "makes": "NOUN"}], "final_pos": "noun"}

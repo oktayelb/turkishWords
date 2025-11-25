@@ -127,31 +127,6 @@ dative_e = Suffix("dative_e", "e", Type.NOUN, Type.NOUN, major_harmony=HasMajorH
 ablative_de = Suffix("ablative_de", "de", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 
 NOUN2NOUN = [
-    abstractifier_iyat,
-    plural_ler,
-    counting_er,
-    cooperative_daş,
-    relative_ce,
-    relative_sel,
-    approximative_imtrak,
-    pluralizer_archaic_iz,
-    posessive_im,
-    posessive_in,
-    dimunitive_cik,
-    actor_ci,
-    ordinal_inci,
-    approximative_si,
-    privative_siz,
-    philicative_cil,
-    composessive_li,
-    suitative_lik,
-    marking_ki,
-    temporative_leyin,
-    ideologicative_izm,
-    scientist_olog,
-    confactuous_le,
-    accusative,
-    locative_den,
-    dative_e,
-    ablative_de
+    value for name, value in globals().items() 
+    if isinstance(value, Suffix) and name != "Suffix"
 ]

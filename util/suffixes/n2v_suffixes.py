@@ -35,9 +35,7 @@ verbifier_e    = Suffix("verbifier_e",     "e", Type.NOUN, Type.VERB, form_funct
 aplicative_le  = Suffix("aplicative_le",  "le", Type.NOUN, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 
 
-NOUN2VERB = [
-    absentative_se,
-    onomatopea_de,
-    verbifier_e,
-    aplicative_le
+NOUN2VERB =[
+    value for name, value in globals().items() 
+    if isinstance(value, Suffix) and name != "Suffix"
 ]
