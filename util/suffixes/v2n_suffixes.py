@@ -37,8 +37,15 @@ def form_for_factative_ir(word, suffix_obj):
     - Apply harmony and vowel drop
     """
     from util.suffix import Suffix
+    import util.word_methods as wrd
     result_list = []
     
+    #if last two letters of the word is me or ma
+    if word[-2:] in ["ma","me"]:
+        if wrd.can_be_verb(word[ :-2]):
+                z_base = "z"   #geniş zamanın olumsuzu için ##TODO BURASI BIRAZ SIKINTILI
+                result_list.append(z_base)
+
     # ir form with harmony
     ir_base = 'ir'
     ir_base = Suffix._apply_major_harmony(word, ir_base, suffix_obj.major_harmony)
@@ -238,11 +245,9 @@ def form_for_toolifier_geç(word, suffix_obj):
 # VERB TO NOUN SUFFIXES (v2n)
 # ============================================================================
 
-nounifier_ecek = Suffix("nounifier_ecek", "ecek", Type.VERB, Type.NOUN, form_function= form_for_nounifier_ecek, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, needs_y_buffer=True)
 infinitive_me = Suffix("infinitive_me", "me", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 infinitive_mek = Suffix("infinitive_mek", "mek", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 factative_en = Suffix("factative_en", "en", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, needs_y_buffer=True)
-factative_ir = Suffix("factative_ir", "ir", Type.VERB, Type.NOUN, form_function= form_for_factative_ir, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
 toolative_ek = Suffix("toolative_ek", "ek", Type.VERB, Type.NOUN, form_function= form_for_toolative_ek, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 adverbial_e = Suffix("adverbial_e", "e", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, needs_y_buffer=True)
 constofactative_gen = Suffix("constofactative_gen", "gen", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
@@ -258,13 +263,17 @@ nounifier_it = Suffix("nounifier_it", "it", Type.VERB, Type.NOUN, major_harmony=
 nounifier_inç = Suffix("nounifier_inç", "inç", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
 nounifier_inti = Suffix("nounifier_inti", "inti", Type.VERB, Type.NOUN, form_function= form_for_nounifier_inti, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
 toolifier_geç = Suffix("toolifier_geç", "geç", Type.VERB, Type.NOUN, form_function= form_for_toolifier_geç, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
-neverfactative_mez = Suffix("neverfactative_mez", "mez", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
-pastfactative_miş = Suffix("pastfactative_miş", "miş", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
 adjectiative_ay_v2n = Suffix("adjectiative_ay", "ay", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 nounifier_anak = Suffix("nounifier_anak", "anak", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 nounifier_amak = Suffix("nounifier_amak", "amak", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 adverbial_erek =Suffix("adverbial_erek", "erek", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 adverbial_ip =Suffix("adverbial_ip", "ip", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
+
+## bunlar aslında zaman gösterme çekimi olarak değil de isimleştirici olarak analiz edilmeli. belki ir dışındakiler
+nounifier_ecek = Suffix("nounifier_ecek", "ecek", Type.VERB, Type.NOUN, form_function= form_for_nounifier_ecek, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, needs_y_buffer=True)
+neverfactative_mez = Suffix("neverfactative_mez", "mez", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
+factative_ir = Suffix("factative_ir", "ir", Type.VERB, Type.NOUN, form_function= form_for_factative_ir, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
+pastfactative_miş = Suffix("pastfactative_miş", "miş", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
 
 VERB2NOUN = [
     value for name, value in globals().items() 

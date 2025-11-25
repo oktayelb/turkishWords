@@ -5071,7 +5071,6 @@ büyütürlük
 büyütüş
 büyüyüş
 büz
-büzdürme
 büzdürmek
 büzgen
 büzgü
@@ -9469,7 +9468,6 @@ ekşimek
 ekşimik
 ekşimsi
 ekşimtırak
-ekşitilme
 ekşitilmek
 ekşitme
 ekşitmek

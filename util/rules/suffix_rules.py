@@ -10,11 +10,13 @@ from enum import Enum
 
 class RuleType(Enum):
     """Types of morphological rules"""
-    INCOMPATIBILITY = "incompatibility"  # Suffix A cannot be followed by suffix B
-    NO_REPETITION = "no_repetition"      # Suffix cannot occur twice
-    REQUIRED_AFTER = "required_after"     # After A, one of [B, C, D] must follow
-    FORBIDDEN_SEQUENCE = "forbidden_sequence"  # Specific sequence [A, B, C] is forbidden
-    MAX_OCCURRENCES = "max_occurrences"   # Suffix can occur at most N times
+    INCOMPATIBILITY = "incompatibility"       # Suffix A cannot be followed by suffix B
+    NO_REPETITION = "no_repetition"           # Suffix cannot occur twice
+    REQUIRED_AFTER = "required_after"         # After A, one of [B, C, D] must follow (if anything follows)
+    ONLY_AFTER = "only_after"                 # Suffix A can ONLY occur immediately after [B, C, D]
+    ALLOWED_SUCCESSORS = "allowed_successors" # After A, ONLY [B, C, D] can come. All else forbidden.
+    FORBIDDEN_SEQUENCE = "forbidden_sequence" # Specific sequence [A, B, C] is forbidden
+    MAX_OCCURRENCES = "max_occurrences"       # Suffix can occur at most N times
 
 
 class SuffixRule:
@@ -71,6 +73,55 @@ class NoRepetitionRule(SuffixRule):
         for suffix in suffix_chain:
             if suffix.name == current_suffix.name:
                 return False
+        return True
+
+
+class OnlyAfterRule(SuffixRule):
+    """
+    Rule: Suffix A can ONLY occur if it is immediately preceded by one of [B, C, D].
+    If the chain is empty (attaching to root) or the predecessor is not in the list, it is invalid.
+    """
+    def __init__(self, target_suffix: str, allowed_predecessors: List[str], description: str = None):
+        self.target_suffix = target_suffix
+        self.allowed_predecessors = set(allowed_predecessors)
+        desc = description or f"'{target_suffix}' can only be used immediately after: {', '.join(allowed_predecessors)}"
+        super().__init__(RuleType.ONLY_AFTER, desc)
+    
+    def validate(self, suffix_chain: List, current_suffix) -> bool:
+        # If the current suffix isn't the one we are restricting, the rule passes.
+        if current_suffix.name != self.target_suffix:
+            return True
+        
+        # If the chain is empty, there is no predecessor suffix, so this is invalid.
+        # (Meaning this suffix cannot attach directly to a root)
+        if not suffix_chain:
+            return False
+        
+        # Check if the immediate predecessor is in the allowed list
+        last_suffix = suffix_chain[-1]
+        return last_suffix.name in self.allowed_predecessors
+
+
+class AllowedSuccessorsRule(SuffixRule):
+    """
+    Rule: After 'trigger_suffix', ONLY suffixes in 'allowed_next' can be used.
+    Any suffix NOT in 'allowed_next' will be rejected immediately after 'trigger_suffix'.
+    """
+    def __init__(self, trigger_suffix: str, allowed_next: List[str], description: str = None):
+        self.trigger_suffix = trigger_suffix
+        self.allowed_next = set(allowed_next)
+        desc = description or f"After '{trigger_suffix}', only the following are allowed: {', '.join(allowed_next)}"
+        super().__init__(RuleType.ALLOWED_SUCCESSORS, desc)
+    
+    def validate(self, suffix_chain: List, current_suffix) -> bool:
+        if not suffix_chain:
+            return True
+        
+        last_suffix = suffix_chain[-1]
+        # If the last suffix was our trigger, we strictly check the whitelist
+        if last_suffix.name == self.trigger_suffix:
+            return current_suffix.name in self.allowed_next
+            
         return True
 
 
@@ -189,14 +240,14 @@ class SuffixRuleEngine:
             ['plural_ler'],
             "Plural suffix cannot occur twice"
         ))
+        
+        # Forbidden sequences
         self.add_rule(ForbiddenSequenceRule(["aplicative_le","active_ir"]))
-
         self.add_rule(ForbiddenSequenceRule(["negative_me","reflexive_ik"]))
         self.add_rule(ForbiddenSequenceRule(["negative_me","reflexive_is"]))
         self.add_rule(ForbiddenSequenceRule(["negative_me","active_it"]))
         self.add_rule(ForbiddenSequenceRule(["negative_me","passive_il"]))
         self.add_rule(ForbiddenSequenceRule(["negative_me","active_ir"]))
-        self.add_rule(ForbiddenSequenceRule(["negative_me","passive_il"]))
         self.add_rule(ForbiddenSequenceRule(["negative_me","reflexive_in"]))
         self.add_rule(ForbiddenSequenceRule(["negative_me","perfectative_ik"]))
         self.add_rule(ForbiddenSequenceRule(["negative_me","toolative_ek"]))
@@ -204,9 +255,6 @@ class SuffixRuleEngine:
         self.add_rule(ForbiddenSequenceRule(["accusative","dimunitive_ek_archaic"]))
         self.add_rule(ForbiddenSequenceRule(["composessive_li","dimunitive_ek_archaic"]))
         self.add_rule(ForbiddenSequenceRule(["approximative_si","pluralizer_archaic_iz"]))
-
-        
-         
 
 
 # Global rule engine instance

@@ -556,7 +556,6 @@
 {"word": "tefeci", "root": "tefe", "suffixes": [{"name": "actor_ci", "form": "ci", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "takmak", "root": "tak", "suffixes": [{"name": "infinitive_mek", "form": "mak", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "soyuculuk", "root": "soy", "suffixes": [{"name": "nounifier_i", "form": "u", "makes": "NOUN"}, {"name": "actor_ci", "form": "cu", "makes": "NOUN"}, {"name": "suitative_lik", "form": "luk", "makes": "NOUN"}], "final_pos": "noun"}
-{"word": "üçüz", "root": "üç", "suffixes": [{"name": "pluralizer_archaic_iz", "form": "üz", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "ütü", "root": "üt", "suffixes": [{"name": "nounifier_i", "form": "ü", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "hissiz", "root": "his", "suffixes": [{"name": "privative_siz", "form": "siz", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "ısrarlı", "root": "ısrar", "suffixes": [{"name": "composessive_li", "form": "lı", "makes": "NOUN"}], "final_pos": "noun"}
@@ -1070,3 +1069,5 @@
 {"word": "gocundurmak", "root": "gocun", "suffixes": [{"name": "active_dir", "form": "dur", "makes": "VERB"}, {"name": "infinitive_mek", "form": "mak", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "kafiyesiz", "root": "kafiye", "suffixes": [{"name": "privative_siz", "form": "siz", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "karışıklık", "root": "kar", "suffixes": [{"name": "reflexive_is", "form": "ış", "makes": "VERB"}, {"name": "perfectative_ik", "form": "ık", "makes": "NOUN"}, {"name": "suitative_lik", "form": "lık", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "büzdürme", "root": "büz", "suffixes": [{"name": "active_dir", "form": "dür", "makes": "VERB"}, {"name": "negative_me", "form": "me", "makes": "VERB"}], "final_pos": "verb"}
+{"word": "ekşitilme", "root": "ekşi", "suffixes": [{"name": "active_it", "form": "it", "makes": "VERB"}, {"name": "passive_il", "form": "il", "makes": "VERB"}, {"name": "negative_me", "form": "me", "makes": "VERB"}], "final_pos": "verb"}

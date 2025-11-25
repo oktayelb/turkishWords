@@ -3,8 +3,7 @@ import json
 import random
 from typing import List, Optional, Tuple, Dict
 
-
-from data.config import TrainingConfig
+from data.file_paths import FilePaths
 import util.suffix_functions as sfx
 
 
@@ -13,10 +12,11 @@ class DataManager:
     """Manages file operations for training data, words, and text processing"""
 
     def __init__(self):
-        self.config = TrainingConfig()
+        self.config = FilePaths()
         self.words = self._load_words()
         self.suffixes = sfx.ALL_SUFFIXES
 
+##load
     def _load_words(self) -> List[str]:
         """Load words from the dictionary file"""
         try:
@@ -40,6 +40,67 @@ class DataManager:
             pass
         return 0
 
+    def random_word(self) -> Optional[str]:
+        """Get a random word from the dictionary"""
+        self._reload_words()
+        return random.choice(self.words) if self.words else None
+
+    def get_text_tokenized(self) -> List[str]:
+        """
+        Load and tokenize text from sample.txt file.
+        Returns a list of words split by whitespace (all lowercase).
+        """
+        text_path = self.config.sample_text_file
+        
+        try:
+            with open(text_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            
+            words = [word.lower() for word in content.split()]
+            
+            print(f"📄 Loaded {len(words)} words from {text_path}")
+            return words
+            
+        except FileNotFoundError:
+            print(f"❌ Error: {text_path} not found")
+            return []
+        except Exception as e:
+            print(f"❌ Error reading text file: {e}")
+            return []
+        
+    def get_valid_decomps(self) -> List[Dict]:
+        """Load all valid decompositions from log file"""
+        entries = []
+        try:    
+            with open(self.config.valid_decompositions_file, 'r', encoding='utf-8') as f:
+                for i, line in enumerate(f, 1):
+                    line = line.strip()
+                    if line:
+                        try:
+                            entries.append(json.loads(line))
+                        except json.JSONDecodeError as e:
+                            print(f"❌ JSON Decode Error on line {i}: {e}. Skipping line.")
+                        except Exception as e:
+                            print(f"❌ Unexpected Error on line {i}: {e}. Skipping line.")
+        except FileNotFoundError:
+            print(f"⚠️  No valid decompositions file found")
+            return []
+        except Exception as e:
+            print(f"❌ Error loading file: {e}")
+            return []
+        
+        print(f"📖 Loaded {len(entries)} decompositions")
+        return entries
+
+    def get_sample_text_path(self) -> str:
+        """Get the path to the sample text file"""
+        return self.config.sample_text_file
+    
+    def get_decomposed_text_path(self) -> str:
+        """Get the path to the output decomposed text file"""
+        return self.config.sample_decomposed_file
+ 
+##write
     def log_decompositions(self, word: str, correct_indices: List[int], 
                           decompositions: List[Tuple]):
         """Save validated decompositions to file"""
@@ -76,35 +137,25 @@ class DataManager:
             'final_pos': final_pos
         }
 
-    def get_valid_decomps(self) -> List[Dict]:
-        """Load all valid decompositions from log file"""
-        entries = []
-        try:    
-            with open(self.config.valid_decompositions_file, 'r', encoding='utf-8') as f:
-                for i, line in enumerate(f, 1):
-                    line = line.strip()
-                    if line:
-                        try:
-                            entries.append(json.loads(line))
-                        except json.JSONDecodeError as e:
-                            print(f"❌ JSON Decode Error on line {i}: {e}. Skipping line.")
-                        except Exception as e:
-                            print(f"❌ Unexpected Error on line {i}: {e}. Skipping line.")
-        except FileNotFoundError:
-            print(f"⚠️  No valid decompositions file found")
-            return []
+    def write_decomposed_text(self, text: str):
+        """
+        Write decomposed text to output file.
+        Output file will be named sample_decomposed.txt in data folder.
+        """
+        output_path = self.config.sample_decomposed_file
+        
+        try:
+            with open(output_path, "w", encoding="utf-8") as f:
+                f.write(text)
+            
+            print(f"💾 Decomposed text saved to {output_path}")
+            return True
+            
         except Exception as e:
-            print(f"❌ Error loading file: {e}")
-            return []
-        
-        print(f"📖 Loaded {len(entries)} decompositions")
-        return entries
-
-    def random_word(self) -> Optional[str]:
-        """Get a random word from the dictionary"""
-        self._reload_words()
-        return random.choice(self.words) if self.words else None
-        
+            print(f"❌ Error writing decomposed text: {e}")
+            return False
+    
+#delete 
     def delete(self, word: str) -> bool:
         """Delete a word from the dictionary file"""
         self._reload_words()
@@ -127,6 +178,34 @@ class DataManager:
             print(f"❌ An error occurred: {e}")
             return False
 
+    def delete_word_if_root_exists(self, word: str, correct_indices: List[int], 
+                                   decompositions: List[Tuple]) -> bool:
+        """
+        Check if word should be deleted (root exists in dictionary) and perform deletion.
+        Returns True if the word was successfully deleted.
+        """
+        word_lower = word.lower()
+        
+        for idx in correct_indices:
+            root = decompositions[idx][0].lower()
+            
+            if root == word_lower:
+                continue
+            
+            if self.exists(root) > 0:
+                if self.delete(word_lower):
+                    print(f"🗑️  Deleted '{word}' (root '{root}' exists)")
+                    return True 
+                
+                infinitive_form = self._infinitive(word_lower)  # word infinitive i suffix ile cekiyoruz
+                if infinitive_form and infinitive_form != word_lower:
+                    if self.delete(infinitive_form):
+                        print(f"🗑️  Deleted infinitive '{infinitive_form}' for '{word}' (root '{root}' exists)")
+                        return True
+        
+        return False
+
+#check
     def exists(self, word: str) -> int:
         """
         Check if word exists in dictionary.
@@ -158,88 +237,13 @@ class DataManager:
 
         return 0
 
-    def delete_word_if_root_exists(self, word: str, correct_indices: List[int], 
-                                   decompositions: List[Tuple]) -> bool:
-        """
-        Check if word should be deleted (root exists in dictionary) and perform deletion.
-        Returns True if the word was successfully deleted.
-        """
-        word_lower = word.lower()
-        
-        for idx in correct_indices:
-            root = decompositions[idx][0].lower()
-            
-            if root == word_lower:
-                continue
-            
-            if self.exists(root) > 0:
-                if self.delete(word_lower):
-                    print(f"🗑️  Deleted '{word}' (root '{root}' exists)")
-                    return True 
-                
-                infinitive_form = self._infinitive(word_lower)  # word infinitive i suffix ile cekiyoruz
-                if infinitive_form and infinitive_form != word_lower:
-                    if self.delete(infinitive_form):
-                        print(f"🗑️  Deleted infinitive '{infinitive_form}' for '{word}' (root '{root}' exists)")
-                        return True
-        
-        return False
-
-    def get_text_tokenized(self) -> List[str]:
-        """
-        Load and tokenize text from sample.txt file.
-        Returns a list of words split by whitespace (all lowercase).
-        """
-        text_path = self.config.sample_text_file
-        
-        try:
-            with open(text_path, "r", encoding="utf-8") as f:
-                content = f.read()
-            
-            words = [word.lower() for word in content.split()]
-            
-            print(f"📄 Loaded {len(words)} words from {text_path}")
-            return words
-            
-        except FileNotFoundError:
-            print(f"❌ Error: {text_path} not found")
-            return []
-        except Exception as e:
-            print(f"❌ Error reading text file: {e}")
-            return []
-    
-    def write_decomposed_text(self, text: str):
-        """
-        Write decomposed text to output file.
-        Output file will be named sample_decomposed.txt in data folder.
-        """
-        output_path = self.config.sample_decomposed_file
-        
-        try:
-            with open(output_path, "w", encoding="utf-8") as f:
-                f.write(text)
-            
-            print(f"💾 Decomposed text saved to {output_path}")
-            return True
-            
-        except Exception as e:
-            print(f"❌ Error writing decomposed text: {e}")
-            return False
-    
-    def get_sample_text_path(self) -> str:
-        """Get the path to the sample text file"""
-        return self.config.sample_text_file
-    
-    def get_decomposed_text_path(self) -> str:
-        """Get the path to the output decomposed text file"""
-        return self.config.sample_decomposed_file
-
 
  ###3 these functions dont really go here   
     def decompose(self, word): ## cheap wrapper to free interactivetrainer from suffix import
         return sfx.decompose(word)
     
-    def _infinitive(self,word):
+    def _infinitive(self,word): ##cheap wrapper that uses wrd to use infinitives (acutally harmonies) easily 
+
         import util.word_methods as wrd
         mastar = wrd.infinitive(word)
 

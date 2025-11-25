@@ -1,8 +1,9 @@
 from typing import List, Optional, Tuple, Dict
 
-from trainer.display import TrainerDisplay
-from trainer.data_manager import DataManager
+from display import TrainerDisplay
+from data.data_manager import DataManager
 from ml_ranking_model import Ranker, Trainer
+from trainer.config import TrainingConfig
 
 class InteractiveTrainer:
     """Handles training logic and model management with pre-encoded suffix data"""
@@ -10,7 +11,7 @@ class InteractiveTrainer:
     def __init__(self):
         
         self.data_manager = DataManager()
-        self.config = self.data_manager.config
+        self.config = TrainingConfig()
         self.display = TrainerDisplay()
         
         # Create suffix and category mappings for encoding
@@ -31,7 +32,7 @@ class InteractiveTrainer:
         )
         self.trainer = Trainer(
             model= self.model,
-            model_path=self.config.model_path,
+            model_path=self.data_manager.config.model_path,
             lr=self.config.learning_rate,
             batch_size=self.config.batch_size,
             patience=self.config.checkpoint_frequency
@@ -72,8 +73,8 @@ class InteractiveTrainer:
         """Save model and training count"""
         ##TODO ## https://gemini.google.com/app/7b96b246a19d322b
         
-        self.trainer.save_checkpoint(self.config.model_path)
-        with open(self.config.training_count_file, "w") as f:
+        self.trainer.save_checkpoint(self.data_manager.config.model_path)
+        with open(self.data_manager.config.training_count_file, "w") as f:
             f.write(str(self.training_count))
         print(f"✅ Model saved")
     
@@ -455,10 +456,10 @@ class InteractiveTrainer:
         while True:
             try:
                 cmd = input("\n📤 Enter word or command: ").strip().lower()
-                
+
                 if not cmd:
                     continue
-                
+
                 if cmd == 'quit':
                     if self.training_count > 0 and self.display.confirm_save():
                         self.save()
