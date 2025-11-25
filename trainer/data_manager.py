@@ -8,6 +8,7 @@ from data.config import TrainingConfig
 import util.suffixes as sfx
 
 
+
 class DataManager:
     """Manages file operations for training data, words, and text processing"""
 
@@ -15,7 +16,7 @@ class DataManager:
         self.config = TrainingConfig()
         self.words = self._load_words()
         self.suffixes = sfx.ALL_SUFFIXES
-        
+
 
     def _load_words(self) -> List[str]:
         """Load words from the dictionary file"""
@@ -135,7 +136,7 @@ class DataManager:
         if not word:
             return 0
 
-        infinitive = word + sfx.infinitive_mak.form(word)[0]# word infinitive i suffix ile cekiyoruz
+        infinitive = word + sfx.infinitive_mek.form(word)[0]# word infinitive i suffix ile cekiyoruz
         if infinitive and infinitive in self.words:
             return 2    # better to  return verb first because decomp will still look for nouns.MORE ON DECOMP/
         
@@ -146,7 +147,7 @@ class DataManager:
 
         if word.endswith("l"):
 
-            soft_l_inf = soft_l + sfx.infinitive_mak.form(soft_l)[0]# word infinitive i suffix ile cekiyoruz
+            soft_l_inf = soft_l + sfx.infinitive_mek.form(soft_l)[0]# word infinitive i suffix ile cekiyoruz
             if soft_l_inf and soft_l_inf in self.words:
                 return 2                                            # better to  return verb first because decomp will still look for nouns.
 
@@ -177,7 +178,7 @@ class DataManager:
                     print(f"🗑️  Deleted '{word}' (root '{root}' exists)")
                     return True 
                 
-                infinitive_form = word_lower + sfx.infinitive_mak.form(word_lower)[0]   # word infinitive i suffix ile cekiyoruz
+                infinitive_form = word_lower + sfx.infinitive_mek.form(word_lower)[0]   # word infinitive i suffix ile cekiyoruz
                 if infinitive_form and infinitive_form != word_lower:
                     if self.delete(infinitive_form):
                         print(f"🗑️  Deleted infinitive '{infinitive_form}' for '{word}' (root '{root}' exists)")

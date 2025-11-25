@@ -8,6 +8,15 @@ import util.word_methods as wrd
 # VERB TO VERB SUFFIXES (v2v)
 # ============================================================================
 
+def form_for_active_er(word,suffix_obj):
+    from util.suffixes import Suffix
+    
+    base = "er"
+    base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
+
+    return [base]
+
+
 def form_for_active_it(word, suffix_obj):
     """
     Form function for active_it suffix
@@ -26,11 +35,9 @@ def form_for_active_it(word, suffix_obj):
     base = Suffix._apply_consonant_hardening(word, base)
     result_list.append(base)
     
-    # Add 't' variant when last letter is vowel
-    if word and word[-1] in wrd.VOWELS:
-        t_form = 't'
-        t_form = Suffix._apply_consonant_hardening(word, t_form)
-        result_list.append(t_form)
+    # Add 't' variant 
+    t_form = 't'
+    result_list.append(t_form)
     
     # Add 't' variant when last 2 letters are ir/ur/ür/ır
     if len(word) >= 2:
@@ -126,7 +133,7 @@ def form_for_nounifier_ecek(word, suffix_obj):
     result_list = []
     
     # Base form: ecek
-    base = suffix_obj.suffix
+    base = "ecek"
     base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
     base = Suffix._apply_consonant_hardening(word, base)
     result_list.append(base)
@@ -321,6 +328,7 @@ def form_for_nounifier_inti(word, suffix_obj):
     return result_list
 
 
+
 def form_for_toolifier_geç(word, suffix_obj):
     """
     Form function for toolifier_geç suffix (merges geç and eç)
@@ -351,6 +359,46 @@ def form_for_toolifier_geç(word, suffix_obj):
 # NOUN TO NOUN SUFFIXES (n2n)
 # ============================================================================
 
+def form_for_pasttense_noundi(word,suffix_obj):
+
+    from util.suffixes import Suffix
+
+    di_base = "di"
+    di_base = Suffix._apply_major_harmony(word, di_base, suffix_obj.major_harmony)
+    di_base = Suffix._apply_minor_harmony(word, di_base, suffix_obj.minor_harmony)
+    di_base = Suffix._apply_consonant_hardening(word, di_base)
+    
+    dik_base = "dik"
+    dik_base = Suffix._apply_major_harmony(word, dik_base, suffix_obj.major_harmony)
+    dik_base = Suffix._apply_minor_harmony(word, dik_base, suffix_obj.minor_harmony)
+    dik_base = Suffix._apply_consonant_hardening(word, dik_base)
+
+    if word[-1] in wrd.VOWELS:
+        di_base = "y" + di_base
+        dik_base = "y" + dik_base
+
+    return [dik_base,di_base]
+
+def form_for_abstractifier_iyat(word, suffix_obj):
+    result_list = ["iye","iyet","iyat","at","et"]
+    
+    return result_list
+
+
+def form_for_adverbial_erek (word, suffix_obj):
+    from util.suffixes import Suffix
+
+    base = "erek"
+    base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
+    base = Suffix._apply_minor_harmony(word, base, suffix_obj.minor_harmony)
+    base = Suffix._apply_consonant_hardening(word, base)
+    
+    if word[-1] in wrd.VOWELS:
+        base = "y" + base
+
+    return [base]
+
+
 def form_for_dative_archaic_ke(word, suffix_obj):
     """Form function for dative_archaic_ke suffix"""
     pass
@@ -368,7 +416,17 @@ def form_for_dative_e(word, suffix_obj):
 
 def form_for_ablative_de(word, suffix_obj):
     """Form function for ablative_de suffix"""
-    pass
+    from util.suffixes import Suffix
+
+    base = "de"
+    base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
+    base = Suffix._apply_minor_harmony(word, base, suffix_obj.minor_harmony)
+    base = Suffix._apply_consonant_hardening(word, base)
+    
+    if word[-1] in ["ı","i","u","ü"]:   # akuzatif
+        base = "n" + base
+
+    return [base]
 
 
 def form_for_plural_ler(word, suffix_obj):
@@ -442,8 +500,23 @@ def form_for_ordinal_inci(word, suffix_obj):
 
 
 def form_for_approximative_si(word, suffix_obj):
-    """Form function for approximative_si suffix"""
-    pass
+    
+    from util.suffixes import Suffix
+    base1 = "imsi"
+    base2 = "si"
+
+    
+
+    base1 = Suffix._apply_major_harmony(word, base1, suffix_obj.major_harmony)
+    base1 = Suffix._apply_minor_harmony(word, base1, suffix_obj.minor_harmony)
+
+    base2 = Suffix._apply_major_harmony(word, base2, suffix_obj.major_harmony)
+    base2 = Suffix._apply_minor_harmony(word, base2, suffix_obj.minor_harmony)
+
+    if word[-1] in wrd.VOWELS:
+        base1 =  base1[1:]
+
+    return [base1, base2]
 
 
 def form_for_privative_siz(word, suffix_obj):
@@ -502,6 +575,37 @@ def form_for_scientist_olog(word, suffix_obj):
 
 
 def form_for_confactuous_le(word, suffix_obj):
-    """Form function for confactuous_le suffix"""
+    
+    from util.suffixes import Suffix
+
+    base = "le"
+    base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
+    base = Suffix._apply_minor_harmony(word, base, suffix_obj.minor_harmony)
+    base = Suffix._apply_consonant_hardening(word, base)
+    
+    if word[-1] in wrd.VOWELS:
+        base = "y" + base
+
+    return [base]
+
     pass
 
+
+
+def form_for_sg1_conjugation(word, suffix_obj):
+    pass
+
+def form_for_sg2_conjugation(word, suffix_obj):
+    pass
+
+def form_for_sg3_conjugation(word, suffix_obj):
+    pass
+
+def form_for_pl1_conjugation(word, suffix_obj):
+    pass
+
+def form_for_pl2_conjugation(word, suffix_obj):
+    pass
+
+def form_for_pl3_conjugation(word, suffix_obj):
+    pass

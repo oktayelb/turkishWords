@@ -125,49 +125,42 @@ negative_me = Suffix("negative_me", "me", Type.VERB, Type.VERB, major_harmony=Ha
 # NOUN TO NOUN SUFFIXES (n2n)
 # ============================================================================
 
-dative_archaic_ke = Suffix("dative_archaic_ke", "ke", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
-locative_den = Suffix("locative_den", "den", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
-dative_e = Suffix("dative_e", "e", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, needs_y_buffer=True)
-ablative_de = Suffix("ablative_de", "de", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 plural_ler = Suffix("plural_ler", "ler", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 counting_er = Suffix("counting_er", "er", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 cooperative_daş = Suffix("cooperative_daş", "daş", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 relative_ce = Suffix("relative_ce", "ca", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 relative_sel = Suffix("relative_sel", "sel", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
-dimunitive_ek_archaic = Suffix("dimunitive_ek_archaic", "ek", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 approximative_imtrak = Suffix("approximative_imtrak", "trak", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No)
-accusative = Suffix("accusative", "i", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, needs_y_buffer=True)
 pluralizer_archaic_iz = Suffix("pluralizer_archaic_iz", "iz", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
 posessive_im = Suffix("posessive_im", "im", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
 posessive_in = Suffix("posessive_in", "in", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
 dimunitive_cik = Suffix("dimunitive_cik", "cik", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
 actor_ci = Suffix("actor_ci", "ci", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
 ordinal_inci = Suffix("ordinal_inci", "inci", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
-approximative_si = Suffix("approximative_si", "si", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
+approximative_si = Suffix("approximative_si", "si", Type.NOUN, Type.NOUN, form_function= forms.form_for_approximative_si, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
 privative_siz = Suffix("privative_siz", "siz", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
 philicative_cil = Suffix("philicative_cil", "cil", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
 composessive_li = Suffix("composessive_li", "li", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
 suitative_lik = Suffix("suitative_lik", "lik", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
-adjectiative_ay = Suffix("adjectiative_ay", "ay", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 marking_ki = Suffix("marking_ki", "ki", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No)
 temporative_leyin = Suffix("temporative_leyin", "leyin", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
 ideologicative_izm = Suffix("ideologicative_izm", "izm", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No)
-locative_le = Suffix("locative_le", "le", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
-eventative_tay = Suffix("eventative_tay", "tay", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No)
 scientist_olog = Suffix("scientist_olog", "olog", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No)
-confactuous_le = Suffix("confactuous_le", "le", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
+confactuous_le = Suffix("confactuous_le", "le", Type.NOUN, Type.NOUN, form_function= forms.form_for_confactuous_le, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 
+
+accusative = Suffix("accusative", "i", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, needs_y_buffer=True)
+locative_den = Suffix("locative_den", "den", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
+dative_e = Suffix("dative_e", "e", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, needs_y_buffer=True)
+ablative_de = Suffix("ablative_de", "de", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 # ============================================================================
 # NOUN TO VERB SUFFIXES (n2v)
 # ============================================================================
 
 absentative_se = Suffix("absentative_se", "se", Type.NOUN, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
-onomatopea_de = Suffix("onomatopea_de", "de", Type.NOUN, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
-verbifier_e = Suffix("verbifier_e", "e", Type.NOUN, Type.VERB, form_function=forms.form_for_verbifier_e, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
-aplicative_le = Suffix("aplicative_le", "le", Type.NOUN, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
-grantative_let = Suffix("grantative_let", "let", Type.NOUN, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
-transformative_les = Suffix("transformative_les", "leş", Type.NOUN, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
-acquirative_len = Suffix("acquirative_len", "len", Type.NOUN, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
+onomatopea_de  = Suffix("onomatopea_de",  "de", Type.NOUN, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
+verbifier_e    = Suffix("verbifier_e",     "e", Type.NOUN, Type.VERB, form_function=forms.form_for_verbifier_e, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
+aplicative_le  = Suffix("aplicative_le",  "le", Type.NOUN, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 
 # ============================================================================
 # VERB TO NOUN SUFFIXES (v2n)
@@ -175,7 +168,7 @@ acquirative_len = Suffix("acquirative_len", "len", Type.NOUN, Type.VERB, major_h
 
 nounifier_ecek = Suffix("nounifier_ecek", "ecek", Type.VERB, Type.NOUN, form_function=forms.form_for_nounifier_ecek, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, needs_y_buffer=True)
 infinitive_me = Suffix("infinitive_me", "me", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
-infinitive_mak = Suffix("infinitive_mak", "mek", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
+infinitive_mek = Suffix("infinitive_mek", "mek", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 factative_en = Suffix("factative_en", "en", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, needs_y_buffer=True)
 factative_ir = Suffix("factative_ir", "ir", Type.VERB, Type.NOUN, form_function=forms.form_for_factative_ir, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
 toolative_ek = Suffix("toolative_ek", "ek", Type.VERB, Type.NOUN, form_function=forms.form_for_toolative_ek, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
@@ -198,6 +191,8 @@ pastfactative_miş = Suffix("pastfactative_miş", "miş", Type.VERB, Type.NOUN, 
 adjectiative_ay_v2n = Suffix("adjectiative_ay", "ay", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 nounifier_anak = Suffix("nounifier_anak", "anak", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 nounifier_amak = Suffix("nounifier_amak", "amak", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
+abstractifier_iyat =Suffix("abstractifier_iyat", "iyat", Type.VERB, Type.NOUN,form_function=forms.form_for_abstractifier_iyat, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
+
 
 
 ALL_SUFFIXES = _SUFFIX_REGISTRY
