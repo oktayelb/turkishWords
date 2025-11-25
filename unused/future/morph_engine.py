@@ -1,4 +1,4 @@
-import util.suffixes as sfx
+import util.suffix as sfx
 from functools import lru_cache
 from typing import List, Tuple, Optional
 
@@ -10,8 +10,7 @@ class MorphEngine:
 
     def __init__(self):
         self.suffixes = sfx.ALL_SUFFIXES
-        # Expose specific suffixes needed for logic checks (like infinitive generation)
-        self.infinitive_suffix = sfx.infinitive_mek
+
 
     @lru_cache(maxsize=10000)
     def decompose(self, word: str) -> List[Tuple]:

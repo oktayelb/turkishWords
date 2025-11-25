@@ -5,7 +5,7 @@ from typing import List, Optional, Tuple, Dict
 
 
 from data.config import TrainingConfig
-import util.suffixes as sfx
+import util.suffix_functions as sfx
 
 
 
@@ -136,7 +136,7 @@ class DataManager:
         if not word:
             return 0
 
-        infinitive = word + sfx.infinitive_mek.form(word)[0]# word infinitive i suffix ile cekiyoruz
+        infinitive = self._infinitive(word)# word infinitive i suffix ile cekiyoruz
         if infinitive and infinitive in self.words:
             return 2    # better to  return verb first because decomp will still look for nouns.MORE ON DECOMP/
         
@@ -147,7 +147,7 @@ class DataManager:
 
         if word.endswith("l"):
 
-            soft_l_inf = soft_l + sfx.infinitive_mek.form(soft_l)[0]# word infinitive i suffix ile cekiyoruz
+            soft_l_inf = self._infinitive(soft_l)# word infinitive i suffix ile cekiyoruz
             if soft_l_inf and soft_l_inf in self.words:
                 return 2                                            # better to  return verb first because decomp will still look for nouns.
 
@@ -178,7 +178,7 @@ class DataManager:
                     print(f"🗑️  Deleted '{word}' (root '{root}' exists)")
                     return True 
                 
-                infinitive_form = word_lower + sfx.infinitive_mek.form(word_lower)[0]   # word infinitive i suffix ile cekiyoruz
+                infinitive_form = self._infinitive(word_lower)  # word infinitive i suffix ile cekiyoruz
                 if infinitive_form and infinitive_form != word_lower:
                     if self.delete(infinitive_form):
                         print(f"🗑️  Deleted infinitive '{infinitive_form}' for '{word}' (root '{root}' exists)")
@@ -237,3 +237,9 @@ class DataManager:
     
     def decompose(self, word): ## cheap wrapper to free interactivetrainer from suffix import
         return sfx.decompose(word)
+    
+    def _infinitive(self,word):
+        import util.word_methods as wrd
+        mastar = wrd.infinitive(word)
+
+        return word+ mastar

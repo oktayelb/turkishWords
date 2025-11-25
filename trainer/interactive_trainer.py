@@ -70,6 +70,8 @@ class InteractiveTrainer:
 
     def save(self):
         """Save model and training count"""
+        ##TODO ## https://gemini.google.com/app/7b96b246a19d322b
+        
         self.trainer.save_checkpoint(self.config.model_path)
         with open(self.config.training_count_file, "w") as f:
             f.write(str(self.training_count))

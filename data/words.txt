@@ -5671,7 +5671,6 @@ cümbüşçü
 cümbüşlü
 cümbüşsüz
 cümle
-cümlecik
 cümlesi
 cümleten
 cümudiye
@@ -12648,7 +12647,6 @@ gülcü
 gülcülük
 güldeste
 güldürmek
-güldürü
 güldürücü
 güldürücülük
 gülecen
@@ -16290,7 +16288,6 @@ kâfiristan
 kâfirlik
 kafiye
 kafiyeli
-kafiyesiz
 Kafkasya
 Kafkasyalı
 kaftan
@@ -24989,7 +24986,6 @@ otoman
 otomasyon
 otomat
 otomatik
-otomatiklik
 otomatikman
 otomatizm
 otomobił
@@ -33771,7 +33767,6 @@ ulutmak
 ulvi
 ulviyet
 umar
-umarsız
 umde
 umdurma
 umdurmak
