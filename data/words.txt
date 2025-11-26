@@ -6432,7 +6432,6 @@ cüzzamlı
 çıkrık
 çıkrıkçı
 çıkrıkçın
-çıkrıklı
 çıkrıksız
 çıktı
 çılbır
@@ -8090,7 +8089,6 @@ dinlendirici
 dinlenilme
 dinlenilmek
 dinleti
-dinleyiş
 dinme
 dinmek
 dinozor
@@ -8946,7 +8944,6 @@ Düldül
 dülger
 dülgerlik
 dümbelek
-dümbelekçi
 dümbük
 dümbüklük
 dümdar
@@ -13168,7 +13165,6 @@ hanımefendi
 hanımefendilik
 hanımeli
 hanımgöbeği
-hanımlık
 hanımparmağı
 hani
 Hani
@@ -13885,7 +13881,6 @@ hızar
 hızarcı
 Hızır
 hızır
-hızla
 hızlı
 hızma
 hızölçer
@@ -24501,7 +24496,6 @@ oduncu
 oduncul
 odunculuk
 odunluk
-odunsu
 odunumsu
 odyometre
 odyovizüel
@@ -24812,7 +24806,6 @@ orantılı
 orantısız
 orası
 oratoryo
-oraya
 orcik
 ordinaryüs
 ordinat
@@ -26942,7 +26935,6 @@ pünez
 pür
 pürçek
 pürçekli
-pürçeksiz
 pürçük
 pürçüklü
 pürçüksüz

@@ -10,17 +10,31 @@ from util.rules.suffix_rules import validate_suffix_addition as validate
 from util.suffix import Type 
 ALL_SUFFIXES = VERB2NOUN + VERB2VERB + NOUN2NOUN + NOUN2VERB 
 
+# Updated logic to handle Type.BOTH
 SUFFIX_TRANSITIONS = {
     'noun': {
-        'noun': [s for s in ALL_SUFFIXES if s.comes_to == Type.NOUN and s.makes == Type.NOUN],
-        'verb': [s for s in ALL_SUFFIXES if s.comes_to == Type.NOUN and s.makes == Type.VERB]
+        # Comes to Noun (or Both) AND Makes Noun (or Both)
+        'noun': [s for s in ALL_SUFFIXES 
+                 if s.comes_to in [Type.NOUN, Type.BOTH] 
+                 and s.makes in [Type.NOUN, Type.BOTH]],
+        
+        # Comes to Noun (or Both) AND Makes Verb (or Both)
+        'verb': [s for s in ALL_SUFFIXES 
+                 if s.comes_to in [Type.NOUN, Type.BOTH] 
+                 and s.makes in [Type.VERB, Type.BOTH]]
     },
     'verb': {
-        'noun': [s for s in ALL_SUFFIXES if s.comes_to == Type.VERB and s.makes == Type.NOUN],
-        'verb': [s for s in ALL_SUFFIXES if s.comes_to == Type.VERB and s.makes == Type.VERB]
+        # Comes to Verb (or Both) AND Makes Noun (or Both)
+        'noun': [s for s in ALL_SUFFIXES 
+                 if s.comes_to in [Type.VERB, Type.BOTH] 
+                 and s.makes in [Type.NOUN, Type.BOTH]],
+                 
+        # Comes to Verb (or Both) AND Makes Verb (or Both)
+        'verb': [s for s in ALL_SUFFIXES 
+                 if s.comes_to in [Type.VERB, Type.BOTH] 
+                 and s.makes in [Type.VERB, Type.BOTH]]
     }
 }
-
 suffix_to_id = {suffix.name: idx for idx, suffix in enumerate(ALL_SUFFIXES)}
 id_to_suffix = {idx: suffix.name for idx, suffix in enumerate(ALL_SUFFIXES)}
 category_to_id = {'Noun': 0, 'Verb': 1}

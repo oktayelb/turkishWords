@@ -1,23 +1,37 @@
 
 
-from util.suffix import Suffix, Type, HasMajorHarmony,HasMinorHarmony
+from util.suffix import  Suffix, Type, HasMajorHarmony,HasMinorHarmony
 
 VOWELS = ["a","e","ı","i","o","ö","u","ü"]
 
 ##bunları dolduracan 
-def form_for_conjugation_2sg():
+def form_for_conjugation_2sg(word, suffix_obj):
+
+    return_list = []
+    if  len(word) > 3 and word[-3:] in ["miş","müş","mış","muş", "ir","ür","ur","ır","ecek","acak","cek","cak","mez","maz","yor"]:
+        sin_base = "sin"
+        sin_base = Suffix._apply_major_harmony(word, sin_base, suffix_obj.major_harmony)
+        sin_base = Suffix._apply_minor_harmony(word, sin_base, suffix_obj.minor_harmony)
+        return_list.append(sin_base)
+    
+    if len(word)>2 and word[-2:] in ["di","dı","du","dü"]:
+        n_base = "n"
+        n_base = Suffix._apply_major_harmony(word, n_base, suffix_obj.major_harmony)
+        n_base = Suffix._apply_minor_harmony(word, n_base, suffix_obj.minor_harmony)
+        return_list.append(n_base)
+
+    return return_list 
+
+def form_for_conjugation_3sg(word, suffix_obj):
     pass
 
-def form_for_conjugation_3sg():
+def form_for_conjugation_1pl(word, suffix_obj):
     pass
 
-def form_for_conjugation_1pl():
+def form_for_conjugation_2pl(word, suffix_obj):
     pass
 
-def form_for_conjugation_2pl():
-    pass
-
-def form_for_conjugation_3pl():
+def form_for_conjugation_3pl(word, suffix_obj):
     pass
 
 
@@ -36,7 +50,7 @@ def form_for_posessive_3sg(word, suffix_obj):
 
 def form_for_confactuous_le(word, suffix_obj):
     
-    from util.suffix import Suffix
+    
 
     base = "le"
     base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
@@ -51,7 +65,7 @@ def form_for_confactuous_le(word, suffix_obj):
 
 def form_for_approximative_si(word, suffix_obj):
     
-    from util.suffix import Suffix
+    
     base1 = "imsi"
     base2 = "si"
 
@@ -71,7 +85,7 @@ def form_for_approximative_si(word, suffix_obj):
 
 def form_for_ablative_de(word, suffix_obj):
     """Form function for ablative_de suffix"""
-    from util.suffix import Suffix
+    
 
     base = "de"
     base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
@@ -87,17 +101,17 @@ def form_for_ablative_de(word, suffix_obj):
 
 def form_for_pasttense_noundi(word,suffix_obj):
 
-    from util.suffix import Suffix
+    
 
     di_base = "di"
     di_base = Suffix._apply_major_harmony(word, di_base, suffix_obj.major_harmony)
     di_base = Suffix._apply_minor_harmony(word, di_base, suffix_obj.minor_harmony)
     di_base = Suffix._apply_consonant_hardening(word, di_base)
     
-    if word[-1] in VOWELS:
-        di_base = "y" + di_base
+    ## bu aslında sadece isim kökenliler için ama fiile gelirken olmuyor, ve wordun fiil oldugunu anlama yöntemim yok su anda
+    ydi_base = "y" + di_base
 
-    return [di_base]
+    return [di_base,ydi_base]
 
 def form_for_abstractifier_iyat(word, suffix_obj):
     result_list = ["iye","iyet","iyat","at","et"]
@@ -106,7 +120,7 @@ def form_for_abstractifier_iyat(word, suffix_obj):
 
 
 def form_for_adverbial_erek (word, suffix_obj):
-    from util.suffix import Suffix
+    
 
     base = "erek"
     base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
@@ -140,6 +154,8 @@ scientist_olog = Suffix("scientist_olog", "olog", Type.NOUN, Type.NOUN, major_ha
 confactuous_le = Suffix("confactuous_le", "le", Type.NOUN, Type.NOUN, form_function= form_for_confactuous_le, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 abstractifier_iyat =Suffix("abstractifier_iyat", "iyat", Type.NOUN, Type.NOUN,form_function= form_for_abstractifier_iyat, major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No)
 
+### 
+pasttense_noundi = Suffix("pasttense_noundi", "di", Type.BOTH, Type.NOUN,form_function= form_for_pasttense_noundi, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
 
 accusative = Suffix("accusative", "i", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, needs_y_buffer=True)
 locative_den = Suffix("locative_den", "den", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
@@ -158,11 +174,11 @@ posessive_3pl = Suffix("posessive_3pl", "leri", Type.NOUN, Type.NOUN, major_harm
 ##buranın gerekliliği tartışılmalı
 conjugation_1sg = Suffix("conjugation_1sg", "im", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
 conjugation_2sg = Suffix("conjugation_2sg","sin", Type.NOUN, Type.NOUN, form_function= form_for_conjugation_2sg, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
-conjugation_3sg = Suffix("conjugation_3sg", "", Type.NOUN, Type.NOUN, form_function=form_for_conjugation_3sg , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
+#conjugation_3sg = Suffix("conjugation_3sg", "", Type.NOUN, Type.NOUN, form_function=form_for_conjugation_3sg , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
 
-conjugation_1sg = Suffix("conjugation_1sg", "im", Type.NOUN, Type.NOUN, form_function= form_for_conjugation_1pl, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
-conjugation_2sg = Suffix("conjugation_2sg", "im", Type.NOUN, Type.NOUN, form_function=form_for_conjugation_2pl , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
-conjugation_3sg = Suffix("conjugation_3sg", "im", Type.NOUN, Type.NOUN, form_function=form_for_conjugation_3pl , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
+#conjugation_1sg = Suffix("conjugation_1sg", "im", Type.NOUN, Type.NOUN, form_function= form_for_conjugation_1pl, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
+#conjugation_2sg = Suffix("conjugation_2sg", "im", Type.NOUN, Type.NOUN, form_function=form_for_conjugation_2pl , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
+#conjugation_3sg = Suffix("conjugation_3sg", "im", Type.NOUN, Type.NOUN, form_function=form_for_conjugation_3pl , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
 
 NOUN2NOUN = [
     value for name, value in globals().items() 

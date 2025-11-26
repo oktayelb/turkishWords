@@ -271,9 +271,12 @@ adverbial_ip =Suffix("adverbial_ip", "ip", Type.VERB, Type.NOUN, major_harmony=H
 
 ## bunlar aslında zaman gösterme çekimi olarak değil de isimleştirici olarak analiz edilmeli. belki ir dışındakiler
 nounifier_ecek = Suffix("nounifier_ecek", "ecek", Type.VERB, Type.NOUN, form_function= form_for_nounifier_ecek, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, needs_y_buffer=True)
+##seni bölsek mi
 neverfactative_mez = Suffix("neverfactative_mez", "mez", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No)
 factative_ir = Suffix("factative_ir", "ir", Type.VERB, Type.NOUN, form_function= form_for_factative_ir, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
-pastfactative_miş = Suffix("pastfactative_miş", "miş", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
+
+##
+pastfactative_miş = Suffix("pastfactative_miş", "miş", Type.BOTH, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes)
 
 VERB2NOUN = [
     value for name, value in globals().items() 

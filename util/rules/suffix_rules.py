@@ -1,4 +1,3 @@
-# suffix_rules.py
 """
 Rule-based filtering system for Turkish morphological decompositions.
 Rules are checked during decomposition to discard invalid suffix chains.

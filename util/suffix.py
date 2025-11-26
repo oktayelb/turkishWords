@@ -4,8 +4,9 @@ import util.word_methods as wrd
 
 
 class Type(Enum):
-    NOUN = 'noun'
-    VERB = 'verb'
+    NOUN = "noun"
+    VERB = "verb"
+    BOTH = "both"
 
 
 class HasMajorHarmony(Enum):
