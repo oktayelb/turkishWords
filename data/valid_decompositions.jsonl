@@ -1080,3 +1080,10 @@
 {"word": "hanımlık", "root": "hanım", "suffixes": [{"name": "suitative_lik", "form": "lık", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "odunsu", "root": "odun", "suffixes": [{"name": "approximative_si", "form": "umsu", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "dümbelekçi", "root": "dümbelek", "suffixes": [{"name": "actor_ci", "form": "çi", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "kalacak", "root": "kal", "suffixes": [{"name": "nounifier_ecek", "form": "acak", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "içerisi", "root": "içeri", "suffixes": [{"name": "posessive_3sg", "form": "si", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "içerisinde", "root": "içeri", "suffixes": [{"name": "posessive_3sg", "form": "si", "makes": "NOUN"}, {"name": "ablative_de", "form": "nde", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "dışarısında", "root": "dışarı", "suffixes": [{"name": "posessive_3sg", "form": "sı", "makes": "NOUN"}, {"name": "ablative_de", "form": "nda", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "içerisindekilerle", "root": "içeri", "suffixes": [{"name": "posessive_3sg", "form": "si", "makes": "NOUN"}, {"name": "ablative_de", "form": "nde", "makes": "NOUN"}, {"name": "marking_ki", "form": "ki", "makes": "NOUN"}, {"name": "conjugation_3sg", "form": "ler", "makes": "NOUN"}, {"name": "confactuous_le", "form": "le", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "içerisindekilerle", "root": "içeri", "suffixes": [{"name": "posessive_3sg", "form": "si", "makes": "NOUN"}, {"name": "ablative_de", "form": "nde", "makes": "NOUN"}, {"name": "marking_ki", "form": "ki", "makes": "NOUN"}, {"name": "plural_ler", "form": "ler", "makes": "NOUN"}, {"name": "confactuous_le", "form": "le", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "içerisindekilerle", "root": "içeri", "suffixes": [{"name": "posessive_3sg", "form": "si", "makes": "NOUN"}, {"name": "ablative_de", "form": "nde", "makes": "NOUN"}, {"name": "marking_ki", "form": "ki", "makes": "NOUN"}, {"name": "plural_ler", "form": "ler", "makes": "NOUN"}, {"name": "confactuous_le", "form": "le", "makes": "NOUN"}], "final_pos": "noun"}

@@ -7,6 +7,7 @@ Key improvements:
     - Better type hints and documentation
     - Optimized batch processing
     - Streamlined training loop
+    - NEW: Persistent training mode for interactive learning
 """
 
 import torch
@@ -86,7 +87,6 @@ class Ranker(nn.Module):
         x = self.input_proj(x)
         
         # Encode
-        
         x = self.encoder(x, src_key_padding_mask=mask)
         
         # Mean pool (mask-aware)
@@ -213,7 +213,7 @@ class Trainer:
         return torch.stack(losses).mean() if losses else torch.tensor(0.0, device=self.device)
     
     def train_epoch(self, data: List) -> float:
-        """Train for one epoch."""
+        """Train for one epoch (standard batch training)."""
         self.model.train()
         losses = []
         
@@ -235,6 +235,79 @@ class Trainer:
         avg_loss = sum(losses) / len(losses) if losses else 0.0
         self.train_history.append(avg_loss)
         return avg_loss
+
+    def train_persistent(self, data: List, max_retries: int = 20, margin: float = 0.5) -> float:
+        """
+        Iteratively train on specific examples until the model learns them or max_retries reached.
+        Best for interactive mode where we want immediate "memory" of a user's correction.
+        
+        Args:
+            data: List of examples (usually just 1 in interactive mode)
+            max_retries: Maximum number of update steps to attempt
+            margin: The correct answer must beat incorrect answers by this score margin
+            
+        Returns:
+            The final loss value
+        """
+        self.model.train()
+        final_loss = 0.0
+        
+        # In interactive mode, we treat the input 'data' as a single persistent batch
+        suf_ids, cat_ids, masks, labels, counts = self._prepare_batch(data)
+        
+        print(f"   💪 Enforcing correct choice...", end="", flush=True)
+        
+        for attempt in range(max_retries):
+            # 1. Forward & Loss
+            scores = self.model(suf_ids, cat_ids, masks)
+            loss = self._compute_loss(scores, labels, counts)
+            final_loss = loss.item()
+            
+            # 2. Update Weights
+            self.optimizer.zero_grad()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
+            self.optimizer.step()
+            self.global_step += 1
+            
+            # 3. Validation: Did we learn it?
+            with torch.no_grad():
+                new_scores = self.model(suf_ids, cat_ids, masks)
+                
+                # Check if all examples in batch meet the margin requirement
+                all_learned = True
+                start = 0
+                for count in counts:
+                    end = start + count
+                    word_scores = new_scores[start:end]
+                    word_labels = labels[start:end]
+                    
+                    correct_idx = word_labels.argmax()
+                    correct_score = word_scores[correct_idx]
+                    
+                    # Get max of incorrect scores
+                    other_scores = word_scores.clone()
+                    other_scores[correct_idx] = -float('inf')
+                    max_incorrect = other_scores.max()
+                    
+                    # If correct answer isn't winning by margin, we aren't done
+                    if correct_score <= (max_incorrect + margin):
+                        all_learned = False
+                        break
+                    start = end
+                
+                if all_learned:
+                    print(f" Learned in {attempt + 1} steps.")
+                    break
+                
+                if attempt % 5 == 0:
+                    print(".", end="", flush=True)
+
+        else:
+            print(f" Limit reached ({max_retries}).")
+            
+        self.train_history.append(final_loss)
+        return final_loss
     
     def validate(self, data: List) -> Tuple[float, float]:
         """Validate and return (loss, accuracy)."""
@@ -336,4 +409,3 @@ class Trainer:
         self.best_val_loss = ckpt.get('best_val_loss', float('inf'))
         self.global_step = ckpt.get('global_step', 0)
         print(f"✓ Loaded from {path} (step {self.global_step})")
-

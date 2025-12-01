@@ -97,8 +97,9 @@ class InteractiveTrainer:
         training_data = [
             ([], encoded_chains, idx) for idx in correct_indices
         ]
-        
-        return self.trainer.train_epoch(training_data)
+        # CHANGED: Use the new persistent training method
+        # This will loop internally until the model learns this specific word
+        return self.trainer.train_persistent(training_data)
 
     def train_on_word(self, word: str) -> Optional[bool]:
         """

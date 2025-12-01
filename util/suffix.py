@@ -6,6 +6,7 @@ import util.word_methods as wrd
 class Type(Enum):
     NOUN = "noun"
     VERB = "verb"
+    ADVERB = "adverb"
     BOTH = "both"
 
 

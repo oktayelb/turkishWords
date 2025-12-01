@@ -12,7 +12,8 @@ if __name__ == "__main__":
 
 
 ## TODO  kökün değişmesi. Edilen gibi sözlüğü gibi.
-## TODO  dir ekini hallet
 ## TODO  birleşik sözcükleri hallet
 ## TODO  isimden fiil yapan er ar ekini ççöz
-## TODO  kişi çekimlemelerini hallet
+## TODO  kişi çekimlemeleri gerekli mi?
+## TODO  ise ekini hallet
+## -dık  sıfat fiil
