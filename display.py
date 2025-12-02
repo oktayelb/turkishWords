@@ -77,19 +77,70 @@ class TrainerDisplay:
         suffix_forms = []
         suffix_names = []
         formation = [root + ("-" if pos == "verb" else "")]
+        
+        # --- Cursor Initialization Logic ---
+        # Normalde cursor, kökün uzunluğundadır (ayır -> 4).
+        # Ancak ünlü düşmesi varsa (ayrılmak), fiziksel kelimede kök daha kısadır (ayr -> 3).
+        
         cursor = len(root)
         
+        # Eğer kelime kök ile başlamıyorsa (ayrılmak startswith ayır -> False)
+        # İmleci düzeltmemiz gerekir.
+        if not word.startswith(root) and chain:
+            # İlk ekin formlarını alalım
+            first_suffix = chain[0]
+            possible_forms = first_suffix.form(root)
+            
+            # Kök uzunluğundan geriye doğru 2 karaktere kadar tara (ayır -> ayr, devir -> devr)
+            # İmleci (cursor) öyle bir yere koy ki, kelimenin geri kalanı suffix formlarından biriyle başlasın.
+            match_found = False
+            for offset in range(3): # 0, 1, 2
+                test_cursor = len(root) - offset
+                if test_cursor <= 0: break
+                
+                rest_of_word = word[test_cursor:]
+                
+                for form in possible_forms:
+                    if rest_of_word.startswith(form):
+                        cursor = test_cursor # Doğru fiziksel konumu bulduk (örn: 3)
+                        match_found = True
+                        break
+                if match_found:
+                    break
+        # -----------------------------------
+
         for suffix_obj in chain:
             # Find matching suffix form
             found_form = None
-            for form in suffix_obj.form(current_stem):
+            possible_forms = suffix_obj.form(current_stem)
+            
+            for form in possible_forms:
                 if word.startswith(form, cursor):
                     found_form = form
                     break
             
+            # Eğer hala bulunamadıysa (örneğin karmaşık daralmalarda),
+            # yumuşak bir eşleşme daha dene (sadece visual display için)
+            if not found_form:
+                 for form in possible_forms:
+                     # Bazen cursor 1 birim kaymış olabilir (kaynaştırma harfleri vs yüzünden)
+                     # Çok agresif olmayan basit bir kurtarma:
+                     if word.startswith(form, cursor - 1):
+                         found_form = form
+                         cursor -= 1 
+                         break
+            
             if not found_form:
                 print(f"[Warning: Could not match suffix '{suffix_obj.name}']")
-                break
+                # Hata durumunda bile devam etmeye çalış, belki sonraki ek tutar
+                # Tahmini bir ilerleme yap (ilk form uzunluğu kadar)
+                if possible_forms:
+                     guessed_len = len(possible_forms[0])
+                     suffix_forms.append(possible_forms[0] + "?")
+                     suffix_names.append(suffix_obj.name)
+                     current_stem += possible_forms[0]
+                     cursor += guessed_len
+                continue
             
             suffix_forms.append(found_form)
             suffix_names.append(suffix_obj.name)
@@ -150,7 +201,7 @@ class TrainerDisplay:
 
     
     @staticmethod
-    def show_statistics(trainer: 'InteractiveTrainer'):
+    def show_statistics(trainer):
         """Display comprehensive training statistics"""
         print(f"\n📊 Training Statistics:")
         print(f"  Total examples: {trainer.training_count}")
@@ -199,24 +250,9 @@ class TrainerDisplay:
 
     
     def format_decomposition(self, word: str, decomposition: Tuple, simple: bool = False) -> str:
-        """
-        Format a decomposition into readable text.
-        
-        Args:
-            word: The original word
-            decomposition: Tuple of (root, pos, chain, final_pos)
-            simple: If True, only output suffix names. If False, include forms.
-        
-        Returns:
-            Formatted decomposition string
-        
-        Examples:
-            simple=True:  ('git', 'verb', [past_tense], 'verb') -> 'git+pastfactative_miş'
-            simple=False: ('git', 'verb', [past_tense], 'verb') -> 'git+pastfactative_miş_miş'
-        """
+        """Format a decomposition into readable text."""
         root, pos, chain, final_pos = decomposition
         
-        # Handle root-only case (empty suffix chain)
         if not chain:
             return root
         
@@ -225,10 +261,11 @@ class TrainerDisplay:
             result = root + '+' + '+'.join(suffix_names)
             return result
         
-        # Detailed format with actual forms
         suffix_parts = []
         current_word = root
         
+        # Bu fonksiyon sadece düz metin formatı için, görselleştirme kadar kritik değil
+        # ama basit bir form seçimi yapar.
         for suffix_obj in chain:
             forms = suffix_obj.form(current_word)
             used_form = forms[0] if forms else suffix_obj.suffix
