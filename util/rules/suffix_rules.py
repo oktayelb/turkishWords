@@ -285,6 +285,7 @@ class SuffixRuleEngine:
             "Plural suffix cannot occur twice"
         ))
         self.add_rule(OnlyAtEndRule("approximative_si"))
+        self.add_rule(ForbiddenSequenceRule(["negative_me","perfectative_ik"]))
         """
         # Forbidden sequences (Non-adjacent check)
         self.add_rule(NoRepetitionRule(["posessive_3sg"]))
@@ -296,7 +297,7 @@ class SuffixRuleEngine:
         self.add_rule(ForbiddenSequenceRule(["negative_me","passive_il"]))
         self.add_rule(ForbiddenSequenceRule(["negative_me","active_ir"]))
         self.add_rule(ForbiddenSequenceRule(["negative_me","reflexive_in"]))
-        self.add_rule(ForbiddenSequenceRule(["negative_me","perfectative_ik"]))
+ 
         self.add_rule(ForbiddenSequenceRule(["negative_me","toolative_ek"]))
         #self.add_rule(ForbiddenSequenceRule(["infinitive_me","dimunitive_ek_archaic"]))
         #self.add_rule(ForbiddenSequenceRule(["accusative","dimunitive_ek_archaic"]))

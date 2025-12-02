@@ -1,8 +1,6 @@
-from trainer.interactive_trainer import InteractiveTrainer
-
+from interactive.interactive_trainer import InteractiveTrainer
 def main():
 
-    
     trainer = InteractiveTrainer()
     trainer.interactive_loop()
 
@@ -11,10 +9,11 @@ if __name__ == "__main__":
     main()
 
 
-## TODO  kökün değişmesi. Edilen gibi sözlüğü gibi.
+## TODO  kökün değişmesi. Edilen gibi. gidilen gibi.
 ## TODO  birleşik sözcükleri hallet
 ## TODO  isimden fiil yapan er ar ekini ççöz
 ## TODO  kişi çekimlemeleri gerekli mi?
 ## TODO  ise ekini hallet
+## TODO bekleyor.
 ## -dık  sıfat fiil
 ## boş dönen ekleri hallet, 2.tekil emir kipi, n ve ünlü ile biten giili ıg eki gibi. s

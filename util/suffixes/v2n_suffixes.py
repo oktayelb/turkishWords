@@ -7,6 +7,14 @@ VOWELS = ["a","e","ı","i","o","ö","u","ü"]
 # FORM FUNCTIONS
 # ============================================================================
 
+def form_for_continuous_iyor(word, suffix_obj):
+    base = "i"
+    base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
+    base = Suffix._apply_minor_harmony(word, base, suffix_obj.minor_harmony)
+
+    base = base+"yor"
+    return [base]
+
 def form_for_nounifier_ecek(word, suffix_obj):
     """
     Form function for nounifier_ecek suffix (Sıfat-Fiil)
@@ -16,7 +24,7 @@ def form_for_nounifier_ecek(word, suffix_obj):
     result_list = []
     
     # Base form: ecek
-    base = "ecek"
+    base = "ecek"   
     base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
     base = Suffix._apply_consonant_hardening(word, base)
     result_list.append(base)
@@ -308,6 +316,19 @@ neverfactative_mez = Suffix("neverfactative_mez", "mez", Type.VERB, Type.NOUN, m
 factative_ir = Suffix("factative_ir", "ir", Type.VERB, Type.NOUN, form_function= form_for_factative_ir, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
 pastfactative_miş = Suffix("pastfactative_miş", "miş", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
 
+## bu ekin şu anki hali yanlış, aslında bu ek fiilken i eki alıp isim olmuş sözcüklere eklenir. 
+# bak-  bakı     bakı yorum.  ölü yorum , ölü oluyorum tarzında 
+# ama bekleyorum vs gibi örneklerdeki düzensizliklerden ötürü şimdilik böyle devam edecek 
+continuous_iyor = Suffix(
+    "continuous_iyor", 
+    "iyor", 
+    Type.VERB,  # Fiile gelir
+    Type.NOUN,  # İsimleştirir (üzerine şahıs eki alır: geliyor-um)
+    form_function=form_for_continuous_iyor, 
+    major_harmony=HasMajorHarmony.Yes, # Fonksiyon hallediyor
+    minor_harmony=HasMinorHarmony.Yes, # Fonksiyon hallediyor
+    group=SuffixGroup.DERIVATIONAL # Group 10 (En başa yakın)
+)
 
 # --- ZARF-FİİLLER (GERUNDS - Group 90) ---
 # Bunlar Zarf yapar. Üzerine İyelik (30) veya Hal eki (40) ALAMAZLAR.

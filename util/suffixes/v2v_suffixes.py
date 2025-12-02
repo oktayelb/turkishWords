@@ -33,7 +33,7 @@ def form_for_active_it(word, suffix_obj):
     t_form = Suffix._apply_consonant_hardening(word, t_form) # d -> t (nadiren)
     
     # Kelime ünlüyle bitiyorsa 't' ekle
-    if word and word[-1] in wrd.VOWELS:
+    if  word[-1] in wrd.VOWELS or  word[-1] in ['r', 'l']:
         result_list.append(t_form)
     
     # Özel durum: Çok heceli ve 'r' veya 'l' ile biten bazı kelimelerde de 't' gelebilir
@@ -57,7 +57,9 @@ def form_for_passive_il(word, suffix_obj):
     # 1. Durum: Kelime ünlü ile bitiyorsa -> sadece 'n' (Ara-n-mak)
     if word[-1] in wrd.VOWELS:
         n_suffix = "n"
+        l_suffix = "l"
         result_list.append(n_suffix)
+        result_list.append(l_suffix)
         return result_list
 
     # 2. Durum: Kelime 'l' ünsüzü ile bitiyorsa -> -in (Bul-un-mak)
@@ -89,7 +91,7 @@ def form_for_passive_il(word, suffix_obj):
 reflexive_is = Suffix("reflexive_is", "iş", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL, is_unique=False)
 
 # Dönüşlü? (Reflexive) / Geçişsizleştiren: Gec-ik, Bir-ik
-reflexive_ik = Suffix("reflexive_ik", "ik", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL, is_unique=False)
+reflexive_ik = Suffix("reflexive_ik", "ik", Type.BOTH, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL, is_unique=False)
 
 # Ettirgen (Causative) -it: Kork-ut, Ak-ıt
 active_it = Suffix("active_it", "it", Type.VERB, Type.VERB, form_function=form_for_active_it, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL, is_unique=False)

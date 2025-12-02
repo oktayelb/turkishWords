@@ -13,11 +13,12 @@ def form_for_conjugation_1sg(word, suffix_obj):
     - Gel-di-m (Sadece m)
     - Doktor-um (im)
     - Baba-y-ım (y + im)
+    - sev-me-m (me + m)
     """
     return_list = []
     
     # 1. Durum: Geçmiş zaman (-di) ve Şart (-se) sonrası sadece 'm'
-    if len(word) > 2 and word[-2:] in ["di","dı","du","dü", "ti","tı","tu","tü", "se","sa"]:
+    if len(word) > 2 and word[-2:] in ["di","dı","du","dü", "ti","tı","tu","tü", "se","sa","me","ma"]:
         return_list.append("m")
         return return_list 
 
@@ -187,7 +188,7 @@ def form_for_confactuous_le(word, suffix_obj):
         base = "y" + base
 
     return [base]
-
+##TODO umsu ekini bi hallet, belki suffix hiyerarşisini yeniden düzenlemek gerekebilir.
 def form_for_approximative_si(word, suffix_obj):
     base1 = "imsi"
     base2 = "si"
@@ -239,7 +240,7 @@ def form_for_abstractifier_iyat(word, suffix_obj):
 
 counting_er = Suffix("counting_er", "er", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
 cooperative_daş = Suffix("cooperative_daş", "daş", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
-relative_ce = Suffix("relative_ce", "ca", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
+relative_ce = Suffix("relative_ce", "ce", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
 relative_sel = Suffix("relative_sel", "sel", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
 approximative_imtrak = Suffix("approximative_imtrak", "imtrak", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
 dimunitive_cik = Suffix("dimunitive_cik", "cik", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
@@ -299,6 +300,8 @@ conjugation_3pl = Suffix("conjugation_3pl", "ler", Type.BOTH, Type.NOUN, form_fu
 # Bu ekler şahıs eklerinden (Grup 50) SONRA gelebilir.
 # Örnek: Gel-ecek-ler-dir (50 -> 60), Gel-iyor-lar-mış.
 
+# şimdiki zaman (-iyor) bu burada kalamıyor, bekleyor örneği i + yor şekline uymuyor.
+#iyor_suffix = Suffix("iyor_suffix", "yor", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.TERMINAL)  
 # Bildirme Eki (-dir)
 nounaorist_dir =  Suffix("nounaorist_dir", "dir", Type.NOUN, Type.NOUN , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.TERMINAL, is_unique=True)
 

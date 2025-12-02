@@ -36,7 +36,7 @@ class TrainerDisplay:
         # Display each option
         index_mapping = {}
         for display_idx, (orig_idx, (decomp, score)) in enumerate(indexed, 1):
-            TrainerDisplay._show_single_decomposition(
+            TrainerDisplay.show_single_decomposition(
                 word, decomp, score, display_idx, orig_idx
             )
             index_mapping[display_idx] = orig_idx
@@ -44,7 +44,7 @@ class TrainerDisplay:
         return index_mapping
     
     @staticmethod
-    def _show_single_decomposition(word: str, decomp: Tuple, score: Optional[float],
+    def show_single_decomposition(word: str, decomp: Tuple, score: Optional[float],
                                    display_idx: int, orig_idx: int):
         """Format and print a single decomposition"""
         root, pos, chain, final_pos = decomp
@@ -197,3 +197,46 @@ class TrainerDisplay:
         print(f"📈 Total examples: {total}")
         print(f"{'='*70}\n")
 
+    
+    def format_decomposition(self, word: str, decomposition: Tuple, simple: bool = False) -> str:
+        """
+        Format a decomposition into readable text.
+        
+        Args:
+            word: The original word
+            decomposition: Tuple of (root, pos, chain, final_pos)
+            simple: If True, only output suffix names. If False, include forms.
+        
+        Returns:
+            Formatted decomposition string
+        
+        Examples:
+            simple=True:  ('git', 'verb', [past_tense], 'verb') -> 'git+pastfactative_miş'
+            simple=False: ('git', 'verb', [past_tense], 'verb') -> 'git+pastfactative_miş_miş'
+        """
+        root, pos, chain, final_pos = decomposition
+        
+        # Handle root-only case (empty suffix chain)
+        if not chain:
+            return root
+        
+        if simple:
+            suffix_names = [suffix.name for suffix in chain]
+            result = root + '+' + '+'.join(suffix_names)
+            return result
+        
+        # Detailed format with actual forms
+        suffix_parts = []
+        current_word = root
+        
+        for suffix_obj in chain:
+            forms = suffix_obj.form(current_word)
+            used_form = forms[0] if forms else suffix_obj.suffix
+            
+            suffix_str = f"{suffix_obj.name}_{used_form}"
+            suffix_parts.append(suffix_str)
+            
+            current_word += used_form
+        
+        result = root + '+' + '+'.join(suffix_parts)
+        return result

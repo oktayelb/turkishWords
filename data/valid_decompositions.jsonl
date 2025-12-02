@@ -1096,3 +1096,25 @@
 {"word": "kaçacağım", "root": "kaç", "suffixes": [{"name": "nounifier_ecek", "form": "acak", "makes": "NOUN"}, {"name": "posessive_1sg", "form": "ım", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "sözlüğüm", "root": "söz", "suffixes": [{"name": "suitative_lik", "form": "lük", "makes": "NOUN"}, {"name": "posessive_1sg", "form": "üm", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "geleceğim", "root": "gel", "suffixes": [{"name": "nounifier_ecek", "form": "ecek", "makes": "NOUN"}, {"name": "conjugation_1sg", "form": "im", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "karşılaştırılmak", "root": "karşı", "suffixes": [{"name": "aplicative_le", "form": "la", "makes": "VERB"}, {"name": "reflexive_is", "form": "ış", "makes": "VERB"}, {"name": "active_dir", "form": "tır", "makes": "VERB"}, {"name": "passive_il", "form": "ıl", "makes": "VERB"}, {"name": "infinitive_mek", "form": "mak", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "çaylı", "root": "çay", "suffixes": [{"name": "composessive_li", "form": "lı", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "doğumlu", "root": "doğ", "suffixes": [{"name": "nounifier_im", "form": "um", "makes": "NOUN"}, {"name": "composessive_li", "form": "lu", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "inceliş", "root": "incel", "suffixes": [{"name": "nounifier_iş", "form": "iş", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "miyopluk", "root": "miyop", "suffixes": [{"name": "suitative_lik", "form": "luk", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "konusuz", "root": "kon", "suffixes": [{"name": "nounifier_i", "form": "u", "makes": "NOUN"}, {"name": "privative_siz", "form": "suz", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "çağırtı", "root": "çağır", "suffixes": [{"name": "active_it", "form": "ıt", "makes": "VERB"}, {"name": "nounifier_i", "form": "ı", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "dokundurmak", "root": "doku", "suffixes": [{"name": "reflexive_in", "form": "un", "makes": "VERB"}, {"name": "active_dir", "form": "dur", "makes": "VERB"}, {"name": "infinitive_mek", "form": "mak", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "geçirtilme", "root": "geç", "suffixes": [{"name": "active_ir", "form": "ir", "makes": "VERB"}, {"name": "active_it", "form": "it", "makes": "VERB"}, {"name": "passive_il", "form": "il", "makes": "VERB"}, {"name": "infinitive_me", "form": "me", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "Bedevilik", "root": "Bedevi", "suffixes": [{"name": "suitative_lik", "form": "lik", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "acayiplik", "root": "acayip", "suffixes": [{"name": "suitative_lik", "form": "lik", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "ışığan", "root": "ışı", "suffixes": [{"name": "factative_en", "form": "an", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "düşsüzlük", "root": "düş", "suffixes": [{"name": "privative_siz", "form": "süz", "makes": "NOUN"}, {"name": "suitative_lik", "form": "lük", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "dehşetli", "root": "dehşet", "suffixes": [{"name": "composessive_li", "form": "li", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "çağcıllık", "root": "çağ", "suffixes": [{"name": "philicative_cil", "form": "cıl", "makes": "NOUN"}, {"name": "suitative_lik", "form": "lık", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "ördürme", "root": "ör", "suffixes": [{"name": "active_dir", "form": "dür", "makes": "VERB"}, {"name": "infinitive_me", "form": "me", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "kalacaklarmış", "root": "kal", "suffixes": [{"name": "nounifier_ecek", "form": "acak", "makes": "NOUN"}, {"name": "plural_ler", "form": "lar", "makes": "NOUN"}, {"name": "copula_mis", "form": "mış", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "gidiyorsunuz", "root": "git", "suffixes": [{"name": "continuous_iyor", "form": "iyor", "makes": "NOUN"}, {"name": "conjugation_2pl", "form": "sunuz", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "ölüyorsunuz", "root": "öl", "suffixes": [{"name": "continuous_iyor", "form": "üyor", "makes": "NOUN"}, {"name": "conjugation_2pl", "form": "sunuz", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "sevmem", "root": "sev", "suffixes": [{"name": "negative_me", "form": "me", "makes": "VERB"}, {"name": "conjugation_1sg", "form": "m", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "sevmem", "root": "sev", "suffixes": [{"name": "negative_me", "form": "me", "makes": "VERB"}, {"name": "conjugation_1sg", "form": "m", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "gitmesin", "root": "git", "suffixes": [{"name": "negative_me", "form": "me", "makes": "VERB"}, {"name": "conjugation_3sg", "form": "sin", "makes": "NOUN"}], "final_pos": "noun"}
