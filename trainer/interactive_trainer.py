@@ -1,40 +1,41 @@
 from typing import List, Optional, Tuple, Dict
 
-from trainer.display import TrainerDisplay
-from trainer.data_manager import DataManager
+from display import TrainerDisplay
+from data.data_manager import DataManager
 from ml_ranking_model import Ranker, Trainer
-
+from trainer.config import TrainingConfig
 
 class InteractiveTrainer:
     """Handles training logic and model management with pre-encoded suffix data"""
     
-    def __init__(self, use_triplet_loss: bool = False, use_lstm: bool = False):
+    def __init__(self):
         
         self.data_manager = DataManager()
-        self.config = self.data_manager.config
+        self.config = TrainingConfig()
         self.display = TrainerDisplay()
         
-        # Create suffix mappings for encoding
-        self.suffix_to_id = {suffix.name: idx + 1 for idx, suffix in enumerate(self.data_manager.suffixes)}
-        self.id_to_suffix = {idx + 1: suffix.name for idx, suffix in enumerate(self.data_manager.suffixes)}
+        # Create suffix and category mappings for encoding
         self.category_to_id = {'Noun': 0, 'Verb': 1}
         
-        self.model = Ranker(
-            suffix_vocab_size=len(self.data_manager.suffixes),
-            num_categories=2,
-            embed_dim=128,
-            num_layers=4,
-            num_heads=8,
-            use_lstm=use_lstm
+        # FIX: Initialize suffix_to_id mapping from data_manager.suffixes
+        self.suffix_to_id = {
+            suffix.name: idx + 1  # Start from 1, reserve 0 for padding
+            for idx, suffix in enumerate(self.data_manager.suffixes)
+        }
+        
+        self.model =  Ranker(
+            suffix_vocab_size=len(self.data_manager.suffixes),  # Use actual vocab size
+            num_categories=self.config.category_num,
+            embed_dim=self.config.embed_dim,
+            num_layers=self.config.num_layers,
+            num_heads=self.config.num_heads,
         )
-
         self.trainer = Trainer(
-            model=self.model,
-            model_path=self.config.model_path,
-            lr=1e-4,
-            batch_size=16,
-            use_triplet_loss=use_triplet_loss,
-            patience=10
+            model= self.model,
+            model_path=self.data_manager.config.model_path,
+            lr=self.config.learning_rate,
+            batch_size=self.config.batch_size,
+            patience=self.config.checkpoint_frequency
         )
         
         self.training_count = self.data_manager.load_training_count()
@@ -59,6 +60,7 @@ class InteractiveTrainer:
         
         encoded = []
         for suffix_obj in suffix_objects:
+            # FIX: Handle unknown suffixes gracefully with padding index
             suffix_id = self.suffix_to_id.get(suffix_obj.name, 0)
             category_id = self.category_to_id.get(suffix_obj.makes.name, 0)
             encoded.append((suffix_id, category_id))
@@ -69,8 +71,10 @@ class InteractiveTrainer:
 
     def save(self):
         """Save model and training count"""
-        self.trainer.save_checkpoint(self.config.model_path)
-        with open(self.config.training_count_file, "w") as f:
+        ##TODO ## https://gemini.google.com/app/7b96b246a19d322b
+        
+        self.trainer.save_checkpoint(self.data_manager.config.model_path)
+        with open(self.data_manager.config.training_count_file, "w") as f:
             f.write(str(self.training_count))
         print(f"✅ Model saved")
     
@@ -82,6 +86,9 @@ class InteractiveTrainer:
         Args:
             suffix_chains: List of suffix object chains
             correct_indices: Indices of correct decompositions
+            
+        Returns:
+            Average training loss
         """
         # Encode all suffix chains to (suffix_id, category_id) format
         encoded_chains = [self.encode_suffix_chain(chain) for chain in suffix_chains]
@@ -90,8 +97,9 @@ class InteractiveTrainer:
         training_data = [
             ([], encoded_chains, idx) for idx in correct_indices
         ]
-        
-        return self.trainer.train_epoch(training_data)
+        # CHANGED: Use the new persistent training method
+        # This will loop internally until the model learns this specific word
+        return self.trainer.train_persistent(training_data)
 
     def train_on_word(self, word: str) -> Optional[bool]:
         """
@@ -174,12 +182,35 @@ class InteractiveTrainer:
         
         training_data = []
         skipped = 0
+        skip_logs = {
+            'no_decomp': [],
+            'single_decomp': [],
+            'match_failed': [],
+            'exception': []
+        }
         
         for word, correct_entries in word_groups.items():
             try:
                 decompositions = self.data_manager.decompose(word)
-                if not decompositions or len(decompositions) == 1:
+                
+                if not decompositions:
                     skipped += 1
+                    skip_logs['no_decomp'].append({
+                        'word': word,
+                        'logged_entries': correct_entries
+                    })
+                    continue
+                    
+                if len(decompositions) == 1:
+                    skipped += 1
+                    skip_logs['single_decomp'].append({
+                        'word': word,
+                        'decomposition': {
+                            'root': decompositions[0][0],
+                            'suffixes': [s.name for s in decompositions[0][2]] if decompositions[0][2] else []
+                        },
+                        'logged_entries': correct_entries
+                    })
                     continue
                 
                 suffix_chains = [chain for _, _, chain, _ in decompositions]
@@ -187,6 +218,17 @@ class InteractiveTrainer:
                 correct_indices = self._match_decompositions(correct_entries, decompositions)
                 if not correct_indices:
                     skipped += 1
+                    skip_logs['match_failed'].append({
+                        'word': word,
+                        'logged_entries': [{
+                            'root': e['root'],
+                            'suffixes': [s['name'] for s in e.get('suffixes', [])]
+                        } for e in correct_entries],
+                        'current_decompositions': [{
+                            'root': root,
+                            'suffixes': [s.name for s in chain] if chain else []
+                        } for root, _, chain, _ in decompositions]
+                    })
                     continue
                 
                 # Encode chains once per word
@@ -196,8 +238,28 @@ class InteractiveTrainer:
                 for idx in correct_indices:
                     training_data.append(([], encoded_chains, idx))
             
-            except Exception:
+            except Exception as e:
                 skipped += 1
+                skip_logs['exception'].append({
+                    'word': word,
+                    'error': str(e),
+                    'logged_entries': correct_entries
+                })
+        
+        # Write skip logs to files
+        import json
+        import os
+        
+        logs_dir = 'skip_logs'
+        os.makedirs(logs_dir, exist_ok=True)
+        
+        for reason, logs in skip_logs.items():
+            if logs:
+                filepath = os.path.join(logs_dir, f'{reason}.jsonl')
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    for log_entry in logs:
+                        f.write(json.dumps(log_entry, ensure_ascii=False) + '\n')
+                print(f"📝 {reason}: {len(logs)} entries logged to {filepath}")
         
         if not training_data:
             print("⚠️  No valid training data")
@@ -334,7 +396,7 @@ class InteractiveTrainer:
                 if error_count <= 5:
                     print(f"   ⚠️  Error processing '{word}': {e}")
         
-        output_text = ' '.join(decomposed_words)
+        output_text = '\n'.join(decomposed_words)
         self.data_manager.write_decomposed_text(output_text)
         
         print(f"\n✅ Text processing complete!")
@@ -354,12 +416,16 @@ class InteractiveTrainer:
             decomposition: Tuple of (root, pos, chain, final_pos)
             simple: If True, only output suffix names. If False, include forms.
         
+        Returns:
+            Formatted decomposition string
+        
         Examples:
             simple=True:  ('git', 'verb', [past_tense], 'verb') -> 'git+pastfactative_miş'
             simple=False: ('git', 'verb', [past_tense], 'verb') -> 'git+pastfactative_miş_miş'
         """
         root, pos, chain, final_pos = decomposition
         
+        # Handle root-only case (empty suffix chain)
         if not chain:
             return root
         
@@ -368,6 +434,7 @@ class InteractiveTrainer:
             result = root + '+' + '+'.join(suffix_names)
             return result
         
+        # Detailed format with actual forms
         suffix_parts = []
         current_word = root
         
@@ -390,10 +457,10 @@ class InteractiveTrainer:
         while True:
             try:
                 cmd = input("\n📤 Enter word or command: ").strip().lower()
-                
+
                 if not cmd:
                     continue
-                
+
                 if cmd == 'quit':
                     if self.training_count > 0 and self.display.confirm_save():
                         self.save()

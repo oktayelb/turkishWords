@@ -12,8 +12,8 @@ from suffix_rules import (
     CustomRule,
     add_rule
 )
-import util.suffixes as sfx
-from depracated.decomposition import decompose
+import util.suffix_functions as sfx
+## from depracated.decomposition import decompose
 
 
 def list_all_rules():
@@ -67,7 +67,7 @@ def test_rule_on_word(word: str, verbose: bool = True):
     print(f"RULE TESTING FOR: {word}")
     print("=" * 70)
     
-    decompositions = decompose(word)
+    decompositions = sfx.decompose(word)
     
     if not decompositions:
         print("\nNo valid decompositions found (all filtered by rules or no valid paths).")
@@ -140,7 +140,7 @@ def suggest_rules_from_feedback(word: str, correct_idx: int):
     Analyze a word where user indicated correct decomposition.
     Suggest potential rules that might filter incorrect alternatives.
     """
-    decompositions = decompose(word)
+    decompositions = sfx.decompose(word)
     
     if not decompositions or correct_idx >= len(decompositions):
         print("Invalid word or decomposition index.")
