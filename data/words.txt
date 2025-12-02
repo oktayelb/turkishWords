@@ -12055,7 +12055,6 @@ girmek
 girmelik
 gişe
 gitar
-gitarcı
 gitarist
 gitgide
 gitme

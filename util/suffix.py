@@ -1,27 +1,36 @@
-from enum import Enum
+from enum import Enum, IntEnum
 import util.word_methods as wrd
 
-
+# Eklerin hiyerarşisi.
+# Kural: Bir ek, kendinden daha düşük numaralı bir gruptan sonra GELEMEZ.
+class SuffixGroup(IntEnum):
+    DERIVATIONAL = 10      # Yapım Ekleri (-lik, -ci, -me, -mek)
+    PLURAL = 20            # Çoğul Eki (-ler)
+    POSSESSIVE = 30        # İyelik Ekleri (-im, -in)
+    CASE = 40              # Hal Ekleri (-e, -de)
+    POST_CASE = 45         # Hal ekinden sonra gelen istisnalar (-ki)
+    PREDICATIVE = 50       # Şahıs / Çekim Ekleri (-im, -sin, -ler)
+    TERMINAL = 60          # Zincir sonu Ek-fiiller (-dir, -miş, -di) -> Şahıs ekinden sonra gelebilir
+    GERUND = 90            # Zarf Fiiller (-ip, -erek) -> ZİNCİRİ KİLİTLER, üzerine ek almaz.
 
 class Type(Enum):
     NOUN = "noun"
     VERB = "verb"
-    ADVERB = "adverb"
     BOTH = "both"
-
 
 class HasMajorHarmony(Enum):
     Yes = 0
     No = 1
 
-
 class HasMinorHarmony(Enum):
     Yes = 0
     No = 1
 
-
 class Suffix:
-    def __init__(self, name, suffix, comes_to, makes, form_function=None, major_harmony=None, minor_harmony=None, needs_y_buffer=False):
+    def __init__(self, name, suffix, comes_to, makes, 
+                 form_function=None, major_harmony=None, minor_harmony=None, needs_y_buffer=False,
+                 group=SuffixGroup.DERIVATIONAL, is_unique=False):
+        
         self.name = name
         self.suffix = str(suffix)
         self.comes_to = comes_to
@@ -30,6 +39,10 @@ class Suffix:
         self.minor_harmony = minor_harmony
         self.needs_y_buffer = needs_y_buffer
         self.form_function = form_function if form_function else self._default_form
+        
+        # Hiyerarşi ve Tekrarlama Kontrolü
+        self.group = group
+        self.is_unique = is_unique
     
     def form(self, word):
         return self.form_function(word, self)
@@ -100,6 +113,3 @@ class Suffix:
         return (word and result and 
                 word[-1] in wrd.VOWELS and 
                 result[0] in wrd.VOWELS)
-
-
-

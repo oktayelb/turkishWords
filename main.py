@@ -17,3 +17,4 @@ if __name__ == "__main__":
 ## TODO  kişi çekimlemeleri gerekli mi?
 ## TODO  ise ekini hallet
 ## -dık  sıfat fiil
+## boş dönen ekleri hallet, 2.tekil emir kipi, n ve ünlü ile biten giili ıg eki gibi. s

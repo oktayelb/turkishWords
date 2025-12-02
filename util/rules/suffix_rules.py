@@ -284,7 +284,8 @@ class SuffixRuleEngine:
             ['plural_ler'],
             "Plural suffix cannot occur twice"
         ))
-        
+        self.add_rule(OnlyAtEndRule("approximative_si"))
+        """
         # Forbidden sequences (Non-adjacent check)
         self.add_rule(NoRepetitionRule(["posessive_3sg"]))
         self.add_rule(ForbiddenSequenceRule(["aplicative_le","active_ir"]))
@@ -304,14 +305,14 @@ class SuffixRuleEngine:
         self.add_rule(ForbiddenSequenceRule(["accusative","posessive_3sg"]))
         self.add_rule(ForbiddenSequenceRule(["confactuous_le","counting_er"]))
         self.add_rule(OnlyAtBeginningRule("onomatopea_de"))
-        self.add_rule(OnlyAtEndRule("approximative_si"))
+
         self.add_rule(OnlyAfterRule("conjugation_3sg", ["nounifier_ecek","factative_ir","pasttense_noundi","pastfactative_miş"]))
         self.add_rule(OnlyAfterRule("conjugation_2sg", ["nounifier_ecek","factative_ir","pasttense_noundi","pastfactative_miş"]))
         self.add_rule(OnlyAfterRule("conjugation_1sg", ["nounifier_ecek","factative_ir","pasttense_noundi","pastfactative_miş"]))
         self.add_rule(OnlyAfterRule("conjugation_3pl", ["nounifier_ecek","factative_ir","pasttense_noundi","pastfactative_miş"]))
         self.add_rule(OnlyAfterRule("conjugation_2pl", ["nounifier_ecek","factative_ir","pasttense_noundi","pastfactative_miş"]))
         self.add_rule(OnlyAfterRule("conjugation_1pl", ["nounifier_ecek","factative_ir","pasttense_noundi","pastfactative_miş"]))
-        
+        """
 
 # Global rule engine instance
 RULE_ENGINE = SuffixRuleEngine()
