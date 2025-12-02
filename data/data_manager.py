@@ -214,37 +214,34 @@ class DataManager:
         if not word:
             return 0
 
-        infinitive = self._infinitive(word)# word infinitive i suffix ile cekiyoruz
+        # Normal kelime kontrolü
+        infinitive = self._infinitive(word)
         if infinitive and infinitive in self.words:
-            return 2    # better to  return verb first because decomp will still look for nouns.MORE ON DECOMP/
+            return 2    
         
         if word in self.words:
             return 1
         
-
-
+        # 'İnce L' (Soft L) Kontrolü
         if word.endswith("l"):
-
-            soft_l_inf = self._infinitive(soft_l)# word infinitive i suffix ile cekiyoruz
-            if soft_l_inf and soft_l_inf in self.words:
-                return 2                                            # better to  return verb first because decomp will still look for nouns.
-
-
+            # DÜZELTME BURADA: Önce soft_l değişkenini tanımlıyoruz
             soft_l = word[:-1] + "ł"
+
+            # Şimdi tanımlanmış değişkeni kullanabiliriz
+            soft_l_inf = self._infinitive(soft_l) 
+            if soft_l_inf and soft_l_inf in self.words:
+                return 2
+
+            # Kök halini kontrol et
             if soft_l in self.words:
                 return 1
 
-
         return 0
-
-
  ###3 these functions dont really go here   
     def decompose(self, word): ## cheap wrapper to free interactivetrainer from suffix import
         return sfx.decompose(word)
     
     def _infinitive(self,word): ##cheap wrapper that uses wrd to use infinitives (acutally harmonies) easily 
-
         import util.word_methods as wrd
-        mastar = wrd.infinitive(word)
 
-        return word+ mastar
+        return wrd.infinitive(word)

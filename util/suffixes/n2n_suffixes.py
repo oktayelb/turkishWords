@@ -96,7 +96,7 @@ def form_for_conjugation_1pl(word, suffix_obj):
     if len(word) > 2 and word[-2:] in ["di","dı","du","dü", "ti","tı","tu","tü", "se","sa"]:
         k_base = "k" 
         return_list.append(k_base)
-
+        
     # 2. Durum: Standart -iz hali
     iz_base = "iz"
     iz_base = Suffix._apply_major_harmony(word, iz_base, suffix_obj.major_harmony)
@@ -145,6 +145,7 @@ def form_for_conjugation_2pl(word, suffix_obj):
 
     return return_list 
 
+
 def form_for_conjugation_3pl(word, suffix_obj):
     result_list  = []
     # Standart: -ler (Gel-ir-ler, Ev-ler)
@@ -162,6 +163,9 @@ def form_for_conjugation_3pl(word, suffix_obj):
 
     return result_list
 
+####
+###   Form for rest
+####
 def form_for_posessive_3sg(word, suffix_obj):
     base = "i"
     base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)

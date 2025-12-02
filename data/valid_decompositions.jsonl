@@ -1091,3 +1091,8 @@
 {"word": "kavram", "root": "kavra", "suffixes": [{"name": "nounifier_im", "form": "ım", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "kavramlar", "root": "kavra", "suffixes": [{"name": "nounifier_im", "form": "ım", "makes": "NOUN"}, {"name": "plural_ler", "form": "lar", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "gitarcı", "root": "gitar", "suffixes": [{"name": "actor_ci", "form": "cı", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "geleceğim", "root": "gel", "suffixes": [{"name": "nounifier_ecek", "form": "ecek", "makes": "NOUN"}, {"name": "posessive_1sg", "form": "im", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "geleceğim", "root": "gel", "suffixes": [{"name": "nounifier_ecek", "form": "ecek", "makes": "NOUN"}, {"name": "conjugation_1sg", "form": "im", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "kaçacağım", "root": "kaç", "suffixes": [{"name": "nounifier_ecek", "form": "acak", "makes": "NOUN"}, {"name": "posessive_1sg", "form": "ım", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "sözlüğüm", "root": "söz", "suffixes": [{"name": "suitative_lik", "form": "lük", "makes": "NOUN"}, {"name": "posessive_1sg", "form": "üm", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "geleceğim", "root": "gel", "suffixes": [{"name": "nounifier_ecek", "form": "ecek", "makes": "NOUN"}, {"name": "conjugation_1sg", "form": "im", "makes": "NOUN"}], "final_pos": "noun"}

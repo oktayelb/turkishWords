@@ -11,6 +11,7 @@ def form_for_nounifier_ecek(word, suffix_obj):
     """
     Form function for nounifier_ecek suffix (Sıfat-Fiil)
     - Returns harmonized versions of ecek, yecek, cek
+    - AND softened versions: eceğ, yeceğ, ceğ
     """
     result_list = []
     
@@ -20,15 +21,30 @@ def form_for_nounifier_ecek(word, suffix_obj):
     base = Suffix._apply_consonant_hardening(word, base)
     result_list.append(base)
     
+    # Softened base: eceğ / acağ
+    soft_base = Suffix._apply_softening(base)
+    if soft_base != base:
+        result_list.append(soft_base)
+    
     # Add buffer variants for vowel-ending words
     if word and word[-1] in VOWELS:
         # yecek variant (yıkayacak)
         y_form = 'y' + base
         result_list.append(y_form)
         
+        # Softened y_form: yeceğ
+        soft_y = Suffix._apply_softening(y_form)
+        if soft_y != y_form:
+            result_list.append(soft_y)
+        
         # cek variant (vowel dropped - uncommon in standard V2N but listed)
         short_form = base[1:] 
         result_list.append(short_form)
+        
+        # Softened short_form: ceğ
+        soft_short = Suffix._apply_softening(short_form)
+        if soft_short != short_form:
+            result_list.append(soft_short)
     
     return result_list
 
@@ -37,6 +53,7 @@ def form_for_factative_ir(word, suffix_obj):
     """
     Form function for factative_ir suffix (Geniş Zaman Sıfat-Fiil)
     - Default forms: er, ir, z (negative)
+    - Note: Does not soften (r and z are soft/continuant).
     """
     result_list = []
     
@@ -70,13 +87,31 @@ def form_for_factative_ir(word, suffix_obj):
 
 
 def form_for_toolative_ek(word, suffix_obj):
-    result = suffix_obj.suffix
-    result = Suffix._apply_major_harmony(word, result, suffix_obj.major_harmony)
-    result = Suffix._apply_consonant_hardening(word, result)
-    return [result]
+    """
+    Form for toolative_ek (e.g. Dur-ak -> Durağı)
+    Includes softening (k -> ğ).
+    """
+    result_list = []
+    
+    base = suffix_obj.suffix
+    base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
+    base = Suffix._apply_consonant_hardening(word, base)
+    result_list.append(base)
+    
+    # Softening: ak -> ağ
+    soft_base = Suffix._apply_softening(base)
+    if soft_base != base:
+        result_list.append(soft_base)
+        
+    return result_list
 
 
 def form_for_nounifier_iş(word, suffix_obj):
+    """
+    Geliş, Gidiş.
+    Note: 'iş' suffix usually does not soften in standard morphology.
+    (Gelişi, not Gelici). Keeping logic as is.
+    """
     result_list = []
     base = suffix_obj.suffix
     base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
@@ -98,6 +133,10 @@ def form_for_nounifier_iş(word, suffix_obj):
 
 
 def form_for_perfectative_ik(word, suffix_obj):
+    """
+    Form for perfectative_ik (e.g. Aç-ık -> Açığı)
+    Includes softening (k -> ğ).
+    """
     result_list = []
     base = suffix_obj.suffix
     base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
@@ -105,17 +144,42 @@ def form_for_perfectative_ik(word, suffix_obj):
     base = Suffix._apply_consonant_hardening(word, base)
     result_list.append(base)
     
+    # Softening base: ik -> iğ
+    soft_base = Suffix._apply_softening(base)
+    if soft_base != base:
+        result_list.append(soft_base)
+    
     if word:
         if word[-1] in VOWELS:
-            result_list.append('y' + base)
+            # y buffer
+            y_form = 'y' + base
+            result_list.append(y_form)
+            
+            soft_y = Suffix._apply_softening(y_form)
+            if soft_y != y_form:
+                result_list.append(soft_y)
+            
             result_list.append('ğ' + base)
-            result_list.append(base[1:])  # k variant
+            
+            # k variant
+            k_form = base[1:]
+            result_list.append(k_form)
+            
+            # Softening k variant: k -> ğ
+            soft_k = Suffix._apply_softening(k_form)
+            if soft_k != k_form:
+                result_list.append(soft_k)
         
         if word[-1] in ['n', 'r']:
             k_form = 'k'
             k_form = Suffix._apply_consonant_hardening(word, k_form)
             if k_form not in result_list:
                 result_list.append(k_form)
+                
+                # Softening k form
+                soft_k_form = Suffix._apply_softening(k_form)
+                if soft_k_form != k_form:
+                    result_list.append(soft_k_form)
     
     return result_list
 
@@ -164,23 +228,43 @@ def form_for_nounifier_inti(word, suffix_obj):
 
 
 def form_for_toolifier_geç(word, suffix_obj):
+    """
+    Form for toolifier_geç (Süz-geç -> Süz-gec-i)
+    Includes softening (ç -> c).
+    """
     result_list = []
+    
+    # Base: geç
     gec_base = suffix_obj.suffix
     gec_base = Suffix._apply_major_harmony(word, gec_base, suffix_obj.major_harmony)
     gec_base = Suffix._apply_minor_harmony(word, gec_base, suffix_obj.minor_harmony)
     gec_base = Suffix._apply_consonant_hardening(word, gec_base)
     result_list.append(gec_base)
     
+    # Softening: geç -> gec / keç -> kec
+    soft_gec = Suffix._apply_softening(gec_base)
+    if soft_gec != gec_base:
+        result_list.append(soft_gec)
+    
+    # Variant: eç (Utan-gaç -> Utan-ac -> Utan-ac-ı ?) 
+    # Not: eç formu genelde 'g' düşmesiyle oluşur, yine de ekliyoruz.
     ec_base = 'eç'
     ec_base = Suffix._apply_major_harmony(word, ec_base, suffix_obj.major_harmony)
     ec_base = Suffix._apply_minor_harmony(word, ec_base, suffix_obj.minor_harmony)
     ec_base = Suffix._apply_consonant_hardening(word, ec_base)
+    
     if ec_base not in result_list:
         result_list.append(ec_base)
+        
+        # Softening variant: eç -> ec
+        soft_ec = Suffix._apply_softening(ec_base)
+        if soft_ec != ec_base:
+            result_list.append(soft_ec)
     
     return result_list
 
 def form_for_adverbial_erek (word, suffix_obj):
+    # Erek yumuşamaz (Giderek -> Gidereği X)
     base = "erek"
     base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
     base = Suffix._apply_minor_harmony(word, base, suffix_obj.minor_harmony)

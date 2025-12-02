@@ -49,22 +49,39 @@ class Suffix:
     
     @staticmethod
     def _default_form(word, suffix_obj):
-        result = suffix_obj.suffix
+        # 1. Baz formu al
+        base = suffix_obj.suffix
         
-        result = Suffix._apply_major_harmony(word, result, suffix_obj.major_harmony)
-        result = Suffix._apply_minor_harmony(word, result, suffix_obj.minor_harmony)
-        result = Suffix._apply_consonant_hardening(word, result)
+        # 2. Uyumları uygula
+        base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
+        base = Suffix._apply_minor_harmony(word, base, suffix_obj.minor_harmony)
         
-        result_list = [result]
+        # 3. Sertleşme (Hardening) uygula (Kelime sonuna göre ekin başı değişir: d->t)
+        base = Suffix._apply_consonant_hardening(word, base)
         
-        if Suffix._should_add_buffer_variants(word, result):
+        # Olası formlar listesi
+        candidates = [base]
+        
+        # 4. Kaynaştırma harfi (Buffer) varyasyonlarını ekle
+        if Suffix._should_add_buffer_variants(word, base):
             if suffix_obj.needs_y_buffer:
-                result_list.append('y' + result)
-                result_list.append('ğ' + result)
-            if len(result) > 1:
-                result_list.append(result[1:])
+                candidates.append('y' + base)
+                candidates.append('ğ' + base) # Nadir durumlar için
+            if len(base) > 1:
+                # Ünlü düşmesi/çakışması durumunda ekin ilk harfini at (örn: ne-in -> neyin/nin)
+                candidates.append(base[1:])
         
-        return result_list
+        # 5. Yumuşama (Softening) varyasyonlarını ekle (Ekin sonuna göre: k->ğ)
+        # Mevcut adayların her biri için yumuşamış bir versiyon var mı diye bakarız.
+        final_results = []
+        for cand in candidates:
+            final_results.append(cand) # Orijinal hali ekle (örn: ecek)
+            
+            softened = Suffix._apply_softening(cand)
+            if softened != cand:
+                final_results.append(softened) # Yumuşamış hali ekle (örn: eceğ)
+        
+        return final_results
     
     @staticmethod
     def _apply_major_harmony(word, result, major_harmony):
@@ -95,6 +112,10 @@ class Suffix:
     
     @staticmethod
     def _apply_consonant_hardening(word, result):
+        """
+        Ünsüz Sertleşmesi (Benzeşmesi):
+        Fıstıkçı Şahap ile biten kelimeye 'c, d, g' ile başlayan ek gelirse 'ç, t, k' olur.
+        """
         if not word or not result:
             return result
         
@@ -102,12 +123,43 @@ class Suffix:
             return result
         
         first_char = result[0]
-        if first_char not in ['g', 'c', 'd', 'ğ']:
-            return result
-        
+        # Yumuşak ünsüz -> Sert ünsüz haritası
         hardening_map = {'g': 'k', 'd': 't', 'c': 'ç', 'ğ': 'k'}
-        return hardening_map.get(first_char, first_char) + result[1:]
-    
+        
+        if first_char in hardening_map:
+             return hardening_map[first_char] + result[1:]
+             
+        return result
+
+    @staticmethod
+    def _apply_softening(form):
+        """
+        Ünsüz Yumuşaması (Suffix Softening):
+        Ekin kendisi ünlü ile başlayan başka bir ek aldığında sonundaki harf değişebilir.
+        Bu metot, ekin son harfini kontrol eder ve yumuşamış halini döndürür.
+        
+        Örnek: 'ecek' -> 'eceğ', 'dik' -> 'diğ', 'amaç' -> 'amac'
+        """
+        if not form:
+            return form
+        
+        last_char = form[-1]
+        
+        # Sık görülen: k -> ğ (Gelecek-im -> Geleceğim)
+        if last_char == 'k':
+            return form[:-1] + 'ğ'
+        
+        # Diğer yumuşamalar (Suffixlerde daha nadir ama mümkün)
+        elif last_char == 'ç':
+            return form[:-1] + 'c'
+        elif last_char == 'p':
+            return form[:-1] + 'b'
+        elif last_char == 't':
+            return form[:-1] + 'd'
+        
+        # Eğer yumuşama yoksa orijinali döndür
+        return form
+
     @staticmethod
     def _should_add_buffer_variants(word, result):
         return (word and result and 
