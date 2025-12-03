@@ -111,12 +111,16 @@ def get_root_candidates(surface_root: str) -> List[Tuple[str, str]]:
     Metinde geçen parçayı (surface_root) analiz eder ve
     (Yüzey Hali, Sözlük Hali) çiftlerini döndürür.
     
-    Örn: 
-    'gid'  -> [('gid', 'git')]
-    'benz' -> [('benz', 'beniz')]
+    Güncelleme: Ünlü düşmesi kontrolü sırasında oluşan kelime için
+    ayrıca ünsüz sertleşmesi (orijinal haline dönüş) kontrolü eklenmiştir.
+    Örn: 'kayb' -> 'kayıb' (yok) -> 'kayıp' (var)
     """
     candidates = [] # List of tuples: (surface, lemma)
     
+    # Yardımcı fonksiyon: Aday listesinde zaten var mı?
+    def is_new_candidate(lemma):
+        return not any(cand[1] == lemma for cand in candidates)
+
     # 1. Olduğu gibi var mı?
     if wrd.exists(surface_root):
         candidates.append((surface_root, surface_root))
@@ -126,39 +130,57 @@ def get_root_candidates(surface_root: str) -> List[Tuple[str, str]]:
 
     last_char = surface_root[-1]
     
-    # --- 2. Yumuşama Kontrolü (Softening) ---
-    candidate_lemma = None
-    if last_char == 'b':
-        candidate_lemma = surface_root[:-1] + 'p'
-    elif last_char == 'c':
-        candidate_lemma = surface_root[:-1] + 'ç'
-    elif last_char == 'd':
-        candidate_lemma = surface_root[:-1] + 't'
-    elif last_char == 'ğ':
-        candidate_lemma = surface_root[:-1] + 'k'
-    elif last_char == 'g' and surface_root.endswith("ng"):
-        candidate_lemma = surface_root[:-2] + 'nk'
+    # --- YARDIMCI MANTIK: Yumuşamayı Geri Alma (Unsoftening Logic) ---
+    def get_unsoftened_char(char, text_ending):
+        if char == 'b': return 'p'
+        if char == 'c': return 'ç'
+        if char == 'd': return 't'
+        if char == 'ğ': return 'k'
+        if char == 'g' and text_ending.endswith("ng"): return 'nk'
+        return None
 
-    if candidate_lemma and wrd.exists(candidate_lemma):
-        candidates.append((surface_root, candidate_lemma))
+    # --- 2. Sadece Yumuşama Kontrolü (Softening) ---
+    # Örn: 'gid' -> 'git'
+    target_char = get_unsoftened_char(last_char, surface_root)
+    if target_char:
+        if target_char == 'nk': # 'ng' -> 'nk' özel durumu
+            candidate_lemma = surface_root[:-2] + 'nk'
+        else:
+            candidate_lemma = surface_root[:-1] + target_char
+            
+        if wrd.exists(candidate_lemma) and is_new_candidate(candidate_lemma):
+            candidates.append((surface_root, candidate_lemma))
 
     # --- 3. Ünlü Düşmesi Kontrolü (Syncope) ---
-    # Metinde 'ayr' var. Sözlükte 'ayır' var mı?
+    # Metinde 'ayr' var -> 'ayır' mı? 
+    # Metinde 'kayb' var -> 'kayıp' mı? (Hem düşme hem yumuşama)
     if len(surface_root) >= 2 and wrd.ends_with_consonant(surface_root):
         prefix = surface_root[:-1]
-        suffix_char = surface_root[-1]
+        suffix_char = surface_root[-1] # Bu karakter yumuşamış olabilir (örn: b)
         
         narrow_vowels = ['ı', 'i', 'u', 'ü']
         for vowel in narrow_vowels:
-            restored_lemma = prefix + vowel + suffix_char # örn: ay(ı)r, ben(i)z
+            # A) Sadece Ünlü Düşmesi: 'benz' -> 'beniz'
+            restored_lemma = prefix + vowel + suffix_char 
             
-            if wrd.exists(restored_lemma):
-                # Çakışma kontrolü
-                if not any(cand[1] == restored_lemma for cand in candidates):
-                    candidates.append((surface_root, restored_lemma))
+            if wrd.exists(restored_lemma) and is_new_candidate(restored_lemma):
+                candidates.append((surface_root, restored_lemma))
+            
+            # B) Ünlü Düşmesi + Ünsüz Değişimi: 'kayb' -> 'kayıb' -> 'kayıp'
+            # restored_lemma şu an 'kayıb'. Sonu 'b' ile bitiyor, bunu 'p' yapmalıyız.
+            last_char_of_restored = restored_lemma[-1]
+            unsoftened_char = get_unsoftened_char(last_char_of_restored, restored_lemma)
+            
+            if unsoftened_char:
+                if unsoftened_char == 'nk':
+                    restored_unsoftened = restored_lemma[:-2] + 'nk'
+                else:
+                    restored_unsoftened = restored_lemma[:-1] + unsoftened_char
+                
+                if wrd.exists(restored_unsoftened) and is_new_candidate(restored_unsoftened):
+                    candidates.append((surface_root, restored_unsoftened))
 
     return candidates
-
 
 def decompose(word: str) -> List[Tuple]:
     """Find all possible legal decompositions of a word."""

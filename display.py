@@ -79,20 +79,12 @@ class TrainerDisplay:
         formation = [root + ("-" if pos == "verb" else "")]
         
         # --- Cursor Initialization Logic ---
-        # Normalde cursor, kökün uzunluğundadır (ayır -> 4).
-        # Ancak ünlü düşmesi varsa (ayrılmak), fiziksel kelimede kök daha kısadır (ayr -> 3).
-        
         cursor = len(root)
         
-        # Eğer kelime kök ile başlamıyorsa (ayrılmak startswith ayır -> False)
-        # İmleci düzeltmemiz gerekir.
         if not word.startswith(root) and chain:
-            # İlk ekin formlarını alalım
             first_suffix = chain[0]
             possible_forms = first_suffix.form(root)
             
-            # Kök uzunluğundan geriye doğru 2 karaktere kadar tara (ayır -> ayr, devir -> devr)
-            # İmleci (cursor) öyle bir yere koy ki, kelimenin geri kalanı suffix formlarından biriyle başlasın.
             match_found = False
             for offset in range(3): # 0, 1, 2
                 test_cursor = len(root) - offset
@@ -102,7 +94,7 @@ class TrainerDisplay:
                 
                 for form in possible_forms:
                     if rest_of_word.startswith(form):
-                        cursor = test_cursor # Doğru fiziksel konumu bulduk (örn: 3)
+                        cursor = test_cursor 
                         match_found = True
                         break
                 if match_found:
@@ -110,30 +102,30 @@ class TrainerDisplay:
         # -----------------------------------
 
         for suffix_obj in chain:
-            # Find matching suffix form
-            found_form = None
+            found_form = None # Explicitly None start
             possible_forms = suffix_obj.form(current_stem)
             
             for form in possible_forms:
+                # Empty string ("") matches any cursor position in startswith
                 if word.startswith(form, cursor):
                     found_form = form
                     break
             
-            # Eğer hala bulunamadıysa (örneğin karmaşık daralmalarda),
-            # yumuşak bir eşleşme daha dene (sadece visual display için)
-            if not found_form:
+            # FIXED: 'if not found_form' fails for empty strings (""). 
+            # We must use 'is None' to distinguish between "not found" and "empty suffix".
+            if found_form is None:
                  for form in possible_forms:
-                     # Bazen cursor 1 birim kaymış olabilir (kaynaştırma harfleri vs yüzünden)
-                     # Çok agresif olmayan basit bir kurtarma:
-                     if word.startswith(form, cursor - 1):
+                     # Soft match attempt
+                     if len(form) > 0 and word.startswith(form, cursor - 1):
                          found_form = form
                          cursor -= 1 
                          break
             
-            if not found_form:
+            if found_form is None:
+                # Sadece gerçekten bulunamadıysa (None ise) hata ver.
+                # Boş string ("") ise buraya girmez.
                 print(f"[Warning: Could not match suffix '{suffix_obj.name}']")
-                # Hata durumunda bile devam etmeye çalış, belki sonraki ek tutar
-                # Tahmini bir ilerleme yap (ilk form uzunluğu kadar)
+                
                 if possible_forms:
                      guessed_len = len(possible_forms[0])
                      suffix_forms.append(possible_forms[0] + "?")
@@ -142,7 +134,13 @@ class TrainerDisplay:
                      cursor += guessed_len
                 continue
             
-            suffix_forms.append(found_form)
+            # Found form (could be empty string)
+            suffix_str = found_form if found_form else "(ø)" # Display empty as (ø) or just empty
+            # Ama join yaparken karmaşa olmasın diye normal ekliyoruz,
+            # Ekrana basarken + + arasına boşluk girmemesi için boş string en iyisidir.
+            # Görsel tercihine göre "(ø)" da yapabilirsin ama şimdilik "" bırakalım.
+            
+            suffix_forms.append(found_form if found_form else "(ø)") # Boş ekleri (ø) diye gösterelim ki belli olsun
             suffix_names.append(suffix_obj.name)
             current_stem += found_form
             cursor += len(found_form)

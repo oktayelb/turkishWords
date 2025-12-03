@@ -7,6 +7,8 @@ VOWELS = ["a","e","ı","i","o","ö","u","ü"]
 # FORM FUNCTIONS
 # ============================================================================
 
+
+
 def form_for_conjugation_1sg(word, suffix_obj):
     """
     1. Tekil Şahıs (-m, -im)
@@ -167,6 +169,17 @@ def form_for_conjugation_3pl(word, suffix_obj):
 ####
 ###   Form for rest
 ####
+
+def form_for_if_suffix  (word, suffix_obj):
+
+    base= "se"
+    base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
+
+    if(word and word[-1] in VOWELS):
+        base = "y" + base
+    
+    return [base]
+
 def form_for_posessive_3sg(word, suffix_obj):
     base = "i"
     base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
@@ -215,6 +228,17 @@ def form_for_ablative_de(word, suffix_obj):
         return [nbase,base]
     return [base]
 
+def form_for_locative_den(word, suffix_obj):
+    base = "den"
+    base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
+    base = Suffix._apply_minor_harmony(word, base, suffix_obj.minor_harmony)
+    base = Suffix._apply_consonant_hardening(word, base)
+    
+    if word[-1] in ["ı","i","u","ü"]: 
+        nbase = "n" + base
+        return [nbase,base]
+    return [base]
+
 def form_for_pasttense_noundi(word,suffix_obj):
     # Hem "doktor-du" (Ek fiil) hem "gel-ecek-ti" (Hikaye birleşik zaman)
     di_base = "di"
@@ -222,9 +246,10 @@ def form_for_pasttense_noundi(word,suffix_obj):
     di_base = Suffix._apply_minor_harmony(word, di_base, suffix_obj.minor_harmony)
     di_base = Suffix._apply_consonant_hardening(word, di_base)
     
-    ydi_base = "y" + di_base
+    if word and word[-1] in VOWELS:
+        di_base = "y" + di_base
 
-    return [di_base, ydi_base]
+    return [di_base]
 
 def form_for_abstractifier_iyat(word, suffix_obj):
     result_list = ["iye","iyet","iyat","at","et"]
@@ -274,7 +299,7 @@ posessive_3pl = Suffix("posessive_3pl", "leri", Type.NOUN, Type.NOUN, major_harm
 # --- Group 40: CASE (Hal Ekleri) ---
 # Bir kelimede sadece bir tane bulunabilir.
 accusative = Suffix("accusative", "i", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, needs_y_buffer=True, group=SuffixGroup.CASE, is_unique=True)
-locative_den = Suffix("locative_den", "den", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.CASE, is_unique=True)
+locative_den = Suffix("locative_den", "den", Type.NOUN, Type.NOUN, form_function=form_for_locative_den, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.CASE, is_unique=True)
 dative_e = Suffix("dative_e", "e", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, needs_y_buffer=True, group=SuffixGroup.CASE, is_unique=True)
 ablative_de = Suffix("ablative_de", "de", Type.NOUN, Type.NOUN, form_function=form_for_ablative_de ,major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.CASE, is_unique=True)
 confactuous_le = Suffix("confactuous_le", "le", Type.NOUN, Type.NOUN, form_function= form_for_confactuous_le, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.CASE, is_unique=True)
@@ -307,6 +332,9 @@ nounaorist_dir =  Suffix("nounaorist_dir", "dir", Type.NOUN, Type.NOUN , major_h
 
 # Ek-Fiil Hikaye (-di) -> (Gelecek-ti, Gelecek-ler-di)
 pasttense_noundi = Suffix("pasttense_noundi", "di", Type.BOTH, Type.NOUN,form_function= form_for_pasttense_noundi, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.TERMINAL, is_unique=True)
+
+# sorgulama eki ise yse se
+if_suffix = Suffix("if_suffix", "se", Type.NOUN, Type.NOUN, form_function= form_for_if_suffix ,major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.TERMINAL, is_unique=True)
 
 # Ek-Fiil Rivayet (-miş) -> (Gelecek-miş, Gelecek-ler-miş)
 copula_mis = Suffix("copula_mis", "miş", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.TERMINAL, is_unique=True)

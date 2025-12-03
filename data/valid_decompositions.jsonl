@@ -1118,3 +1118,10 @@
 {"word": "sevmem", "root": "sev", "suffixes": [{"name": "negative_me", "form": "me", "makes": "VERB"}, {"name": "conjugation_1sg", "form": "m", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "sevmem", "root": "sev", "suffixes": [{"name": "negative_me", "form": "me", "makes": "VERB"}, {"name": "conjugation_1sg", "form": "m", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "gitmesin", "root": "git", "suffixes": [{"name": "negative_me", "form": "me", "makes": "VERB"}, {"name": "conjugation_3sg", "form": "sin", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "evdeki", "root": "ev", "suffixes": [{"name": "ablative_de", "form": "de", "makes": "NOUN"}, {"name": "marking_ki", "form": "ki", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "arabadaysa", "root": "araba", "suffixes": [{"name": "ablative_de", "form": "da", "makes": "NOUN"}, {"name": "if_suffix", "form": "ysa", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "sana", "root": "sana", "suffixes": [], "final_pos": "noun"}
+{"word": "bana", "root": "bana", "suffixes": [], "final_pos": "noun"}
+{"word": "banaysa", "root": "bana", "suffixes": [{"name": "if_suffix", "form": "ysa", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "geleceklerse", "root": "gel", "suffixes": [{"name": "nounifier_ecek", "form": "ecek", "makes": "NOUN"}, {"name": "plural_ler", "form": "ler", "makes": "NOUN"}, {"name": "if_suffix", "form": "se", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "gelecek", "root": "gel", "suffixes": [{"name": "nounifier_ecek", "form": "ecek", "makes": "NOUN"}], "final_pos": "noun"}
