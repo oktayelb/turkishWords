@@ -1125,3 +1125,4 @@
 {"word": "banaysa", "root": "bana", "suffixes": [{"name": "if_suffix", "form": "ysa", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "geleceklerse", "root": "gel", "suffixes": [{"name": "nounifier_ecek", "form": "ecek", "makes": "NOUN"}, {"name": "plural_ler", "form": "ler", "makes": "NOUN"}, {"name": "if_suffix", "form": "se", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "gelecek", "root": "gel", "suffixes": [{"name": "nounifier_ecek", "form": "ecek", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "görmedikçe", "root": "gör", "suffixes": [{"name": "negative_me", "form": "me", "makes": "VERB"}, {"name": "adjectifier_dik", "form": "dik", "makes": "NOUN"}, {"name": "relative_ce", "form": "çe", "makes": "NOUN"}], "final_pos": "noun"}

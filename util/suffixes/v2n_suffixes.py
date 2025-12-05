@@ -288,6 +288,8 @@ def form_for_adverbial_erek (word, suffix_obj):
 # --- STANDART YAPIM EKLERİ (DERIVATIONAL - Group 10) ---
 # Bunlar isim/sıfat kökü oluşturur, üzerine çoğul/iyelik gelebilir.
 
+
+##TODO form for form for constofactattive koy, agan eğen biçimleri için
 infinitive_me = Suffix("infinitive_me", "me", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
 infinitive_mek = Suffix("infinitive_mek", "mek", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
 factative_en = Suffix("factative_en", "en", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, needs_y_buffer=True, group=SuffixGroup.DERIVATIONAL)
@@ -308,7 +310,7 @@ toolifier_geç = Suffix("toolifier_geç", "geç", Type.VERB, Type.NOUN, form_fun
 adjectiative_ay_v2n = Suffix("adjectiative_ay", "ay", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
 nounifier_anak = Suffix("nounifier_anak", "anak", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
 nounifier_amak = Suffix("nounifier_amak", "amak", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
-
+nounifier_ce = Suffix("nounifier_ce", "ce", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
 # Sıfat-Fiil (Participles) - Bunlar da isimleşir, çekim alabilir (Bildiğ-im, Yapacağ-ım)
 adjectifier_dik = Suffix("adjectifier_dik", "dik", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
 nounifier_ecek = Suffix("nounifier_ecek", "ecek", Type.VERB, Type.NOUN, form_function= form_for_nounifier_ecek, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, needs_y_buffer=True, group=SuffixGroup.DERIVATIONAL)
