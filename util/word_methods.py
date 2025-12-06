@@ -57,7 +57,7 @@ def exists(word: str) -> bool:
         if infinitive(soft_l) in WORDS:
             return 2 
 
-    return False
+    return 0
 
 def can_be_verb(word: str) -> bool:
     """Checks if a root is a verb by verifying its infinitive form."""

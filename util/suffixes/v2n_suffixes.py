@@ -188,6 +188,9 @@ def form_for_perfectative_ik(word, suffix_obj):
                 soft_k_form = Suffix._apply_softening(k_form)
                 if soft_k_form != k_form:
                     result_list.append(soft_k_form)
+
+        if word[-2:] in ["me","ma"]:
+            return [" dummy_string"] 
     
     return result_list
 
@@ -321,6 +324,7 @@ factative_ir = Suffix("factative_ir", "ir", Type.VERB, Type.NOUN, form_function=
 pastfactative_miş = Suffix("pastfactative_miş", "miş", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
 undoing_meden = Suffix("undoing_meden", "meden", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
 
+wish_suffix = Suffix("wish_suffix", "se", Type.NOUN, Type.NOUN,major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.TERMINAL, is_unique=True)
 
 ## bu ekin şu anki hali yanlış, aslında bu ek fiilken i eki alıp isim olmuş sözcüklere eklenir. 
 # bak-  bakı     bakı yorum.  ölü yorum , ölü oluyorum tarzında 

@@ -2627,7 +2627,6 @@ bahçemsi
 Bahçesaray
 bahçesiz
 bahçıvan
-bahçıvanlı
 bahçıvanlık
 bahçıvansız
 bahir
@@ -2981,7 +2980,6 @@ basılış
 basım
 basımcı
 basımevi
-basın
 basınç
 basınçölçer
 basıölçer
@@ -3132,7 +3130,6 @@ Başkurdistan
 Başkurt
 Başkurtça
 başlahana
-başlangıç
 başlayıcı
 başlayış
 başlı
@@ -12328,7 +12325,6 @@ görgülü
 görgülüce
 görgüsüz
 görgüsüzce
-görgüsüzlük
 görk
 görkem
 görkemli
@@ -12349,7 +12345,6 @@ görücü
 görücülük
 görülme
 görülmek
-görülmemiş
 görülmemişlik
 görüm
 görümce
@@ -14653,7 +14648,6 @@ içiriş
 içirme
 içirmek
 içirtme
-içirtmek
 içiş
 içit
 içki
@@ -25087,7 +25081,6 @@ oyulgamak
 oyulganma
 oyulganmak
 oyulma
-oyulmak
 oyuluş
 oyun
 oyunbaz
@@ -27267,7 +27260,6 @@ rekolte
 rekonstrüksiyon
 rekor
 rekortmen
-rekortmenlik
 rekreasyon
 rektör
 rektörlük
