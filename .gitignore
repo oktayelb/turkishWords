@@ -1,5 +1,4 @@
 __py
 __pycache__/
 *.py[cod]
-
-
+skip_logs/

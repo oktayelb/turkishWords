@@ -108,11 +108,13 @@ passive_il = Suffix("passive_il", "il", Type.VERB, Type.VERB, form_function=form
 # Dönüşlü (Reflexive) -in: Giy-in, Sev-in
 reflexive_in = Suffix("reflexive_in", "in", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL, is_unique=False)
 
+randomative_ele = Suffix("randomative_ele", "ele", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL, is_unique=False)
 # Olumsuzluk (Negative): Gel-me.
 # Bu ek Yapım eklerinden sonra gelir, ama Çekim eklerinden önce gelir.
 # Hiyerarşide DERIVATIONAL grubunda kalabilir ama is_unique=True olmalı.
 negative_me = Suffix("negative_me", "me", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL, is_unique=True)
 
+negative_consto = Suffix("negative_consto", "ama", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL, is_unique=True)
 
 VERB2VERB =   [
     value for name, value in globals().items() 
