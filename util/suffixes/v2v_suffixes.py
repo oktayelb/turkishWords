@@ -51,8 +51,7 @@ def form_for_passive_il(word, suffix_obj):
     """
     result_list = []
     
-    if not word:
-        return result_list
+
 
     # 1. Durum: Kelime ünlü ile bitiyorsa -> sadece 'n' (Ara-n-mak)
     if word[-1] in wrd.VOWELS:

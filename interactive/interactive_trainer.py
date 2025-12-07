@@ -203,7 +203,7 @@ class InteractiveTrainer:
                         'logged_entries': correct_entries
                     })
                     continue
-                    
+                """     
                 if len(decompositions) == 1:
                     skipped += 1
                     skip_logs['single_decomp'].append({
@@ -215,7 +215,7 @@ class InteractiveTrainer:
                         'logged_entries': correct_entries
                     })
                     continue
-                
+                """ 
                 suffix_chains = [chain for _, _, chain, _ in decompositions]
                 
                 correct_indices = self._match_decompositions(correct_entries, decompositions)

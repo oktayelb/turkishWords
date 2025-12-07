@@ -8387,7 +8387,6 @@ doktora
 doktorasız
 doktorculuk
 doktrin
-doktrinci
 doku
 dokulu
 dokuma
@@ -11922,7 +11921,6 @@ geyşa
 geyşalık
 Geyve
 gez
-gezdirici
 gezdirilme
 gezdirilmek
 gezdiriş
@@ -13473,7 +13471,6 @@ hayâ
 hayał
 hayałet
 hayalbaz
-hayalci
 hayalen
 hayalet
 hayalhane
@@ -25143,7 +25140,6 @@ ozuga
 ödevcil
 ödevlendirilme
 ödevlendirilmek
-ödevli
 ödlek
 ödlekçe
 ödleklik
@@ -30125,7 +30121,6 @@ sultani
 sultanibuselik
 sultanihüzzam
 sultaniyegâh
-sultanlık
 sultanoğlu
 sulu
 sulugözlü
@@ -35758,7 +35753,6 @@ yırtılmışlık
 yırtım
 yırtımcı
 yırtınış
-yırtınmak
 yırtlak
 yırtma
 yırtmaç

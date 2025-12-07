@@ -2,3 +2,5 @@ __py
 __pycache__/
 *.py[cod]
 skip_logs/
+
+data/turkish_morph_model.pt

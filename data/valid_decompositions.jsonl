@@ -1142,3 +1142,19 @@
 {"word": "basın", "root": "bas", "suffixes": [{"name": "reflexive_in", "form": "ın", "makes": "VERB"}], "final_pos": "verb"}
 {"word": "Manisa", "root": "Manisa", "suffixes": [], "final_pos": "noun"}
 {"word": "oyulmak", "root": "oy", "suffixes": [{"name": "passive_il", "form": "ul", "makes": "VERB"}, {"name": "infinitive_mek", "form": "mak", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "doktrinci", "root": "doktrin", "suffixes": [{"name": "actor_ci", "form": "ci", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "sultanlık", "root": "sultan", "suffixes": [{"name": "suitative_lik", "form": "lık", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "yırtınmak", "root": "yırt", "suffixes": [{"name": "reflexive_in", "form": "ın", "makes": "VERB"}, {"name": "infinitive_mek", "form": "mak", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "ödevli", "root": "ödev", "suffixes": [{"name": "composessive_li", "form": "li", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "hayalci", "root": "hayal", "suffixes": [{"name": "actor_ci", "form": "ci", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "gezdirici", "root": "gez", "suffixes": [{"name": "active_dir", "form": "dir", "makes": "VERB"}, {"name": "nounifier_i", "form": "i", "makes": "NOUN"}, {"name": "actor_ci", "form": "ci", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "biçimi", "root": "biç", "suffixes": [{"name": "nounifier_im", "form": "im", "makes": "NOUN"}, {"name": "accusative", "form": "i", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "içeri", "root": "içeri", "suffixes": [], "final_pos": "noun"}
+{"word": "içerisi", "root": "içeri", "suffixes": [{"name": "posessive_3sg", "form": "si", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "içerisinde", "root": "içeri", "suffixes": [{"name": "posessive_3sg", "form": "si", "makes": "NOUN"}, {"name": "ablative_de", "form": "nde", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "içerisindeki", "root": "içeri", "suffixes": [{"name": "posessive_3sg", "form": "si", "makes": "NOUN"}, {"name": "ablative_de", "form": "nde", "makes": "NOUN"}, {"name": "marking_ki", "form": "ki", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "içerisindekiler", "root": "içeri", "suffixes": [{"name": "posessive_3sg", "form": "si", "makes": "NOUN"}, {"name": "ablative_de", "form": "nde", "makes": "NOUN"}, {"name": "marking_ki", "form": "ki", "makes": "NOUN"}, {"name": "conjugation_3pl", "form": "ler", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "içerisi", "root": "içeri", "suffixes": [{"name": "posessive_3sg", "form": "si", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "içerisinde", "root": "içeri", "suffixes": [{"name": "posessive_3sg", "form": "si", "makes": "NOUN"}, {"name": "ablative_de", "form": "nde", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "içerisinde", "root": "içeri", "suffixes": [{"name": "posessive_3sg", "form": "si", "makes": "NOUN"}, {"name": "ablative_de", "form": "nde", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "içerisindekilerleyken", "root": "içeri", "suffixes": [{"name": "posessive_3sg", "form": "si", "makes": "NOUN"}, {"name": "ablative_de", "form": "nde", "makes": "NOUN"}, {"name": "marking_ki", "form": "ki", "makes": "NOUN"}, {"name": "plural_ler", "form": "ler", "makes": "NOUN"}, {"name": "confactuous_le", "form": "le", "makes": "NOUN"}, {"name": "when_ken", "form": "yken", "makes": "NOUN"}], "final_pos": "noun"}

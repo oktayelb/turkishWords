@@ -4,14 +4,13 @@ import util.word_methods as wrd
 # Eklerin hiyerarşisi.
 # Kural: Bir ek, kendinden daha düşük numaralı bir gruptan sonra GELEMEZ.
 class SuffixGroup(IntEnum):
-    DERIVATIONAL = 10      # Yapım Ekleri (-lik, -ci, -me, -mek)
-    PLURAL = 20            # Çoğul Eki (-ler)
+    DERIVATIONAL = 10      # Yapım Ekleri (ve -ler çoğul eki dosyanızdaki yapıya göre)
+    DERIVATIONAL_LOCKING = 15 # Yapım Ekleri - Kilitli (Bazı ekler geldikten sonra başka yapım eki gelmez
     POSSESSIVE = 30        # İyelik Ekleri (-im, -in)
     CASE = 40              # Hal Ekleri (-e, -de)
-    POST_CASE = 45         # Hal ekinden sonra gelen istisnalar (-ki)
-    PREDICATIVE = 50       # Şahıs / Çekim Ekleri (-im, -sin, -ler)
-    TERMINAL = 60          # Zincir sonu Ek-fiiller (-dir, -miş, -di) -> Şahıs ekinden sonra gelebilir
-    GERUND = 90            # Zarf Fiiller (-ip, -erek) -> ZİNCİRİ KİLİTLER, üzerine ek almaz.
+    POST_CASE = 45         # Hal eki sonrası istisnalar (-ki)
+    PREDICATIVE = 50       # Bildirme / Ek-fiil (-dir, -di, -miş, -se)
+    TERMINAL = 60          # Şahıs Ekleri (-im, -sin, -ler)
 
 class Type(Enum):
     NOUN = "noun"

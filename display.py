@@ -49,7 +49,7 @@ class TrainerDisplay:
         """Format and print a single decomposition"""
         root, pos, chain, final_pos = decomp
         
-        print(f"\n[Option {display_idx}] (Original index: {orig_idx + 1})")
+        print(f"\n[Option {display_idx}]")
         if score is not None:
             print(f"ML Score: {score:.4f}")
         
