@@ -119,14 +119,14 @@ reflexive_in = Suffix("reflexive_in", "in", Type.VERB, Type.VERB, major_harmony=
 
 randomative_ele = Suffix("randomative_ele", "ele", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL, is_unique=False)
 
-possibiliative_ebil = Suffix("possibilitative_ebil", "ebil", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL, is_unique=True)
+possibiliative_ebil = Suffix("possibilitative_ebil", "ebil", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.COMPOUND_VERB, is_unique=True)
 
 # Olumsuzluk (Negative): Gel-me.
 # Bu ek Yapım eklerinden sonra gelir, ama Çekim eklerinden önce gelir.
 # Hiyerarşide DERIVATIONAL grubunda kalabilir ama is_unique=True olmalı.
-negative_me = Suffix("negative_me", "me", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL, is_unique=True)
+negative_me = Suffix("negative_me", "me", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.VERB_NEGATIVE, is_unique=True)
 
-negative_consto = Suffix("negative_consto", "eme", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL, is_unique=True)
+negative_consto = Suffix("negative_consto", "eme", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.VERB_NEGATIVE, is_unique=True)
 
 VERB2VERB =   [
     value for name, value in globals().items() 

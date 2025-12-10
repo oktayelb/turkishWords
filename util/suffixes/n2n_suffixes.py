@@ -202,18 +202,14 @@ def form_for_confactuous_le(word, suffix_obj):
 ##TODO umsu ekini bi hallet, belki suffix hiyerarşisini yeniden düzenlemek gerekebilir.
 def form_for_approximative_si(word, suffix_obj):
     base1 = "imsi"
-    base2 = "si"
 
     base1 = Suffix._apply_major_harmony(word, base1, suffix_obj.major_harmony)
     base1 = Suffix._apply_minor_harmony(word, base1, suffix_obj.minor_harmony)
 
-    base2 = Suffix._apply_major_harmony(word, base2, suffix_obj.major_harmony)
-    base2 = Suffix._apply_minor_harmony(word, base2, suffix_obj.minor_harmony)
-
     if word[-1] in VOWELS:
         base1 =  base1[1:]
 
-    return [base1, base2]
+    return [base1]
 
 def form_for_ablative_de(word, suffix_obj):
     base = "de"
@@ -289,6 +285,49 @@ def form_for_when_ken(word, suffix_obj):
         base = "y" + base
     return [base]
 
+
+def form_for_marking_ki(word, suffix_obj):
+    base = "ki"
+    base2 = "kü"
+    base_prefix = "ın"
+    
+    base_prefix = Suffix._apply_major_harmony(word, base_prefix, suffix_obj.major_harmony)
+    base_prefix = Suffix._apply_minor_harmony(word, base_prefix, suffix_obj.minor_harmony)
+
+    return [base, base_prefix + base, base2]
+
+
+
+def form_for_copula_mis (word, suffix_obj):
+    base = "miş"
+    base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
+    base = Suffix._apply_minor_harmony(word, base, suffix_obj.minor_harmony)
+    
+    if word and word[-1] in VOWELS:
+        base = "y" + base
+
+    return [base]
+
+def form_for_noun_compound_suffix(word, suffix_obj):
+    base = "ın"
+    base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
+    base = Suffix._apply_minor_harmony(word, base, suffix_obj.minor_harmony)
+    if word and word[-1] in VOWELS:
+        base = "n" + base
+
+    return [base]
+
+def form_for_accusative(word, suffix_obj):
+    base = "e"
+    base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
+    
+    if word and word[-1] in VOWELS:
+        nbase = "n" + base
+        base = "y" + base
+        return [nbase, base]
+    
+
+    return [base]
 # ============================================================================
 # SUFFIX DEFINITIONS
 # ============================================================================
@@ -317,7 +356,7 @@ abstractifier_iyat =Suffix("abstractifier_iyat", "iyat", Type.NOUN, Type.NOUN,fo
 ideologicative_izm = Suffix("ideologicative_izm", "izm", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
 scientist_olog = Suffix("scientist_olog", "olog", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
 familative_gil = Suffix("familative_gil", "gil", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
-plural_ler  = Suffix("plural_ler", "ler", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, is_unique=True, group=SuffixGroup.DERIVATIONAL)
+plural_ler  = Suffix("plural_ler", "ler", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
 
 # --- Group 30: POSSESSIVE (İyelik) ---
 posessive_1sg = Suffix("posessive_1sg", "im", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.POSSESSIVE)
@@ -327,9 +366,10 @@ posessive_1pl = Suffix("posessive_1pl", "imiz", Type.NOUN, Type.NOUN, major_harm
 posessive_2pl = Suffix("posessive_2pl", "iniz", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.POSSESSIVE)
 posessive_3pl = Suffix("posessive_3pl", "leri", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.POSSESSIVE)
 
+noun_compound = Suffix("noun_compound", "in", Type.NOUN, Type.NOUN, form_function=form_for_noun_compound_suffix, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.COMPOUND)
 
 # --- Group 40: CASE (Hal Ekleri) ---
-accusative = Suffix("accusative", "i", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, needs_y_buffer=True, group=SuffixGroup.CASE)
+accusative = Suffix("accusative", "i", Type.NOUN, Type.NOUN,form_function= form_for_accusative, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, needs_y_buffer=True, group=SuffixGroup.CASE)
 locative_den = Suffix("locative_den", "den", Type.NOUN, Type.NOUN, form_function=form_for_locative_den, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.CASE)
 dative_e = Suffix("dative_e", "e", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, needs_y_buffer=True, group=SuffixGroup.CASE)
 ablative_de = Suffix("ablative_de", "de", Type.NOUN, Type.NOUN, form_function=form_for_ablative_de ,major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.CASE)
@@ -337,24 +377,24 @@ confactuous_le = Suffix("confactuous_le", "le", Type.NOUN, Type.NOUN, form_funct
 
 
 # --- Group 45: POST_CASE (İstisna) ---
-marking_ki = Suffix("marking_ki", "ki", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.POST_CASE)
+marking_ki = Suffix("marking_ki", "ki", Type.NOUN, Type.NOUN, form_function= form_for_marking_ki, major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.POST_CASE) # is_unique çünkü sadece bir kere gelebilir.
+when_ken = Suffix("when_ken", "ken", Type.NOUN, Type.NOUN, form_function= form_for_when_ken , major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.POST_CASE) #zarf sanrırım
 
 
 # --- Group 50: PREDICATIVE (Bildirme/Şahıs Ekleri) ---
 nounaorist_dir =  Suffix("nounaorist_dir", "dir", Type.NOUN, Type.NOUN , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.PREDICATIVE)
 pasttense_noundi = Suffix("pasttense_noundi", "di", Type.BOTH, Type.NOUN,form_function= form_for_pasttense_noundi, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.PREDICATIVE)
 if_suffix = Suffix("if_suffix", "se", Type.NOUN, Type.NOUN, form_function= form_for_if_suffix ,major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.PREDICATIVE)
-copula_mis = Suffix("copula_mis", "miş", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.PREDICATIVE)
-when_ken = Suffix("when_ken", "ken", Type.NOUN, Type.NOUN, form_function= form_for_when_ken , major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.PREDICATIVE) #zarf sanrırım
+copula_mis = Suffix("copula_mis", "miş", Type.NOUN, Type.NOUN,form_function= form_for_copula_mis , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.PREDICATIVE)
 
-# --- Group 60: TERMINAL (Ek-Fiil / Bitiş Ekleri) ---
-conjugation_1sg = Suffix("conjugation_1sg", "im", Type.BOTH, Type.NOUN, form_function= form_for_conjugation_1sg, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, is_unique=True, group=SuffixGroup.TERMINAL)
-conjugation_2sg = Suffix("conjugation_2sg","sin", Type.BOTH, Type.NOUN, form_function= form_for_conjugation_2sg, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, is_unique=True, group=SuffixGroup.TERMINAL)
-conjugation_3sg = Suffix("conjugation_3sg", "", Type.BOTH, Type.NOUN, form_function=form_for_conjugation_3sg , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, is_unique=True, group=SuffixGroup.TERMINAL)
+# --- Group 60: CONJUGATION (Ek-Fiil / Bitiş Ekleri) ---
+conjugation_1sg = Suffix("conjugation_1sg", "im", Type.BOTH, Type.NOUN, form_function= form_for_conjugation_1sg, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, is_unique=True, group=SuffixGroup.CONJUGATION)
+conjugation_2sg = Suffix("conjugation_2sg","sin", Type.BOTH, Type.NOUN, form_function= form_for_conjugation_2sg, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, is_unique=True, group=SuffixGroup.CONJUGATION)
+conjugation_3sg = Suffix("conjugation_3sg", "", Type.BOTH, Type.NOUN, form_function=form_for_conjugation_3sg , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, is_unique=True, group=SuffixGroup.CONJUGATION)
 
-conjugation_1pl = Suffix("conjugation_1pl", "iz", Type.BOTH, Type.NOUN, form_function= form_for_conjugation_1pl, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, is_unique=True, group=SuffixGroup.TERMINAL)
-conjugation_2pl = Suffix("conjugation_2pl", "siniz", Type.BOTH, Type.NOUN, form_function=form_for_conjugation_2pl , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, is_unique=True, group=SuffixGroup.TERMINAL)
-conjugation_3pl = Suffix("conjugation_3pl", "ler", Type.BOTH, Type.NOUN, form_function=form_for_conjugation_3pl , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, is_unique=True, group=SuffixGroup.TERMINAL)
+conjugation_1pl = Suffix("conjugation_1pl", "iz", Type.BOTH, Type.NOUN, form_function= form_for_conjugation_1pl, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, is_unique=True, group=SuffixGroup.CONJUGATION)
+conjugation_2pl = Suffix("conjugation_2pl", "siniz", Type.BOTH, Type.NOUN, form_function=form_for_conjugation_2pl , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, is_unique=True, group=SuffixGroup.CONJUGATION)
+conjugation_3pl = Suffix("conjugation_3pl", "ler", Type.BOTH, Type.NOUN, form_function=form_for_conjugation_3pl , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, is_unique=True, group=SuffixGroup.CONJUGATION)
 
 
 

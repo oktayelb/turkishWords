@@ -207,8 +207,7 @@ def form_for_nounifier_i(word, suffix_obj):
         result_list.append('y' + base)
         result_list.append('ğ' + base)
     
-    if word and word[-1] == 'n':
-        result_list.append('')
+    
     
     return result_list
 
@@ -323,7 +322,7 @@ factative_ir = Suffix("factative_ir", "ir", Type.VERB, Type.NOUN, form_function=
 pastfactative_miş = Suffix("pastfactative_miş", "miş", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
 undoing_meden = Suffix("undoing_meden", "meden", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
 
-wish_suffix = Suffix("wish_suffix", "se", Type.NOUN, Type.NOUN,major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.TERMINAL, is_unique=True)
+wish_suffix = Suffix("wish_suffix", "se", Type.NOUN, Type.NOUN,major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.PREDICATIVE, is_unique=True)
 
 ## bu ekin şu anki hali yanlış, aslında bu ek fiilken i eki alıp isim olmuş sözcüklere eklenir. 
 # bak-  bakı     bakı yorum.  ölü yorum , ölü oluyorum tarzında 

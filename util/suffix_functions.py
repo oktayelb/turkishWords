@@ -46,9 +46,16 @@ def is_valid_transition(last_suffix: Suffix, next_suffix: Suffix) -> bool:
     # --- RULE 1: The Post-Case Loop (-ki Exception) ---
     # Exception: Post-Case (45) can loop back to Derivational (10)
     # Example: Ev-de-ki-ler (40 -> 45 -> 10)
-    if last_g == SuffixGroup.POST_CASE and next_g == SuffixGroup.DERIVATIONAL:
+    if last_g == SuffixGroup.POST_CASE and next_g  <= SuffixGroup.POST_CASE  :
         return True
 
+    # isim tamlamasından sonra ek gelmez
+    if last_g == SuffixGroup.COMPOUND :
+        return False
+    # isim tamlaması yalnızca yalın isim, pol ve kişi ekli ve ki ekli isimlere gelebilir
+    if next_g == SuffixGroup.COMPOUND and not (last_g  == SuffixGroup.DERIVATIONAL or last_g  == SuffixGroup.POST_CASE  or   last_g  == SuffixGroup.POSSESSIVE)    :
+        return False
+        
     # --- RULE 2: Derivational Locking (The Valve) ---
     # Exception: If we are in Locking (15), we MUST skip Possessive(30) and Case(40).
     # We can only go to Predicative(50) or Terminal(60).
@@ -60,12 +67,16 @@ def is_valid_transition(last_suffix: Suffix, next_suffix: Suffix) -> bool:
     # You cannot go upstream (e.g., Case 40 cannot go to Possessive 30)
     if next_g < last_g:
         return False
+    
+    ## copula gibi eklerden sonra  kişi çekim gelmeyi
+    if last_g == SuffixGroup.PREDICATIVE and next_g != SuffixGroup.CONJUGATION:
+        return False
 
     # --- RULE 4: Self-Looping Constraints ---
     if next_g == last_g:
         # Allowed to chain: Derivational (10) and Predicative (50)
         # Example: Göz-lük-çü (10->10), Gel-di-yse (50->50)
-        if last_g in [SuffixGroup.DERIVATIONAL, SuffixGroup.PREDICATIVE, SuffixGroup.TERMINAL]:
+        if last_g in [SuffixGroup.DERIVATIONAL, SuffixGroup.PREDICATIVE]:
             return True
         
         # Not allowed to chain: Possessive (30), Case (40), Locking (15), PostCase (45)
@@ -317,7 +328,7 @@ def decompose(word: str) -> List[Tuple]:
             pos = "noun"
             noun_chains = []
             verb_chains = []
-            if(wrd.exists(lemma_root)):
+            if(wrd.exists(lemma_root) == 1):
                 noun_chains = find_suffix_chain(virtual_word, "noun", lemma_root)
             if(wrd.can_be_verb(lemma_root)):
                 verb_chains = find_suffix_chain(virtual_word, "verb", lemma_root)

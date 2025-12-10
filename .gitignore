@@ -4,3 +4,5 @@ __pycache__/
 skip_logs/
 
 data/turkish_morph_model.pt
+
+.gitignore
