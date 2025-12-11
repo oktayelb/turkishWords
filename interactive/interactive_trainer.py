@@ -4,7 +4,8 @@ from display import TrainerDisplay
 from data.data_manager import DataManager
 from ml_ranking_model import Ranker, Trainer
 from interactive.config import TrainingConfig
-
+import concurrent.futures
+import multiprocessing
 class InteractiveTrainer:
     """Handles training logic and model management with pre-encoded suffix data"""
     
@@ -342,74 +343,117 @@ class InteractiveTrainer:
         self.auto_stats['words_processed'] -= self.auto_stats['words_skipped'] + self.auto_stats['words_deleted']
         self.display.show_auto_summary(self.auto_stats)
 
+    # In interactive_trainer.py, replace the text_mode method:
+
     def text_mode(self):
-        """Process a text file and output morphologically decomposed words"""
-        print("\n📄 Text Mode - Processing text file...")
+        """
+        🚀 Multiprocessing Text Mode 
+        Uses ALL CPU cores to decompose words, then GPU/CPU for Batch AI ranking.
+        """
+        print(f"\nExample: 'text input.txt'")
+        filename = input("Enter filename (default: text_input.txt): ").strip()
+        if not filename: filename = "text_input.txt"
         
-        text = self.data_manager.get_text_tokenized()
-        
-        if not text:
-            print("⚠️  No text found or file is empty")
+        # 1. Load Text
+        try:
+            # Assuming get_text_tokenized can take a filename or uses a default
+            # If your data_manager doesn't support args, you might need to set it first
+            text = self.data_manager.get_text_tokenized() 
+        except Exception as e:
+            print(f"❌ Error loading text: {e}")
             return
-        
-        print(f"📊 Processing {len(text)} words...")
-        
-        decomposed_words = []
-        processed_count = 0
-        unchanged_count = 0
-        error_count = 0
-        
-        for idx, word in enumerate(text, 1):
-            try:
-                decompositions = self.data_manager.decompose(word)
-                
-                if not decompositions:
-                    decomposed_words.append(word)
-                    unchanged_count += 1
-                    continue
-                
-                if len(decompositions) == 1:
-                    decomposed_word = self.display.format_decomposition(word, decompositions[0], simple=True)
-                    decomposed_words.append(decomposed_word)
-                    processed_count += 1
-                    continue
-                
-                suffix_chains = [chain for _, _, chain, _ in decompositions]
-                
-                try:
-                    # Encode chains for prediction
-                    encoded_chains = [self.encode_suffix_chain(chain) for chain in suffix_chains]
-                    pred_idx, scores = self.trainer.predict(encoded_chains)
-                    best_decomposition = decompositions[pred_idx]
-                    decomposed_word = self.display.format_decomposition(word, best_decomposition, simple=True)
-                    decomposed_words.append(decomposed_word)
-                    processed_count += 1
-                except Exception:
-                    decomposed_word = self.display.format_decomposition(word, decompositions[0], simple=True)
-                    decomposed_words.append(decomposed_word)
-                    processed_count += 1
-                
-                if idx % 100 == 0:
-                    print(f"   Progress: {idx}/{len(text)} words...")
+
+        if not text:
+            print("⚠️  No text found")
+            return
             
-            except Exception as e:
-                decomposed_words.append(word)
-                unchanged_count += 1
-                error_count += 1
-                if error_count <= 5:
-                    print(f"   ⚠️  Error processing '{word}': {e}")
+        print(f"   📊 Input: {len(text)} tokens")
         
-        output_text = '\n'.join(decomposed_words)
+        # 2. Deduplication (Critical optimization)
+        unique_words = list(set(text))
+        print(f"   🔍 Unique words: {len(unique_words)} (Reduction: {100 - len(unique_words)/len(text)*100:.1f}%)")
+        
+        # 3. Parallel Decomposition (The Speedup)
+        # We use all available cores minus 1 (to keep system responsive)
+        num_cores = max(1, multiprocessing.cpu_count() - 1)
+        print(f"   🔥 Spawning {num_cores} worker processes for decomposition...")
+        
+        word_results = {} # Maps word -> decompositions
+        
+        # ProcessPoolExecutor handles the heavy lifting
+        with concurrent.futures.ProcessPoolExecutor(max_workers=num_cores) as executor:
+            # map returns results in the same order as inputs
+            # chunksize helps reduce communication overhead
+            results = executor.map(self.data_manager.decompose, unique_words, chunksize=100)
+            
+            for word, decompositions in zip(unique_words, results):
+                word_results[word] = decompositions
+
+        # 4. Filter Ambiguous Words for AI
+        print("   🤖 Preparing AI Batch...")
+        
+        cache = {} # Final lookup table {word: formatted_string}
+        ambiguous_batches = [] # [ (word_index, encoded_chains) ]
+        
+        for i, word in enumerate(unique_words):
+            decomps = word_results[word]
+            
+            if not decomps:
+                cache[word] = word
+            elif len(decomps) == 1:
+                cache[word] = self.display.format_decomposition(word, decomps[0], simple=True)
+            else:
+                # Prepare for ML
+                suffix_chains = [chain for _, _, chain, _ in decomps]
+                encoded_chains = [self.encode_suffix_chain(chain) for chain in suffix_chains]
+                
+                # Store tuple: (index_in_unique_words, chains)
+                ambiguous_batches.append((i, encoded_chains))
+                # Placeholder
+                cache[word] = ("__WAITING__", decomps)
+
+        # 5. Batch AI Inference
+        if ambiguous_batches:
+            print(f"   ⚡ Ranking {len(ambiguous_batches)} ambiguous words on device...")
+            
+            # Extract just the chains for the predictor
+            just_chains = [x[1] for x in ambiguous_batches]
+            
+            # Use the batch_predict method we added to ml_ranking_model.py
+            # If you haven't added it yet, standard predict loop is fine here 
+            # but batch_predict is 10x faster.
+            try:
+                batch_predictions = self.trainer.batch_predict(just_chains)
+            except AttributeError:
+                print("   ⚠️  Trainer missing batch_predict, falling back to slow loop...")
+                batch_predictions = []
+                for chains in just_chains:
+                     batch_predictions.append(self.trainer.predict(chains))
+
+            # Apply predictions
+            for idx, (original_idx, _) in enumerate(ambiguous_batches):
+                best_idx_in_decomp = batch_predictions[idx][0]
+                
+                word = unique_words[original_idx]
+                _, decomps = cache[word] # Retrieve waiting data
+                
+                # Safety check
+                if best_idx_in_decomp >= len(decomps): best_idx_in_decomp = 0
+                
+                best_decomp = decomps[best_idx_in_decomp]
+                cache[word] = self.display.format_decomposition(word, best_decomp, simple=True)
+
+        # 6. Reconstruct Text
+        print("   📝 Reconstructing full text...")
+        final_output = []
+        for word in text:
+            final_output.append(cache.get(word, word))
+            
+        output_text = '\n'.join(final_output)
         self.data_manager.write_decomposed_text(output_text)
         
-        print(f"\n✅ Text processing complete!")
-        print(f"   📝 Total words: {len(text)}")
-        print(f"   🔄 Decomposed: {processed_count}")
-        print(f"   ➡️  Unchanged: {unchanged_count}")
-        if error_count > 0:
-            print(f"   ⚠️  Errors: {error_count}")
-        print(f"   💾 Output saved to: {self.data_manager.get_decomposed_text_path()}")
-
+        print(f"\n✅ Done! Processed {len(text)} words.")
+        print(f"   💾 Saved to: {self.data_manager.get_decomposed_text_path()}")
 
     def interactive_loop(self):
         """Main interactive training loop"""

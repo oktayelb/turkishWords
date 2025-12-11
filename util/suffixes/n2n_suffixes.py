@@ -21,7 +21,7 @@ def form_for_conjugation_1sg(word, suffix_obj):
     if len(word) > 2 and word[-2:] in ["di","dı","du","dü", "ti","tı","tu","tü", "se","sa","me","ma"]:
         return_list.append("m")
         return return_list 
-
+    #TODO eyim geleyim gideyim ekle
     # 2. Durum: Standart -im hali (Geleceğ-im, Doktor-um, Arkadaşlar-ım)
     base = "im"
     base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
@@ -32,6 +32,7 @@ def form_for_conjugation_1sg(word, suffix_obj):
         return_list.append('y' + base)
     else:
         return_list.append(base)
+
 
     return return_list
 
@@ -49,12 +50,20 @@ def form_for_conjugation_2sg(word, suffix_obj):
     if len(word) > 2 and word[-2:] in ["di","dı","du","dü", "ti","tı","tu","tü", "se","sa"]:
         return_list.append("n")
         
+    
     # 2. Durum: Standart -sin hali (Predicative / Geniş Zaman / Şimdiki Zaman)
     sin_base = "sin"
     sin_base = Suffix._apply_major_harmony(word, sin_base, suffix_obj.major_harmony)
     sin_base = Suffix._apply_minor_harmony(word, sin_base, suffix_obj.minor_harmony)
     return_list.append(sin_base)
 
+    in_base = "in"
+    in_base = Suffix._apply_major_harmony(word, in_base, suffix_obj.major_harmony)
+    in_base = Suffix._apply_minor_harmony(word, in_base, suffix_obj.minor_harmony)
+    if word and word[-1] in VOWELS:
+        return_list.append('y' + in_base)
+    else:
+        return_list.append(in_base)
     return return_list 
 
 

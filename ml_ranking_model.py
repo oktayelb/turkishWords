@@ -142,6 +142,8 @@ class Trainer:
             print(f"✅ Loaded model from {self.path}")
         except:
             print(f"⚠️  Starting fresh (no checkpoint found)")
+
+        
     
     def _prepare_batch(self, examples: List[Tuple[List[Tuple[int, int]], List[List[Tuple[int, int]]], int]]) \
             -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, List[int]]:
@@ -386,6 +388,47 @@ class Trainer:
             scores = self.model(suf_ids, cat_ids, masks)
             
         return scores.argmax().item(), scores.cpu().tolist()
+    
+
+    def batch_predict(self, batch_candidates: List[List[List[Tuple[int, int]]]]) -> List[Tuple[int, List[float]]]:
+        """
+        Predict best candidates for multiple words at once.
+        
+        Args:
+            batch_candidates: List of words, where each word is a list of candidate chains.
+                              [ [chain1, chain2], [chain1, chain2, chain3], ... ]
+        Returns:
+            List of (best_index, all_scores) for each word in order.
+        """
+        self.model.eval()
+        
+        # Create dummy examples to reuse _prepare_batch logic
+        # Format: (root, candidates, dummy_label)
+        dummy_examples = [([], cands, 0) for cands in batch_candidates]
+        
+        # Process in chunks to avoid OOM on very large texts
+        results = []
+        chunk_size = 256  # Tune this based on VRAM (128-512 is usually safe)
+        
+        with torch.no_grad():
+            for i in range(0, len(dummy_examples), chunk_size):
+                chunk = dummy_examples[i:i + chunk_size]
+                suf_ids, cat_ids, masks, _, counts = self._prepare_batch(chunk)
+                
+                # Single forward pass for the whole chunk
+                scores = self.model(suf_ids, cat_ids, masks)
+                
+                # Unpack flat scores back into per-word results
+                scores_list = scores.cpu().tolist()
+                start = 0
+                for count in counts:
+                    end = start + count
+                    word_scores = scores_list[start:end]
+                    best_idx = word_scores.index(max(word_scores))
+                    results.append((best_idx, word_scores))
+                    start = end
+                    
+        return results
     
     def save_checkpoint(self, path: str):
         torch.save({

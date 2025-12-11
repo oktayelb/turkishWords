@@ -35,7 +35,7 @@ class MinorHarmony(Enum):
 
 # --- Load words once ---
 with open(DATA_FILE, "r", encoding="utf-8") as f:
-    WORDS = list(line.strip() for line in f if line.strip())
+    WORDS = set(line.strip() for line in f if line.strip())
 
 def exists(word: str) -> bool:
     if not word:

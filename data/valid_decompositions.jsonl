@@ -1184,3 +1184,8 @@
 {"word": "çalışması", "root": "çal", "suffixes": [{"name": "reflexive_is", "form": "ış", "makes": "VERB"}, {"name": "infinitive_me", "form": "ma", "makes": "NOUN"}, {"name": "posessive_3sg", "form": "sı", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "zirveye", "root": "zirve", "suffixes": [{"name": "dative_e", "form": "ye", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "kaportacına", "root": "kaporta", "suffixes": [{"name": "actor_ci", "form": "cı", "makes": "NOUN"}, {"name": "posessive_2sg", "form": "n", "makes": "NOUN"}, {"name": "dative_e", "form": "a", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "pencereden", "root": "pencere", "suffixes": [{"name": "locative_den", "form": "den", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "pencereden", "root": "pencere", "suffixes": [{"name": "locative_den", "form": "den", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "içi", "root": "iç", "suffixes": [{"name": "posessive_3sg", "form": "i", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "içi", "root": "iç", "suffixes": [{"name": "posessive_3sg", "form": "i", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "içi", "root": "iç", "suffixes": [{"name": "posessive_3sg", "form": "i", "makes": "NOUN"}], "final_pos": "noun"}
