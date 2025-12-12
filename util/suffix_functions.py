@@ -10,31 +10,26 @@ from util.suffixes.n2n_suffixes import NOUN2NOUN
 from util.suffixes.v2n_suffixes import VERB2NOUN
 import util.word_methods as wrd
 from util.suffix import Type, Suffix, SuffixGroup
-
-ALL_SUFFIXES = VERB2NOUN + VERB2VERB + NOUN2NOUN + NOUN2VERB 
-
+ALL_SUFFIXES = NOUN2NOUN + NOUN2VERB + VERB2NOUN + VERB2VERB
 # ============================================================================
 # SUFFIX TYPES
 # ============================================================================
 SUFFIX_TRANSITIONS = {
     'noun': {
-        'noun': [s for s in ALL_SUFFIXES 
-                 if s.comes_to in [Type.NOUN, Type.BOTH] 
-                 and s.makes in [Type.NOUN, Type.BOTH]],
-        'verb': [s for s in ALL_SUFFIXES 
-                 if s.comes_to in [Type.NOUN, Type.BOTH] 
-                 and s.makes in [Type.VERB, Type.BOTH]]
+        # Standard N->N + (V->N suffixes that also accept Nouns)
+        'noun': NOUN2NOUN + [s for s in VERB2NOUN if s.comes_to == Type.BOTH],
+        
+        # Standard N->V + (V->V suffixes that also accept Nouns)
+        'verb': NOUN2VERB + [s for s in VERB2VERB if s.comes_to == Type.BOTH]
     },
     'verb': {
-        'noun': [s for s in ALL_SUFFIXES 
-                 if s.comes_to in [Type.VERB, Type.BOTH] 
-                 and s.makes in [Type.NOUN, Type.BOTH]],
-        'verb': [s for s in ALL_SUFFIXES 
-                 if s.comes_to in [Type.VERB, Type.BOTH] 
-                 and s.makes in [Type.VERB, Type.BOTH]]
+        # Standard V->N + (N->N suffixes that also accept Verbs)
+        'noun': VERB2NOUN + [s for s in NOUN2NOUN if s.comes_to == Type.BOTH],
+        
+        # Standard V->V + (N->V suffixes that also accept Verbs)
+        'verb': VERB2VERB + [s for s in NOUN2VERB if s.comes_to == Type.BOTH]
     }
 }
-
 # ============================================================================
 # SUFFIX HIERARCHY RULES
 # ============================================================================
@@ -236,183 +231,174 @@ def find_suffix_chain(word: str, start_pos: str, root: str,
                     
     return results
     
+
 @lru_cache(maxsize=100000)
 def get_root_candidates(surface_root: str) -> List[Tuple[str, str]]:
-    """
-    Analyzes the text segment and returns (Surface Form, Dictionary Lemma).
-    """
+    """Analyzes the text segment and returns (Surface Form, Dictionary Lemma)."""
     candidates = [] 
-    
-    def is_new_candidate(lemma):
-        return not any(cand[1] == lemma for cand in candidates)
 
-    if wrd.exists(surface_root):
-        candidates.append((surface_root, surface_root))
-        
-    if not surface_root:
-        return candidates
+    def check_and_add_softened(form_to_check):
+        if not form_to_check: return
 
-    last_char = surface_root[-1]
-    
-    def get_unsoftened_char(char, text_ending):
-        if char == 'b': return 'p'
-        if char == 'c': return 'ç'
-        if char == 'd': return 't'
-        if char == 'ğ': return 'k'
-        if char == 'g' and text_ending.endswith("ng"): return 'nk'
-        return None
+        last_char = form_to_check[-1]
+        candidate = form_to_check
 
-    # Yumuşama
-    target_char = get_unsoftened_char(last_char, surface_root)
-    if target_char:
-        if target_char == 'nk': 
-            candidate_lemma = surface_root[:-2] + 'nk'
-        else:
-            candidate_lemma = surface_root[:-1] + target_char
-            
-        if wrd.exists(candidate_lemma) and is_new_candidate(candidate_lemma):
-            candidates.append((surface_root, candidate_lemma))
+        if last_char   == 'b':  candidate = form_to_check[:-1] + 'p'
+        elif last_char == 'c':  candidate = form_to_check[:-1] + 'ç'
+        elif last_char == 'd':  candidate = form_to_check[:-1] + 't'
+        elif last_char == 'ğ':  candidate = form_to_check[:-1] + 'k'
+        elif last_char == 'g':  candidate = form_to_check[:-1] + 'k'
 
-    # Ünlü Düşmesi
-    if len(surface_root) > 2 and len(surface_root) < 6 and  wrd.ends_with_consonant(surface_root):
+        # 2. Check & Append
+        if wrd.exists(candidate):
+            candidates.append(candidate)
+
+
+
+    check_and_add_softened(surface_root)
+
+
+    if 2 < len(surface_root) < 10 and wrd.ends_with_consonant(surface_root):
         prefix = surface_root[:-1]
         suffix_char = surface_root[-1]
         
-        narrow_vowels = ['ı', 'i', 'u', 'ü']
-        for vowel in narrow_vowels:
-            restored_lemma = prefix + vowel + suffix_char 
+        for vowel in ['ı', 'i', 'u', 'ü']:
+            restored = prefix + vowel + suffix_char 
             
-            if wrd.exists(restored_lemma) and is_new_candidate(restored_lemma):
-                candidates.append((surface_root, restored_lemma))
+            # Case A: Restored form is the root (e.g. burn -> burun)
+            if wrd.exists(restored):
+                candidates.append( restored)
             
-            last_char_of_restored = restored_lemma[-1]
-            unsoftened_char = get_unsoftened_char(last_char_of_restored, restored_lemma)
-            
-            if unsoftened_char:
-                if unsoftened_char == 'nk':
-                    restored_unsoftened = restored_lemma[:-2] + 'nk'
-                else:
-                    restored_unsoftened = restored_lemma[:-1] + unsoftened_char
-                
-                if wrd.exists(restored_unsoftened) and is_new_candidate(restored_unsoftened):
-                    candidates.append((surface_root, restored_unsoftened))
+            check_and_add_softened(restored)
 
-    # Vowel Narrowing at Root
+    # 4. Vowel Narrowing at Root (e.g. diye -> de, yiye -> ye)
     if not wrd.exists(surface_root) and len(surface_root) > 1:
         for terminal_vowel in ['a', 'e']:
-            restored_lemma = surface_root + terminal_vowel
-            if wrd.exists(restored_lemma) and is_new_candidate(restored_lemma):
-                 candidates.append((surface_root, restored_lemma))
+            restored = surface_root + terminal_vowel
+            if wrd.exists(restored):
+                 candidates.append( restored)
 
     return candidates
 
 
-def check_pekistirme(word):
-    if len(word) < 4:
-        return []
+pekistirme_suffix = Suffix("pekistirme", "pekistirme", Type.NOUN, Type.NOUN, is_unique=True)
+def get_pekistirme_analyses(word: str) -> List[Tuple]:
+    """
+    Encapsulates all logic for identifying and analyzing intensified adjectives (Pekiştirme).
+    Example: 'masmavi' -> (mavi, noun, [pekistirme], noun)
+    """
+
+    analyses = []
     
-    pekistirme_letters = "psrm"
+    # Fast exit
+    if len(word) < 4: 
+        return analyses
+
+    # 1. Detect Vowels and Special Letters (m, p, r, s)
     first_vowel_index = -1
-    
     for i in range(len(word)):
         if word[i] in wrd.VOWELS:
             first_vowel_index = i
             break
             
-    if first_vowel_index == -1: 
-        return []
+    if first_vowel_index == -1 or (first_vowel_index + 1) >= len(word):
+        return analyses
 
-    if first_vowel_index + 1 >= len(word):
-        return []
+    if word[first_vowel_index + 1] not in "psrm":  
+        return analyses
 
-    if word[first_vowel_index+1] not in pekistirme_letters:  
-        return []
+    # 2. Strategy: Try to find a valid (Prefix, Root) pair
+    detected_root = None
+    detected_prefix = None
     
-    # Case 1: Standard (mas-mavi)
-    split_index_1 = first_vowel_index + 2
-    if split_index_1 < len(word):
-        potential_rest = word[split_index_1:]
-        prefix = word[:split_index_1]
+    # Case A: Standard (mas-mavi) -> Split at index + 2
+    idx_std = first_vowel_index + 2
+    # Case B: Extended (gü-p-e-gündüz) -> Split at index + 3 (if connecting vowel exists)
+    idx_ext = first_vowel_index + 3
+
+    # Helper to scan for root
+    def find_root_in_rest(prefix_len):
+        potential_rest = word[prefix_len:]
+        # The rest must start with the duplicated part (e.g. 'mas-mavi' -> 'mavi' starts with 'ma')
+        if potential_rest.startswith(word[:first_vowel_index + 1]):
+            # Greedy search: match longest possible valid dictionary word
+            for k in range(len(potential_rest), 1, -1):
+                candidate = potential_rest[:k]
+                if wrd.exists(candidate):
+                    return word[:prefix_len], candidate
+        return None, None
+
+    # Try Case A
+    detected_prefix, detected_root = find_root_in_rest(idx_std)
+
+    # Try Case B if A failed, checking for connecting vowel (a/e)
+    if not detected_root and idx_ext < len(word):
+        if word[first_vowel_index + 2] in ['a', 'e']:
+             detected_prefix, detected_root = find_root_in_rest(idx_ext)
+
+    if not detected_root:
+        return analyses
+
+    # 3. Build Analysis Chain
+    # Scenario 1: Pure Pekiştirme (e.g., "masmavi")
+    if len(detected_prefix + detected_root) == len(word):
+        analyses.append((detected_root, "noun", [pekistirme_suffix], "noun"))
+    
+    # Scenario 2: Pekiştirme with suffixes (e.g., "masmaviyim")
+    else:
+        # Extract the logical part for suffix analysis: "mas" + "maviyim"
+        virtual_word_part = word[len(detected_prefix):] # e.g., "maviyim"
         
-        if potential_rest.startswith(word[:first_vowel_index+1]):
-             for k in range(len(potential_rest), 1, -1):
-                 candidate_root = potential_rest[:k]
-                 if wrd.exists(candidate_root):
-                     return [prefix, candidate_root]
+        # Recursive call: Find suffixes attached to the root "mavi" within "maviyim"
+        chains = find_suffix_chain(virtual_word_part, "noun", detected_root)
+        
+        for chain, final_pos in chains:
+            full_chain = [pekistirme_suffix] + chain
+            analyses.append((detected_root, "noun", full_chain, final_pos))
 
-    # Case 2: Extended (gü-p-e-gündüz)
-    split_index_2 = first_vowel_index + 3
-    if split_index_2 < len(word):
-        if word[first_vowel_index+2] in ['a', 'e']:
-            potential_rest = word[split_index_2:]
-            prefix = word[:split_index_2]
-            
-            if potential_rest.startswith(word[:first_vowel_index+1]):
-                for k in range(len(potential_rest), 1, -1):
-                    candidate_root = potential_rest[:k]
-                    if wrd.exists(candidate_root):
-                        return [prefix, candidate_root]
-    
-    return []
+    return analyses
 
 @lru_cache(maxsize=50000)
 def decompose(word: str) -> List[Tuple]:
     """
     Find all possible legal decompositions of a word.
-    Uses caching to speed up repeated calls.
     """
     if not word:
         return []
     
-    analyses = []
-    
-    
-    def pekistirme_dummy_form(word, suffix_obj):
-        return ["dummy_form"]
-    pekistirme_suffix = Suffix("pekistirme", "pekistirme", Type.BOTH, Type.BOTH, form_function=pekistirme_dummy_form, is_unique=True)
+    # 1. Get Pekiştirme Analyses (Cleaner!)
+    analyses = get_pekistirme_analyses(word)
 
-    # --- PEKISTIRME ---
-    pekistirme_data = check_pekistirme(word) 
-    
-    if pekistirme_data:
-        prefix_str = pekistirme_data[0]
-        root_str = pekistirme_data[1]
-        
-        if len(prefix_str + root_str) == len(word):
-            analyses.append((root_str, "noun", [pekistirme_suffix], "noun"))
-        else:
-            virtual_word_part = word[len(prefix_str):] 
-            chains = find_suffix_chain(virtual_word_part, "noun", root_str)
-            for chain, final_pos in chains:
-                full_chain = [pekistirme_suffix] + chain
-                analyses.append((root_str, "noun", full_chain, final_pos))
-
-    # --- STANDARD ---
+    # 2. Standard Analyses
+    ## GET ROOT candidates yalnızca exists 0 döndürürse çalışmalı (mı??)
     for i in range(1, len(word) + 1):
-        surface_part = word[:i] 
-        root_pairs = get_root_candidates(surface_part)
-        
-        if not root_pairs:
-            continue
+        root = word[:i]
+        if wrd.exists(root):
+            noun_chains = find_suffix_chain(word, "noun", root)
+            for chain, final_pos in noun_chains:
+                analyses.append((root, "noun", chain, final_pos))
             
-        for surface_root, lemma_root in root_pairs:
-
-            is_valid_noun = wrd.exists(lemma_root)
-            is_valid_verb = wrd.can_be_verb(lemma_root)
             
-            if not (is_valid_noun or is_valid_verb):
-                continue
-
-            virtual_word = lemma_root + word[len(surface_root):]
-            
-            if is_valid_noun:
-                noun_chains = find_suffix_chain(virtual_word, "noun", lemma_root)
-                for chain, final_pos in noun_chains:
-                    analyses.append((lemma_root, "noun", chain, final_pos))
-            
-            if is_valid_verb:
-                verb_chains = find_suffix_chain(virtual_word, "verb", lemma_root)
+            if wrd.can_be_verb(root):
+                verb_chains = find_suffix_chain(word, "verb", root)
                 for chain, final_pos in verb_chains:
-                    analyses.append((lemma_root, "verb", chain, final_pos))
+                    analyses.append((root, "verb", chain, final_pos))
+
+        
+        else :
+            root_pairs = get_root_candidates(word[:i])
+            for  lemma_root in root_pairs:
+                
+                virtual_word = lemma_root + word[i:]
+                
+                if wrd.exists(lemma_root):
+                    noun_chains = find_suffix_chain(virtual_word, "noun", lemma_root)
+                    for chain, final_pos in noun_chains:
+                        analyses.append((lemma_root, "noun", chain, final_pos))
+                
+                if wrd.can_be_verb(lemma_root):
+                    verb_chains = find_suffix_chain(virtual_word, "verb", lemma_root)
+                    for chain, final_pos in verb_chains:
+                        analyses.append((lemma_root, "verb", chain, final_pos))
 
     return analyses

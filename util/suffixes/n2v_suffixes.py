@@ -1,11 +1,6 @@
 from util.suffix import Suffix, Type, HasMajorHarmony, HasMinorHarmony, SuffixGroup
 
 
-def form_for_onomatopea_de(word, suffix_obj):
-    base = "de"
-    base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
-    return [base]
-
 # ============================================================================
 # NOUN TO VERB SUFFIXES (n2v) - Hepsi DERIVATIONAL (Grup 10)
 # ============================================================================
@@ -14,14 +9,14 @@ def form_for_onomatopea_de(word, suffix_obj):
 absentative_se = Suffix("absentative_se", "se", Type.NOUN, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
 
 # onomatopea_de: çatır-da, gürül-de
-onomatopea_de  = Suffix("onomatopea_de",  "de", Type.NOUN, Type.VERB, form_function=form_for_onomatopea_de ,major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
+onomatopea_de  = Suffix("onomatopea_de",  "de", Type.NOUN, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
 
 # verbifier_e: kan-a, oyun-a (oyna), yaş-a
 verbifier_e    = Suffix("verbifier_e",     "e", Type.NOUN, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
 
 # aplicative_le: su-la, baş-la
 aplicative_le  = Suffix("aplicative_le",  "le", Type.NOUN, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
-#kır ekini eklemeyeceğim.
+
 
 NOUN2VERB =[
     value for name, value in globals().items() 

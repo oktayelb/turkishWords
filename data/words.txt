@@ -3583,7 +3583,6 @@ benmari
 benmerkezci
 bent
 benzeme
-benzemek
 benzemeklik
 benzemez
 benzemezlik
@@ -30253,7 +30252,6 @@ sümbül
 sümbüle
 sümbüli
 sümbülteber
-sümek
 sümen
 Sümer
 Sümerce
@@ -36617,7 +36615,7 @@ zümrüt
 zümrütsü
 züppe
 züppece
-züppelik
+züppelik    
 zürafa
 zürefa
 zürra
