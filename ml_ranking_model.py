@@ -125,6 +125,7 @@ class Trainer:
         self.optimizer = torch.optim.AdamW(
             model.parameters(), lr=lr, weight_decay=weight_decay, betas=(0.9, 0.999)
         )
+        
         self.scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
             self.optimizer, T_0=10, T_mult=2, eta_min=lr * 0.01
         )

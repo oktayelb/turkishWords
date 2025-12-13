@@ -4,7 +4,7 @@ import random
 from typing import List, Optional, Tuple, Dict
 
 from data.file_paths import FilePaths
-import util.suffix_functions as sfx
+import util.decomposer as sfx
 
 
 
