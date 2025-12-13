@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple, Dict
 
-from display import TrainerDisplay
+from interactive.display import TrainerDisplay
 from data.data_manager import DataManager
 from ml_ranking_model import Ranker, Trainer
 from interactive.config import TrainingConfig
@@ -350,9 +350,9 @@ class InteractiveTrainer:
         🚀 Multiprocessing Text Mode 
         Uses ALL CPU cores to decompose words, then GPU/CPU for Batch AI ranking.
         """
-        print(f"\nExample: 'text input.txt'")
-        filename = input("Enter filename (default: text_input.txt): ").strip()
-        if not filename: filename = "text_input.txt"
+        print(f"\nExample: 'sample.txt'")
+        filename = input("Enter filename (default: sample.txt): ").strip()
+        if not filename: filename = "sample.txt"
         
         # 1. Load Text
         try:
