@@ -2,9 +2,10 @@ import os
 import json
 import random
 from typing import List, Optional, Tuple, Dict
+import string
 
 from data.file_paths import FilePaths
-import util.suffix_functions as sfx
+import util.decomposer as sfx
 
 
 
@@ -48,7 +49,9 @@ class DataManager:
     def get_text_tokenized(self) -> List[str]:
         """
         Load and tokenize text from sample.txt file.
-        Returns a list of words split by whitespace (all lowercase).
+        1. Merges words separated by apostrophes (e.g., Ankara'ya -> Ankaraya).
+        2. Replaces all other punctuation with spaces.
+        3. Returns a list of words split by whitespace (all lowercase).
         """
         text_path = self.config.sample_text_file
         
@@ -56,6 +59,20 @@ class DataManager:
             with open(text_path, "r", encoding="utf-8") as f:
                 content = f.read()
             
+            # 1. Handle Apostrophes specifically:
+            # Replace them with empty string to MERGE the parts (Ankara'ya -> Ankaraya)
+            # We handle both standard (') and right-single-quote (’) just in case
+            content = content.replace("'", "").replace("’", "")
+
+            # 2. Handle all other punctuation:
+            # Create a translator that replaces punctuation with SPACE
+            # We exclude ' from string.punctuation because we already handled it above
+            other_punct = string.punctuation.replace("'", "")
+            translator = str.maketrans(other_punct, ' ' * len(other_punct))
+            content = content.translate(translator)
+            
+            # 3. Split and Lowercase
+            # .split() automatically handles multiple spaces created by punctuation removal
             words = [word.lower() for word in content.split()]
             
             print(f"📄 Loaded {len(words)} words from {text_path}")

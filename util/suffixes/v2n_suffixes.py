@@ -7,6 +7,14 @@ VOWELS = ["a","e","ı","i","o","ö","u","ü"]
 # FORM FUNCTIONS
 # ============================================================================
 
+def form_for_continuous_iyor(word, suffix_obj):
+    base = "i"
+    base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
+    base = Suffix._apply_minor_harmony(word, base, suffix_obj.minor_harmony)
+
+    base = base+"yor"
+    return [base]
+
 def form_for_nounifier_ecek(word, suffix_obj):
     """
     Form function for nounifier_ecek suffix (Sıfat-Fiil)
@@ -16,7 +24,7 @@ def form_for_nounifier_ecek(word, suffix_obj):
     result_list = []
     
     # Base form: ecek
-    base = "ecek"
+    base = "ecek"   
     base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
     base = Suffix._apply_consonant_hardening(word, base)
     result_list.append(base)
@@ -144,11 +152,16 @@ def form_for_perfectative_ik(word, suffix_obj):
     base = Suffix._apply_consonant_hardening(word, base)
     result_list.append(base)
     
+
     # Softening base: ik -> iğ
     soft_base = Suffix._apply_softening(base)
     if soft_base != base:
         result_list.append(soft_base)
     
+    if word[-2:] in ["me","ma"]:
+        result_list.append("y" + base)
+        result_list.append("y" + soft_base)
+
     if word:
         if word[-1] in VOWELS:
             # y buffer
@@ -180,6 +193,8 @@ def form_for_perfectative_ik(word, suffix_obj):
                 soft_k_form = Suffix._apply_softening(k_form)
                 if soft_k_form != k_form:
                     result_list.append(soft_k_form)
+
+
     
     return result_list
 
@@ -196,8 +211,7 @@ def form_for_nounifier_i(word, suffix_obj):
         result_list.append('y' + base)
         result_list.append('ğ' + base)
     
-    if word and word[-1] == 'n':
-        result_list.append('')
+    
     
     return result_list
 
@@ -280,6 +294,8 @@ def form_for_adverbial_erek (word, suffix_obj):
 # --- STANDART YAPIM EKLERİ (DERIVATIONAL - Group 10) ---
 # Bunlar isim/sıfat kökü oluşturur, üzerine çoğul/iyelik gelebilir.
 
+
+##TODO form for form for constofactattive koy, agan eğen biçimleri için
 infinitive_me = Suffix("infinitive_me", "me", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
 infinitive_mek = Suffix("infinitive_mek", "mek", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
 factative_en = Suffix("factative_en", "en", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, needs_y_buffer=True, group=SuffixGroup.DERIVATIONAL)
@@ -297,27 +313,44 @@ nounifier_it = Suffix("nounifier_it", "it", Type.VERB, Type.NOUN, major_harmony=
 nounifier_inç = Suffix("nounifier_inç", "inç", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
 nounifier_inti = Suffix("nounifier_inti", "inti", Type.VERB, Type.NOUN, form_function= form_for_nounifier_inti, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
 toolifier_geç = Suffix("toolifier_geç", "geç", Type.VERB, Type.NOUN, form_function= form_for_toolifier_geç, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
-adjectiative_ay_v2n = Suffix("adjectiative_ay", "ay", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
 nounifier_anak = Suffix("nounifier_anak", "anak", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
 nounifier_amak = Suffix("nounifier_amak", "amak", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
-
+nounifier_ce = Suffix("nounifier_ce", "ce", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
+subjectifier_men = Suffix("subjectifier_men", "men", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
+subjectifier_giç = Suffix("subjectifier_giç", "giç", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
 # Sıfat-Fiil (Participles) - Bunlar da isimleşir, çekim alabilir (Bildiğ-im, Yapacağ-ım)
 adjectifier_dik = Suffix("adjectifier_dik", "dik", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
 nounifier_ecek = Suffix("nounifier_ecek", "ecek", Type.VERB, Type.NOUN, form_function= form_for_nounifier_ecek, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, needs_y_buffer=True, group=SuffixGroup.DERIVATIONAL)
 neverfactative_mez = Suffix("neverfactative_mez", "mez", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
 factative_ir = Suffix("factative_ir", "ir", Type.VERB, Type.NOUN, form_function= form_for_factative_ir, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
 pastfactative_miş = Suffix("pastfactative_miş", "miş", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
+undoing_meden = Suffix("undoing_meden", "meden", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
 
+wish_suffix = Suffix("wish_suffix", "se", Type.NOUN, Type.NOUN,major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.PREDICATIVE, is_unique=True)
+
+## bu ekin şu anki hali yanlış, aslında bu ek fiilken i eki alıp isim olmuş sözcüklere eklenir. 
+# bak-  bakı     bakı yorum.  ölü yorum , ölü oluyorum tarzında 
+# ama bekleyorum vs gibi örneklerdeki düzensizliklerden ötürü şimdilik böyle devam edecek 
+continuous_iyor = Suffix(
+    "continuous_iyor", 
+    "iyor", 
+    Type.VERB,  # Fiile gelir
+    Type.NOUN,  # İsimleştirir (üzerine şahıs eki alır: geliyor-um)
+    form_function=form_for_continuous_iyor, 
+    major_harmony=HasMajorHarmony.Yes, # Fonksiyon hallediyor
+    minor_harmony=HasMinorHarmony.Yes, # Fonksiyon hallediyor
+    group=SuffixGroup.DERIVATIONAL # Group 10 (En başa yakın)
+)
 
 # --- ZARF-FİİLLER (GERUNDS - Group 90) ---
 # Bunlar Zarf yapar. Üzerine İyelik (30) veya Hal eki (40) ALAMAZLAR.
 # SuffixGroup.GERUND = 90 olduğu için; 30 < 90 kontrolü devreye girer ve zincir kesilir.
 
-adverbial_erek = Suffix("adverbial_erek", "erek", Type.VERB, Type.NOUN, form_function= form_for_adverbial_erek, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.GERUND)
-adverbial_ip   = Suffix("adverbial_ip", "ip", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.GERUND)
-adverbial_e    = Suffix("adverbial_e", "e", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, needs_y_buffer=True, group=SuffixGroup.GERUND)
-adverbial_esi  = Suffix("adverbial_esi", "esi", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, needs_y_buffer=True, group=SuffixGroup.GERUND) # Ölesiye (kalıplaşmış olsa da genelde zarftır)
-
+adverbial_erek = Suffix("adverbial_erek", "erek", Type.VERB, Type.NOUN, form_function= form_for_adverbial_erek, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
+adverbial_ip   = Suffix("adverbial_ip", "ip", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL_LOCKING)
+adverbial_e    = Suffix("adverbial_e", "e", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, needs_y_buffer=True, group=SuffixGroup.DERIVATIONAL_LOCKING)
+adverbial_esi  = Suffix("adverbial_esi", "esi", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, needs_y_buffer=True, group=SuffixGroup.DERIVATIONAL) # Ölesiye (kalıplaşmış olsa da genelde zarftır)
+adverbial_ince = Suffix("adverbial_ince", "ince", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
 
 VERB2NOUN = [
     value for name, value in globals().items() 

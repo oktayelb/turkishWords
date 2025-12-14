@@ -3,15 +3,19 @@ import util.word_methods as wrd
 
 # Eklerin hiyerarşisi.
 # Kural: Bir ek, kendinden daha düşük numaralı bir gruptan sonra GELEMEZ.
+## TODO belki fiiller için ayrı hiyerarşi
 class SuffixGroup(IntEnum):
-    DERIVATIONAL = 10      # Yapım Ekleri (-lik, -ci, -me, -mek)
-    PLURAL = 20            # Çoğul Eki (-ler)
+    VERB_DERIVATIONAL = 5  # v2v
+    VERB_NEGATING = 7   # Olumsuzluk eki ()
+    VERB_COMPOUND = 8     # Fiil Tamlama Ekleri (-r)
+    DERIVATIONAL = 10      # Yapım Ekleri (ve -ler çoğul eki dosyanızdaki yapıya göre)
+    DERIVATIONAL_LOCKING = 15 # Yapım Ekleri - Kilitli (Bazı ekler geldikten sonra başka yapım eki gelmez
     POSSESSIVE = 30        # İyelik Ekleri (-im, -in)
+    COMPOUND = 35          # İsim Tamlama Ekleri (-in)
     CASE = 40              # Hal Ekleri (-e, -de)
-    POST_CASE = 45         # Hal ekinden sonra gelen istisnalar (-ki)
-    PREDICATIVE = 50       # Şahıs / Çekim Ekleri (-im, -sin, -ler)
-    TERMINAL = 60          # Zincir sonu Ek-fiiller (-dir, -miş, -di) -> Şahıs ekinden sonra gelebilir
-    GERUND = 90            # Zarf Fiiller (-ip, -erek) -> ZİNCİRİ KİLİTLER, üzerine ek almaz.
+    POST_CASE = 45         # Hal eki sonrası istisnalar (-ki)
+    PREDICATIVE = 50       # Bildirme / Ek-fiil (-dir, -di, -miş, -se)
+    CONJUGATION = 60          # Şahıs Ekleri (-im, -sin, -ler)
 
 class Type(Enum):
     NOUN = "noun"
@@ -50,36 +54,37 @@ class Suffix:
     @staticmethod
     def _default_form(word, suffix_obj):
         # 1. Baz formu al
-        base = suffix_obj.suffix
+        base = suffix_obj.suffix    
         
         # 2. Uyumları uygula
         base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
         base = Suffix._apply_minor_harmony(word, base, suffix_obj.minor_harmony)
-        
-        # 3. Sertleşme (Hardening) uygula (Kelime sonuna göre ekin başı değişir: d->t)
         base = Suffix._apply_consonant_hardening(word, base)
         
-        # Olası formlar listesi
-        candidates = [base]
-        
-        # 4. Kaynaştırma harfi (Buffer) varyasyonlarını ekle
-        if Suffix._should_add_buffer_variants(word, base):
+        candidates = [] # Start empty!
+
+        # 4. Çarpışma Kontrolü (Collision Check)
+        vowel_collision = Suffix._vowel_collision(word, base)
+
+        if vowel_collision:
+
             if suffix_obj.needs_y_buffer:
                 candidates.append('y' + base)
-                candidates.append('ğ' + base) # Nadir durumlar için
-            if len(base) > 1:
-                # Ünlü düşmesi/çakışması durumunda ekin ilk harfini at (örn: ne-in -> neyin/nin)
-                candidates.append(base[1:])
+                candidates.append('ğ' + base) 
         
-        # 5. Yumuşama (Softening) varyasyonlarını ekle (Ekin sonuna göre: k->ğ)
-        # Mevcut adayların her biri için yumuşamış bir versiyon var mı diye bakarız.
+            elif len(base) > 1:
+                candidates.append(base[1:]) 
+
+
+                
+        candidates.append(base)
         final_results = []
         for cand in candidates:
-            final_results.append(cand) # Orijinal hali ekle (örn: ecek)
+            final_results.append(cand) 
             
             softened = Suffix._apply_softening(cand)
             if softened != cand:
-                final_results.append(softened) # Yumuşamış hali ekle (örn: eceğ)
+                final_results.append(softened) 
         
         return final_results
     
@@ -161,7 +166,7 @@ class Suffix:
         return form
 
     @staticmethod
-    def _should_add_buffer_variants(word, result):
-        return (word and result and 
+    def _vowel_collision(word, suffix):
+        return ( 
                 word[-1] in wrd.VOWELS and 
-                result[0] in wrd.VOWELS)
+                suffix[0] in wrd.VOWELS)

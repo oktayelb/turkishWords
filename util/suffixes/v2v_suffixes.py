@@ -33,7 +33,7 @@ def form_for_active_it(word, suffix_obj):
     t_form = Suffix._apply_consonant_hardening(word, t_form) # d -> t (nadiren)
     
     # Kelime ünlüyle bitiyorsa 't' ekle
-    if word and word[-1] in wrd.VOWELS:
+    if  word[-1] in wrd.VOWELS or  word[-1] in ['r', 'l']:
         result_list.append(t_form)
     
     # Özel durum: Çok heceli ve 'r' veya 'l' ile biten bazı kelimelerde de 't' gelebilir
@@ -51,13 +51,14 @@ def form_for_passive_il(word, suffix_obj):
     """
     result_list = []
     
-    if not word:
-        return result_list
+
 
     # 1. Durum: Kelime ünlü ile bitiyorsa -> sadece 'n' (Ara-n-mak)
     if word[-1] in wrd.VOWELS:
         n_suffix = "n"
+        l_suffix = "l"
         result_list.append(n_suffix)
+        result_list.append(l_suffix)
         return result_list
 
     # 2. Durum: Kelime 'l' ünsüzü ile bitiyorsa -> -in (Bul-un-mak)
@@ -77,40 +78,55 @@ def form_for_passive_il(word, suffix_obj):
 
     return result_list
 
+def form_for_active_ir(word, suffix_obj):
+
+    base = "ir"
+    base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
+    base = Suffix._apply_minor_harmony(word, base, suffix_obj.minor_harmony)
+
+    base2 = "er"
+    base2 = Suffix._apply_major_harmony(word, base2, suffix_obj.major_harmony)
+    base2 = Suffix._apply_minor_harmony(word, base2, suffix_obj.minor_harmony)
+    return [base, base2]
 
 # ============================================================================
-# VERB TO VERB SUFFIXES (v2v) - Hepsi DERIVATIONAL (Grup 10)
+# VERB TO VERB SUFFIXES (v2v) - Hepsi VERB_DERIVATIONAL (Grup 10)
 # ============================================================================
 
 # Not: is_unique=False yapıyoruz çünkü çatı ekleri üst üste gelebilir (Yap-tır-t-tır).
 # Sadece Olumsuzluk eki (-me) unique olmalıdır.
 
 # İşteş (Reciprocal/Reflexive): Gül-üş, Gör-üş
-reflexive_is = Suffix("reflexive_is", "iş", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL, is_unique=False)
+reflexive_is = Suffix("reflexive_is", "iş", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.VERB_DERIVATIONAL, is_unique=False)
 
 # Dönüşlü? (Reflexive) / Geçişsizleştiren: Gec-ik, Bir-ik
-reflexive_ik = Suffix("reflexive_ik", "ik", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL, is_unique=False)
+reflexive_ik = Suffix("reflexive_ik", "ik", Type.BOTH, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.VERB_DERIVATIONAL, is_unique=False)
 
 # Ettirgen (Causative) -it: Kork-ut, Ak-ıt
-active_it = Suffix("active_it", "it", Type.VERB, Type.VERB, form_function=form_for_active_it, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL, is_unique=False)
+active_it = Suffix("active_it", "it", Type.VERB, Type.VERB, form_function=form_for_active_it, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.VERB_DERIVATIONAL, is_unique=False)
 
 # Ettirgen (Causative) -dir: Yap-tır, Koş-tur
-active_dir = Suffix("active_dir", "dir", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL, is_unique=False)
+active_dir = Suffix("active_dir", "dir", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.VERB_DERIVATIONAL, is_unique=False)
 
 # Ettirgen (Causative) -ir: Piş-ir, Düş-ür
-active_ir = Suffix("active_ir", "ir", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL, is_unique=False)
+active_ir = Suffix("active_ir", "ir", Type.VERB, Type.VERB, form_function=form_for_active_ir, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.VERB_DERIVATIONAL, is_unique=False)
 
 # Edilgen (Passive): Yap-ıl, Bul-un
-passive_il = Suffix("passive_il", "il", Type.VERB, Type.VERB, form_function=form_for_passive_il, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL, is_unique=False)
+passive_il = Suffix("passive_il", "il", Type.VERB, Type.VERB, form_function=form_for_passive_il, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.VERB_DERIVATIONAL, is_unique=False)
 
 # Dönüşlü (Reflexive) -in: Giy-in, Sev-in
-reflexive_in = Suffix("reflexive_in", "in", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL, is_unique=False)
+reflexive_in = Suffix("reflexive_in", "in", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.VERB_DERIVATIONAL, is_unique=False)
+
+randomative_ele = Suffix("randomative_ele", "ele", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.VERB_DERIVATIONAL, is_unique=False)
+
+possibiliative_ebil = Suffix("possibilitative_ebil", "ebil", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.VERB_COMPOUND, is_unique=True)
 
 # Olumsuzluk (Negative): Gel-me.
 # Bu ek Yapım eklerinden sonra gelir, ama Çekim eklerinden önce gelir.
-# Hiyerarşide DERIVATIONAL grubunda kalabilir ama is_unique=True olmalı.
-negative_me = Suffix("negative_me", "me", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL, is_unique=True)
+# Hiyerarşide VERB_DERIVATIONAL grubunda kalabilir ama is_unique=True olmalı.
+negative_me = Suffix("negative_me", "me", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.VERB_NEGATING, is_unique=True)
 
+negative_consto = Suffix("negative_consto", "eme", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.VERB_NEGATING, is_unique=True)
 
 VERB2VERB =   [
     value for name, value in globals().items() 
