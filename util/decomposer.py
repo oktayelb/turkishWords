@@ -43,6 +43,9 @@ def is_valid_transition(last_suffix: Suffix, next_suffix: Suffix) -> bool:
     # --- RULE 1: The Post-Case Loop (-ki Exception) ---
     if last_g == SuffixGroup.POST_CASE and next_g <= SuffixGroup.POST_CASE:
         return True
+    ## şelale akışına istisna olarak  yapım eklerinden sonra fiil ekleri gelebilir 
+    if last_g == SuffixGroup.DERIVATIONAL and next_g <= SuffixGroup.DERIVATIONAL:
+        return True   
     ## ebilmekten gibi eklerden sonra  fiil ekleri gelebilir. 
     if last_g == SuffixGroup.VERB_COMPOUND and next_g <= SuffixGroup.VERB_COMPOUND:
         return True

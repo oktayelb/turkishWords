@@ -5,6 +5,7 @@ skip_logs/
 .vscode/
 build/
 data/turkish_morph_model.pt
-data/words.txt
+
+data/training_count.txt
 data/valid_decompositions.jsonl
 .gitignore

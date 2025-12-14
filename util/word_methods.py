@@ -45,17 +45,12 @@ def exists(word: str) -> bool:
     if word in WORDS:
         return 1
     
-    if infinitive(word) in WORDS:
-        return 2
 
     # Check soft-l variant if word ends with 'l' because of the convention I imposed
     if word.endswith("l"):
         soft_l = word[:-1] + "ł"
         if soft_l in WORDS:
             return 1
-
-        if infinitive(soft_l) in WORDS:
-            return 2 
 
     return 0
 

@@ -76,8 +76,8 @@ class Suffix:
                 candidates.append(base[1:]) 
 
 
-                
-        candidates.append(base)
+        else:        
+            candidates.append(base)
         final_results = []
         for cand in candidates:
             final_results.append(cand) 

@@ -1197,3 +1197,10 @@
 {"word": "burnumuz", "root": "burun", "suffixes": [{"name": "posessive_1pl", "form": "umuz", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "seçinebilememiş", "root": "seç", "suffixes": [{"name": "reflexive_in", "form": "in", "makes": "VERB"}, {"name": "possibilitative_ebil", "form": "ebil", "makes": "VERB"}, {"name": "negative_consto", "form": "eme", "makes": "VERB"}, {"name": "pastfactative_miş", "form": "miş", "makes": "NOUN"}], "final_pos": "noun"}
 {"word": "gidebiliyorken", "root": "git", "suffixes": [{"name": "possibilitative_ebil", "form": "ebil", "makes": "VERB"}, {"name": "continuous_iyor", "form": "iyor", "makes": "NOUN"}, {"name": "when_ken", "form": "ken", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "taşma", "root": "taş", "suffixes": [{"name": "infinitive_me", "form": "ma", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "tostçuluk", "root": "tost", "suffixes": [{"name": "actor_ci", "form": "çu", "makes": "NOUN"}, {"name": "suitative_lik", "form": "luk", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "ontolojizm", "root": "ontoloji", "suffixes": [{"name": "ideologicative_izm", "form": "zm", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "bizatihi", "root": "bizatihi", "suffixes": [], "final_pos": "noun"}
+{"word": "büyüleyiş", "root": "büyü", "suffixes": [{"name": "aplicative_le", "form": "le", "makes": "VERB"}, {"name": "nounifier_iş", "form": "iş", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "uyanıklık", "root": "uyan", "suffixes": [{"name": "perfectative_ik", "form": "ık", "makes": "NOUN"}, {"name": "suitative_lik", "form": "lık", "makes": "NOUN"}], "final_pos": "noun"}
+{"word": "kanıt", "root": "kan", "suffixes": [{"name": "nounifier_it", "form": "ıt", "makes": "NOUN"}], "final_pos": "noun"}
