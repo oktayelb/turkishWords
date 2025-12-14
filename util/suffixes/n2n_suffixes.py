@@ -50,6 +50,7 @@ def form_for_conjugation_2sg(word, suffix_obj):
     if len(word) > 2 and word[-2:] in ["di","dı","du","dü", "ti","tı","tu","tü", "se","sa"]:
         return_list.append("n")
         
+    ## TODO if is verb  add ""
     
     # 2. Durum: Standart -sin hali (Predicative / Geniş Zaman / Şimdiki Zaman)
     sin_base = "sin"
@@ -327,7 +328,7 @@ def form_for_noun_compound_suffix(word, suffix_obj):
     return [base]
 
 def form_for_accusative(word, suffix_obj):
-    base = "e"
+    base = "i"
     base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
     
     if word and word[-1] in VOWELS:

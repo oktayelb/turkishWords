@@ -152,11 +152,16 @@ def form_for_perfectative_ik(word, suffix_obj):
     base = Suffix._apply_consonant_hardening(word, base)
     result_list.append(base)
     
+
     # Softening base: ik -> iğ
     soft_base = Suffix._apply_softening(base)
     if soft_base != base:
         result_list.append(soft_base)
     
+    if word[-2:] in ["me","ma"]:
+        result_list.append("y" + base)
+        result_list.append("y" + soft_base)
+
     if word:
         if word[-1] in VOWELS:
             # y buffer
@@ -189,8 +194,7 @@ def form_for_perfectative_ik(word, suffix_obj):
                 if soft_k_form != k_form:
                     result_list.append(soft_k_form)
 
-        if word[-2:] in ["me","ma"]:
-            return [" dummy_string"] 
+
     
     return result_list
 

@@ -43,9 +43,11 @@ def is_valid_transition(last_suffix: Suffix, next_suffix: Suffix) -> bool:
     # --- RULE 1: The Post-Case Loop (-ki Exception) ---
     if last_g == SuffixGroup.POST_CASE and next_g <= SuffixGroup.POST_CASE:
         return True
-
-    # isim tamlamasından sonra ek gelmez
-    if last_g == SuffixGroup.COMPOUND:
+    ## ebilmekten gibi eklerden sonra  fiil ekleri gelebilir. 
+    if last_g == SuffixGroup.VERB_COMPOUND and next_g <= SuffixGroup.VERB_COMPOUND:
+        return True
+    # isim tamlamasından sonra yalnızca ki gelebilir
+    if last_g == SuffixGroup.COMPOUND and next_g != SuffixGroup.POST_CASE:
         return False
         
     # isim tamlaması yalnızca yalın isim, pol ve kişi ekli ve ki ekli isimlere gelebilir
@@ -69,7 +71,7 @@ def is_valid_transition(last_suffix: Suffix, next_suffix: Suffix) -> bool:
 
     # --- RULE 4: Self-Looping Constraints ---
     if next_g == last_g:
-        if last_g in [SuffixGroup.DERIVATIONAL, SuffixGroup.PREDICATIVE]:
+        if last_g in [SuffixGroup.DERIVATIONAL, SuffixGroup.VERB_DERIVATIONAL, SuffixGroup.PREDICATIVE]:
             return True
         return False
 
@@ -250,7 +252,7 @@ def get_root_candidates(surface_root: str) -> List[Tuple[str, str]]:
         elif last_char == 'g':  candidate = form_to_check[:-1] + 'k'
 
         # 2. Check & Append
-        if wrd.exists(candidate):
+        if wrd.exists(candidate) or wrd.can_be_verb(candidate):
             candidates.append(candidate)
 
 
@@ -266,7 +268,7 @@ def get_root_candidates(surface_root: str) -> List[Tuple[str, str]]:
             restored = prefix + vowel + suffix_char 
             
             # Case A: Restored form is the root (e.g. burn -> burun)
-            if wrd.exists(restored):
+            if wrd.exists(restored) or wrd.can_be_verb(restored):
                 candidates.append( restored)
             
             check_and_add_softened(restored)
@@ -275,7 +277,7 @@ def get_root_candidates(surface_root: str) -> List[Tuple[str, str]]:
     if not wrd.exists(surface_root) and len(surface_root) > 1:
         for terminal_vowel in ['a', 'e']:
             restored = surface_root + terminal_vowel
-            if wrd.exists(restored):
+            if wrd.exists(restored) or wrd.can_be_verb(restored):
                  candidates.append( restored)
 
     return candidates
@@ -379,10 +381,10 @@ def decompose(word: str) -> List[Tuple]:
                 analyses.append((root, "noun", chain, final_pos))
             
             
-            if wrd.can_be_verb(root):
-                verb_chains = find_suffix_chain(word, "verb", root)
-                for chain, final_pos in verb_chains:
-                    analyses.append((root, "verb", chain, final_pos))
+        if wrd.can_be_verb(root):
+            verb_chains = find_suffix_chain(word, "verb", root)
+            for chain, final_pos in verb_chains:
+                analyses.append((root, "verb", chain, final_pos))
 
         
         else :
