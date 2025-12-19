@@ -97,9 +97,9 @@ def _build_fast_index():
         return
 
     # Probe roots to detect possible starting chars for each suffix
-    probe_roots = ["a", "e", "ol", "ak", "ev", "süt", "buz", "top"]
+    probe_roots = ["a", "e", "ol", "ak", "ev", "süt", "buz", "top", "kedi"]
     
-    for start_pos, targets in SUFFIX_TRANSITIONS.items():
+    for start_pos, targets in SUFFIX_TRANSITIONS.items():   
         FAST_SUFFIX_INDEX[start_pos] = {}
         
         for target_pos, suffix_list in targets.items():
@@ -384,7 +384,7 @@ def decompose(word: str) -> List[Tuple]:
                 analyses.append((root, "noun", chain, final_pos))
             
             
-        if wrd.can_be_verb(root):
+        elif wrd.can_be_verb(root):
             verb_chains = find_suffix_chain(word, "verb", root)
             for chain, final_pos in verb_chains:
                 analyses.append((root, "verb", chain, final_pos))

@@ -8291,7 +8291,6 @@ dizin
 diziş
 dizlik
 dizme
-dizmek
 dizmen
 dizüstü
 dizyem
@@ -24087,7 +24086,6 @@ Nemçe
 nemçeker
 nemdenetir
 nemf
-nemlendirici
 nemli
 nemölçer
 nemrut
