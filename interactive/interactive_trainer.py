@@ -77,7 +77,7 @@ class InteractiveTrainer:
         self.trainer.save_checkpoint(self.data_manager.config.model_path)
         with open(self.data_manager.config.training_count_file, "w") as f:
             f.write(str(self.training_count))
-        print(f"✅ Model saved")
+        print(f"Model saved")
     
     def _train_on_choices(self, suffix_chains: List[List], 
                          correct_indices: List[int]) -> float:
@@ -127,7 +127,7 @@ class InteractiveTrainer:
                 # Encode chains for prediction
                 encoded_chains = [self.encode_suffix_chain(chain) for chain in suffix_chains]
                 _, scores = self.trainer.predict(encoded_chains)
-                print(f"\n🤖 ML Model predictions shown")
+                print(f"\n ML Model predictions shown")
             except Exception:
                 pass
         
@@ -145,7 +145,7 @@ class InteractiveTrainer:
         self.data_manager.delete_word_if_root_exists(word, correct_indices, decompositions)
         
         loss = self._train_on_choices(suffix_chains, correct_indices)
-        print(f"\n✅ Training complete. Loss: {loss:.4f}")
+        print(f"\n Training complete. Loss: {loss:.4f}")
         print(f"Total examples: {self.training_count}")
         
         self.training_count += 1
@@ -158,7 +158,7 @@ class InteractiveTrainer:
         """Evaluate model on a word without training"""
         decompositions = self.data_manager.decompose(word)
         if not decompositions:
-            print(f"\n⚠️  No decompositions found")
+            print(f"\n  No decompositions found")
             return
         
         suffix_chains = [chain for _, _, chain, _ in decompositions]
@@ -173,7 +173,7 @@ class InteractiveTrainer:
                 word, decompositions[pred_idx], scores[pred_idx], 1, pred_idx
             )
         except Exception as e:
-            print(f"\n❌ Error: {e}")
+            print(f"\n Error: {e}")
 
     def batch_train_from_file(self, filepath: Optional[str] = None):
         """Train on all logged decompositions"""
@@ -263,13 +263,13 @@ class InteractiveTrainer:
                 with open(filepath, 'w', encoding='utf-8') as f:
                     for log_entry in logs:
                         f.write(json.dumps(log_entry, ensure_ascii=False) + '\n')
-                print(f"📝 {reason}: {len(logs)} entries logged to {filepath}")
+                print(f" {reason}: {len(logs)} entries logged to {filepath}")
         
         if not training_data:
-            print("⚠️  No valid training data")
+            print("  No valid training data")
             return
         
-        print(f"\n🚀 Training on {len(training_data)} examples...")
+        print(f"\n Training on {len(training_data)} examples...")
         
         history = self.trainer.train(training_data, num_epochs=5, verbose=True)
         final_loss = history['train_history'][-1] if history['train_history'] else 0.0
@@ -299,7 +299,7 @@ class InteractiveTrainer:
     def auto_mode(self):
         """Continuously train on random words from dictionary"""
 
-        print(f"💡 Words deleted if root exists in dictionary")
+        print(f"   Words deleted if root exists in dictionary")
         print(f"   Press 'q' to exit\n")
         consecutive_errors = 0
         
@@ -317,7 +317,7 @@ class InteractiveTrainer:
                 
                 if result is None:
                     self.auto_stats['words_processed'] -= 1 
-                    print("\n👋 Exiting auto mode...")
+                    print("\n Exiting auto mode...")
                     break
                 
                 if result is False:
@@ -331,13 +331,13 @@ class InteractiveTrainer:
                     self.save()
             
             except KeyboardInterrupt:
-                print("\n\n⚠️  Interrupted!")
+                print("\n\n  Interrupted!")
                 break
             except Exception as e:
                 consecutive_errors += 1
-                print(f"\n❌ Error: {e}")
+                print(f"\n Error: {e}")
                 if consecutive_errors >= 5:
-                    print("\n❌ Too many errors. Exiting...")
+                    print("\n Too many errors. Exiting...")
                     break
         
         self.auto_stats['words_processed'] -= self.auto_stats['words_skipped'] + self.auto_stats['words_deleted']
@@ -360,23 +360,23 @@ class InteractiveTrainer:
             # If your data_manager doesn't support args, you might need to set it first
             text = self.data_manager.get_text_tokenized() 
         except Exception as e:
-            print(f"❌ Error loading text: {e}")
+            print(f" Error loading text: {e}")
             return
 
         if not text:
-            print("⚠️  No text found")
+            print("  No text found")
             return
             
-        print(f"   📊 Input: {len(text)} tokens")
+        print(f"    Input: {len(text)} tokens")
         
         # 2. Deduplication (Critical optimization)
         unique_words = list(set(text))
-        print(f"   🔍 Unique words: {len(unique_words)} (Reduction: {100 - len(unique_words)/len(text)*100:.1f}%)")
+        print(f"    Unique words: {len(unique_words)} (Reduction: {100 - len(unique_words)/len(text)*100:.1f}%)")
         
         # 3. Parallel Decomposition (The Speedup)
         # We use all available cores minus 1 (to keep system responsive)
         num_cores = max(1, multiprocessing.cpu_count() - 1)
-        print(f"   🔥 Spawning {num_cores} worker processes for decomposition...")
+        print(f"    Spawning {num_cores} worker processes for decomposition...")
         
         word_results = {} # Maps word -> decompositions
         
@@ -390,7 +390,7 @@ class InteractiveTrainer:
                 word_results[word] = decompositions
 
         # 4. Filter Ambiguous Words for AI
-        print("   🤖 Preparing AI Batch...")
+        print("    Preparing AI Batch...")
         
         cache = {} # Final lookup table {word: formatted_string}
         ambiguous_batches = [] # [ (word_index, encoded_chains) ]
@@ -414,7 +414,7 @@ class InteractiveTrainer:
 
         # 5. Batch AI Inference
         if ambiguous_batches:
-            print(f"   ⚡ Ranking {len(ambiguous_batches)} ambiguous words on device...")
+            print(f"    Ranking {len(ambiguous_batches)} ambiguous words on device...")
             
             # Extract just the chains for the predictor
             just_chains = [x[1] for x in ambiguous_batches]
@@ -444,7 +444,7 @@ class InteractiveTrainer:
                 cache[word] = self.display.format_decomposition(word, best_decomp, simple=True)
 
         # 6. Reconstruct Text
-        print("   📝 Reconstructing full text...")
+        print("    Reconstructing full text...")
         final_output = []
         for word in text:
             final_output.append(cache.get(word, word))
@@ -452,8 +452,8 @@ class InteractiveTrainer:
         output_text = '\n'.join(final_output)
         self.data_manager.write_decomposed_text(output_text)
         
-        print(f"\n✅ Done! Processed {len(text)} words.")
-        print(f"   💾 Saved to: {self.data_manager.get_decomposed_text_path()}")
+        print(f"\n Done! Processed {len(text)} words.")
+        print(f"   Saved to: {self.data_manager.get_decomposed_text_path()}")
 
     def interactive_loop(self):
         """Main interactive training loop"""
@@ -461,7 +461,7 @@ class InteractiveTrainer:
         
         while True:
             try:
-                cmd = input("\n📤 Enter word or command: ").strip().lower()
+                cmd = input("\n Enter word or command: ").strip().lower()
 
                 if not cmd:
                     continue
@@ -492,9 +492,9 @@ class InteractiveTrainer:
                         break
             
             except KeyboardInterrupt:
-                print("\n\n⚠️  Interrupted!")
+                print("\n\n  Interrupted!")
                 if self.display.confirm_save():
                     self.save()
                 break
             except Exception as e:
-                print(f"\n❌ Error: {e}")
+                print(f"\n Error: {e}")

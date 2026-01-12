@@ -1,6 +1,6 @@
 from enum import Enum
 from pathlib import Path
-
+from typing import List, Tuple
 DATA_FILE = Path(__file__).resolve().parent.parent / "data" / "words.txt"
 
 
@@ -37,14 +37,13 @@ class MinorHarmony(Enum):
 with open(DATA_FILE, "r", encoding="utf-8") as f:
     WORDS = set(line.strip() for line in f if line.strip())
 
-def exists(word: str) -> bool:
+def can_be_noun(word: str) -> bool:
     if not word:
         return 0
 
     # Check basic forms
     if word in WORDS:
         return 1
-    
 
     # Check soft-l variant if word ends with 'l' because of the convention I imposed
     if word.endswith("l"):
@@ -56,7 +55,7 @@ def exists(word: str) -> bool:
 
 def can_be_verb(word: str) -> bool:
     """Checks if a root is a verb by verifying its infinitive form."""
-    return exists(infinitive(word))
+    return can_be_noun(infinitive(word))
 
 
 # --- Harmony functions ---
@@ -64,7 +63,7 @@ def major_harmony(word: str) -> MajorHarmony | None:
     """Determines major vowel harmony based on last vowel"""
     if word.endswith("l"):              
         soft_l = word[:-1] + "ł"
-        if exists(soft_l):
+        if can_be_noun(soft_l):
             return MajorHarmony.FRONT
     for ch in reversed(word):
         if ch in VOWELS:
@@ -107,3 +106,49 @@ def has_no_vowels(word: str) -> bool:
             break
     return ret
 
+def get_root_candidates(surface_root: str) -> List[Tuple[str, str]]:
+    """Analyzes the text segment and returns (Surface Form, Dictionary Lemma)."""
+    candidates = [] 
+
+    def check_and_add_softened(form_to_check):
+        if not form_to_check: return
+
+        last_char = form_to_check[-1]
+        candidate = form_to_check
+
+        if last_char   == 'b':  candidate = form_to_check[:-1] + 'p'
+        elif last_char == 'c':  candidate = form_to_check[:-1] + 'ç'
+        elif last_char == 'd':  candidate = form_to_check[:-1] + 't'
+        elif last_char == 'ğ':  candidate = form_to_check[:-1] + 'k'
+        elif last_char == 'g':  candidate = form_to_check[:-1] + 'k'
+
+        # 2. Check & Append
+        if can_be_noun(candidate) or can_be_verb(candidate):
+            candidates.append(candidate)
+
+
+
+    check_and_add_softened(surface_root)
+
+
+    if 2 < len(surface_root) < 10 and ends_with_consonant(surface_root):
+        prefix = surface_root[:-1]
+        suffix_char = surface_root[-1]
+        
+        for vowel in ['ı', 'i', 'u', 'ü']:
+            restored = prefix + vowel + suffix_char 
+            
+            # Case A: Restored form is the root (e.g. burn -> burun)
+            if can_be_noun(restored) or can_be_verb(restored):
+                candidates.append( restored)
+            
+            check_and_add_softened(restored)
+
+    # 4. Vowel Narrowing at Root (e.g. diye -> de, yiye -> ye)
+    if not can_be_noun(surface_root) and len(surface_root) > 1:
+        for terminal_vowel in ['a', 'e']:
+            restored = surface_root + terminal_vowel
+            if can_be_noun(restored) or can_be_verb(restored):
+                 candidates.append( restored)
+
+    return candidates

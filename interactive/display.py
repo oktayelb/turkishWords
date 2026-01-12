@@ -6,7 +6,7 @@ class TrainerDisplay:
     @staticmethod
     def welcome():
         """Show welcome message and available commands"""
-        print("\n💡 Commands:")
+        print("\n Commands:")
         print("  - Enter a word to analyze and train")
         print("  - 'auto' - Start auto mode (random words from dictionary)")
         print("  - 'eval <word>' - Evaluate model on a word")
@@ -223,7 +223,7 @@ class TrainerDisplay:
     @staticmethod
     def show_statistics(trainer):
         """Display comprehensive training statistics"""
-        print(f"\n📊 Training Statistics:")
+        print(f"\n Training Statistics:")
         print(f"  Total examples: {trainer.training_count}")
         
         if trainer.trainer.training_history:
@@ -251,9 +251,9 @@ class TrainerDisplay:
         print(f"\n{'='*70}")
         print(f"AUTO MODE SUMMARY")
         print(f"{'='*70}")
-        print(f"✅ Processed: {stats['words_processed']}")
-        print(f"🗑️  Deleted: {stats['words_deleted']}")
-        print(f"⭐️  Skipped: {stats['words_skipped']}")
+        print(f" Processed: {stats['words_processed']}")
+        print(f" Deleted: {stats['words_deleted']}")
+        print(f" Skipped: {stats['words_skipped']}")
         print(f"{'='*70}\n")
     
     @staticmethod
@@ -262,10 +262,10 @@ class TrainerDisplay:
         print(f"\n{'='*70}")
         print(f"BATCH TRAINING COMPLETE")
         print(f"{'='*70}")
-        print(f"✅ Trained: {trained} examples")
-        print(f"⭐️  Skipped: {skipped} words")
-        print(f"📊 Final loss: {final_loss:.4f}")
-        print(f"📈 Total examples: {total}")
+        print(f" Trained: {trained} examples")
+        print(f" Skipped: {skipped} words")
+        print(f" Final loss: {final_loss:.4f}")
+        print(f" Total examples: {total}")
         print(f"{'='*70}\n")
 
     
