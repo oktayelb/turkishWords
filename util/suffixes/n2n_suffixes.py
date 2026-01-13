@@ -386,8 +386,8 @@ ablative_de = Suffix("ablative_de", "de", Type.NOUN, Type.NOUN, form_function=fo
 confactuous_le = Suffix("confactuous_le", "le", Type.NOUN, Type.NOUN, form_function= form_for_confactuous_le, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.CASE)
 
 
-# --- Group 45: POST_CASE (İstisna) ---
-marking_ki = Suffix("marking_ki", "ki", Type.NOUN, Type.NOUN, form_function= form_for_marking_ki, major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.POST_CASE) # is_unique çünkü sadece bir kere gelebilir.
+# --- Group 45: POST_CASE (İstisna) ---                                                               ## şüpheli ##      
+marking_ki = Suffix("marking_ki", "ki", Type.NOUN, Type.NOUN, form_function= form_for_marking_ki, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.POST_CASE) # is_unique çünkü sadece bir kere gelebilir.
 when_ken = Suffix("when_ken", "ken", Type.NOUN, Type.NOUN, form_function= form_for_when_ken , major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.POST_CASE) #zarf sanrırım
 
 
@@ -406,6 +406,7 @@ conjugation_1pl = Suffix("conjugation_1pl", "iz", Type.BOTH, Type.NOUN, form_fun
 conjugation_2pl = Suffix("conjugation_2pl", "siniz", Type.BOTH, Type.NOUN, form_function=form_for_conjugation_2pl , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, is_unique=True, group=SuffixGroup.CONJUGATION)
 conjugation_3pl = Suffix("conjugation_3pl", "ler", Type.BOTH, Type.NOUN, form_function=form_for_conjugation_3pl , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, is_unique=True, group=SuffixGroup.CONJUGATION)
 
+pekistirme_suffix = Suffix("pekistirme", "pekistirme", Type.NOUN, Type.NOUN, is_unique=True)
 
 
 

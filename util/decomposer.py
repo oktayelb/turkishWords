@@ -5,13 +5,14 @@ from typing import List, Tuple, Set
 # ============================================================================
 from util.suffixes.v2v_suffixes import VERB2VERB
 from util.suffixes.n2v_suffixes import NOUN2VERB
-from util.suffixes.n2n_suffixes import NOUN2NOUN
+from util.suffixes.n2n_suffixes import NOUN2NOUN , pekistirme_suffix
 from util.suffixes.v2n_suffixes import VERB2NOUN
 
 import util.word_methods as wrd
 from util.suffix import Type, Suffix, SuffixGroup
 
 ALL_SUFFIXES = NOUN2NOUN + NOUN2VERB + VERB2NOUN + VERB2VERB
+
 # ============================================================================
 # SUFFIX TYPES
 # ============================================================================
@@ -31,6 +32,7 @@ SUFFIX_TRANSITIONS = {
         'verb': VERB2VERB + [s for s in NOUN2VERB if s.comes_to == Type.BOTH]
     }
 }
+
 # ============================================================================
 # SUFFIX HIERARCHY RULES
 # ============================================================================
@@ -83,72 +85,13 @@ def is_valid_transition(last_suffix: Suffix, next_suffix: Suffix) -> bool:
 
 
 # ============================================================================
-# 🚀 OPTIMIZATION: FAST LOOKUP INDEX
-# ============================================================================
-
-# Maps: start_pos -> target_pos -> first_char -> [list of suffixes]
-FAST_SUFFIX_INDEX = {}
-def _build_fast_index():
-    """
-    Categorizes suffixes by their starting characters to avoid checking 
-    irrelevant suffixes during recursion. Runs ONCE on import.
-    """
-    global FAST_SUFFIX_INDEX
-    if FAST_SUFFIX_INDEX:
-        return
-
-    # Probe roots to detect possible starting chars for each suffix
-    probe_roots = ["a", "e", "ol", "ak", "ev", "süt", "buz", "top", "kedi"]
-    
-    for start_pos, targets in SUFFIX_TRANSITIONS.items():   
-        FAST_SUFFIX_INDEX[start_pos] = {}
-        
-        for target_pos, suffix_list in targets.items():
-            FAST_SUFFIX_INDEX[start_pos][target_pos] = {
-                'vowel': [],      # Suffixes starting with vowels
-                'consonant_map': {} # Map 'k' -> [suffixes starting with k]
-            }
-            
-            for suffix in suffix_list:
-                possible_starts = set()
-                try:
-                    # Generate forms for all probe roots
-                    forms = set()
-                    for r in probe_roots:
-                        forms.update(suffix.form(r))
-                    
-                    for f in forms:
-                        if not f: continue
-                        possible_starts.add(f[0])
-                        
-                except Exception:
-                    pass
-                
-                # If no forms generated or complex, add to vowel list (safest fallback)
-                if not possible_starts:
-                    FAST_SUFFIX_INDEX[start_pos][target_pos]['vowel'].append(suffix)
-                    continue
-
-                is_vowel_start = any(c in wrd.VOWELS for c in possible_starts)
-                
-                if is_vowel_start:
-                    FAST_SUFFIX_INDEX[start_pos][target_pos]['vowel'].append(suffix)
-                else:
-                    c_map = FAST_SUFFIX_INDEX[start_pos][target_pos]['consonant_map']
-                    for char in possible_starts:
-                        if char not in c_map: c_map[char] = []
-                        if suffix not in c_map[char]:
-                            c_map[char].append(suffix)
-_build_fast_index()
-
-
-# ============================================================================
 # CORE RECURSIVE LOGIC
 # ============================================================================
 def find_suffix_chain(word: str, start_pos: str, root: str, 
                      current_chain: List = None, visited: Set = None) -> List: 
     """
-    Optimized suffix chain finder using Lookahead Indexing.
+    Recursive suffix chain finder.
+    Iterates through SUFFIX_TRANSITIONS directly without pre-indexing.
     """
     
     if current_chain is None: current_chain = []
@@ -164,29 +107,23 @@ def find_suffix_chain(word: str, start_pos: str, root: str,
     root_len = len(root)
     rest = word[root_len:]
     
-    # Base Case
+    # Base Case: No more characters to consume -> Valid chain found
     if not rest:
         return [([], start_pos)]
     
-    if start_pos not in FAST_SUFFIX_INDEX:
+    # Safety check: Ensure the current POS has defined transitions
+    if start_pos not in SUFFIX_TRANSITIONS:
         return []
     
     results = []
-    next_char = rest[0]
     iyor_variations = ('iyor', 'ıyor', 'uyor', 'üyor')
 
-    for target_pos, lookup_data in FAST_SUFFIX_INDEX[start_pos].items():
+    # Iterate over all possible next Parts of Speech (target_pos)
+    # and all suffixes available for that transition.
+    for target_pos, candidate_suffixes in SUFFIX_TRANSITIONS[start_pos].items():
         
-        # 🚀 FILTER CANDIDATES
-        candidates = []
-        candidates.extend(lookup_data['vowel']) # Always check vowel-starters (they might drop chars)
-        candidates.extend(lookup_data['consonant_map'].get(next_char, []))
-        
-        # Special check for narrowing scenarios
-        if len(rest) > 1 and any(rest[1:].startswith(v) for v in iyor_variations):
-             candidates.extend(lookup_data['vowel'])
-
-        for suffix_obj in candidates:
+        for suffix_obj in candidate_suffixes:
+            
             # --- HIERARCHY VALIDATION ---
             if current_chain:
                 last_suffix = current_chain[-1]
@@ -199,16 +136,17 @@ def find_suffix_chain(word: str, start_pos: str, root: str,
                     continue
             
             # --- FORM GENERATION ---
+            # Generate possible forms of this suffix when attached to 'root'
             suffix_forms = suffix_obj.form(root)
             
             for suffix_form in suffix_forms:
                 sf_len = len(suffix_form)
                 
-                # Fast Fail: Suffix longer than remaining text
+                # Fast Fail: Suffix generated is longer than remaining text
                 if sf_len > len(rest):
                     continue
 
-                # --- MATCH TYPE 1: Standard ---
+                # --- MATCH TYPE 1: Standard Match ---
                 if rest.startswith(suffix_form):
                     subchains = find_suffix_chain(
                         word, target_pos, 
@@ -219,11 +157,13 @@ def find_suffix_chain(word: str, start_pos: str, root: str,
                     for chain, final_pos in subchains:
                         results.append(([suffix_obj] + chain, final_pos))
 
-                # --- MATCH TYPE 2: Vowel Narrowing ---
+                # --- MATCH TYPE 2: Vowel Narrowing (e.g., bekle -> bekl-iyor) ---
                 elif sf_len > 0 and suffix_form[-1] in ('a', 'e'):
                     narrowed_form = suffix_form[:-1]
+                    # Check if the shortened form matches (e.g. 'bekl')
                     if rest.startswith(narrowed_form):
                         rest_after = rest[len(narrowed_form):]
+                        # This narrowing only happens if the NEXT part is -iyor/uyor
                         if any(rest_after.startswith(v) for v in iyor_variations):
                             subchains = find_suffix_chain(
                                 root + suffix_form + rest_after, 
@@ -236,11 +176,12 @@ def find_suffix_chain(word: str, start_pos: str, root: str,
                                 results.append(([suffix_obj] + chain, final_pos))
                     
     return results
-    
 
 
+# ============================================================================
+# PEKİŞTİRME LOGIC
+# ============================================================================
 
-pekistirme_suffix = Suffix("pekistirme", "pekistirme", Type.NOUN, Type.NOUN, is_unique=True)
 def get_pekistirme_analyses(word: str) -> List[Tuple]:
     """
     Encapsulates all logic for identifying and analyzing intensified adjectives (Pekiştirme).
@@ -324,24 +265,27 @@ def append_analysis(word, pos, root, analyses_list):
 
 def decompose(word: str) -> List[Tuple]:
     """
-    Find all possible legal decompositions of a word.
+    Bİr sözcük için olası tüm kök-ek ayrışımlarını bulur.
+
     """
-    if not word:
-        return []
+
     
-    # 1. Get Pekiştirme Analyses (Cleaner!)
+    # Pekiştirme var mı diye yoklama
     analyses = get_pekistirme_analyses(word)
 
-    # 2. Standard Analyses
-    ## GET ROOT candidates yalnızca exists 0 döndürürse çalışmalı (mı??)
+    # sözbaşından sonuna dek tüm ayrımları dene
     for i in range(1, len(word) + 1):
         root = word[:i]
+        # sözlükte var mı
         if wrd.can_be_noun(root):
             append_analysis(word, "noun", root, analyses)
-            
+        # sözlükte mastarlı hali var mı? (aç, açmak)   
         if wrd.can_be_verb(root):
             append_analysis(word, "verb", root, analyses)
         
+        # eğer iki türlü de sözlükte yoksa kök değişime uğramış olabilir
+        # 1- kökte ünsüz yumuşaması (git-> gidecek)
+        # 2- kökte ünlü düşmesi     (beniz -> benzemek)
         elif not wrd.can_be_noun(root) and not wrd.can_be_verb(root):
             root_pairs = wrd.get_root_candidates(word[:i])
             for  lemma_root in root_pairs:
