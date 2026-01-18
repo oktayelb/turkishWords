@@ -5,7 +5,7 @@ from typing import List, Tuple, Set
 # ============================================================================
 from util.suffixes.v2v_suffixes import VERB2VERB
 from util.suffixes.n2v_suffixes import NOUN2VERB
-from util.suffixes.n2n_suffixes import NOUN2NOUN , pekistirme_suffix
+from util.suffixes.n2n_suffixes import NOUN2NOUN
 from util.suffixes.v2n_suffixes import VERB2NOUN
 
 import util.word_methods as wrd
@@ -181,7 +181,7 @@ def find_suffix_chain(word: str, start_pos: str, root: str,
 # ============================================================================
 # PEKİŞTİRME LOGIC
 # ============================================================================
-
+pekistirme_suffix = Suffix("pekistirme", "pekistirme", Type.NOUN, Type.NOUN, is_unique=True)
 def get_pekistirme_analyses(word: str) -> List[Tuple]:
     """
     Encapsulates all logic for identifying and analyzing intensified adjectives (Pekiştirme).

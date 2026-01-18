@@ -406,7 +406,6 @@ conjugation_1pl = Suffix("conjugation_1pl", "iz", Type.BOTH, Type.NOUN, form_fun
 conjugation_2pl = Suffix("conjugation_2pl", "siniz", Type.BOTH, Type.NOUN, form_function=form_for_conjugation_2pl , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, is_unique=True, group=SuffixGroup.CONJUGATION)
 conjugation_3pl = Suffix("conjugation_3pl", "ler", Type.BOTH, Type.NOUN, form_function=form_for_conjugation_3pl , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, is_unique=True, group=SuffixGroup.CONJUGATION)
 
-pekistirme_suffix = Suffix("pekistirme", "pekistirme", Type.NOUN, Type.NOUN, is_unique=True)
 
 
 
