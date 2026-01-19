@@ -6,12 +6,11 @@ from typing import List, Optional, Tuple, Dict
 import app.display as Display
 from app.data_manager import DataManager
 from ml.ml_ranking_model import Ranker, Trainer
+import util.decomposer as sfx
+from util.suffix import Suffix
 
-# Helper for multiprocessing (must be top-level to be picklable)
 def _worker_decompose(word):
-    # Wrapper to prevent pickling the entire application context
-    from util import decomposer
-    return decomposer.decompose(word)
+    return sfx.decompose(word)
 
 class InteractiveTrainer:
     """
@@ -23,47 +22,11 @@ class InteractiveTrainer:
         # 1. Initialize Components
         self.data_manager = DataManager()
     
-        # 2. Setup Mappings (Suffix Name -> ID)
-        self.category_to_id = {'Noun': 0, 'Verb': 1}
-        # Start IDs from 1 (0 is reserved for padding in the ML model)
-        self.suffix_to_id = {
-            suffix.name: idx + 1  
-            for idx, suffix in enumerate(self.data_manager.suffixes)
-        }
-        
-        # 3. Initialize ML Model
-        # We only pass the dynamic vocab size. 
-        # The Ranker self-configures everything else (dim, heads, etc.) via ml.config
-        self.model = Ranker(suffix_vocab_size=len(self.data_manager.suffixes))
-        
-        # 4. Initialize Trainer
-        # The Trainer self-configures paths and hypers via ml.config
+        self.model = Ranker(suffix_vocab_size=len(sfx.ALL_SUFFIXES))
         self.trainer = Trainer(model=self.model)
         
-        # 5. Load State
         self.training_count = self.data_manager.load_training_count()
-        self.auto_stats = {
-            'words_processed': 0,
-            'words_deleted': 0,
-            'words_skipped': 0
-        }
-    
-    def encode_suffix_chain(self, suffix_objects: List) -> List[Tuple[int, int]]:
-        """
-        Convert a list of Suffix objects into (suffix_id, category_id) tuples 
-        that the ML model can understand.
-        """
-        if not suffix_objects:
-            return []
-        
-        encoded = []
-        for suffix_obj in suffix_objects:
-            suffix_id = self.suffix_to_id.get(suffix_obj.name, 0)
-            category_id = self.category_to_id.get(suffix_obj.makes.name, 0)
-            encoded.append((suffix_id, category_id))
-        
-        return encoded
-    
+
     def save(self):
         """
         Trigger a save. The Trainer handles the model weights; 
@@ -74,7 +37,7 @@ class InteractiveTrainer:
         
         # We manually save the counter to the file path defined in DataManager
         # (Assuming DataManager still holds the path to training_count.txt)
-        with open(self.data_manager.config.training_count_file, "w") as f:
+        with open(self.data_manager.paths.training_count_path, "w") as f:
             f.write(str(self.training_count))
         print(f"Model saved")
     
@@ -83,7 +46,7 @@ class InteractiveTrainer:
         Format the user's choice into a training example and update the model.
         """
         # Encode all candidate chains
-        encoded_chains = [self.encode_suffix_chain(chain) for chain in suffix_chains]
+        encoded_chains = [Translation().encode_suffix_chain(chain) for chain in suffix_chains]
         
         # Format: (root_info, candidates, correct_index)
         # Note: root_info is empty [] because we currently don't use root embeddings
@@ -94,7 +57,7 @@ class InteractiveTrainer:
         # Use persistent training to force the model to memorize this decision
         return self.trainer.train_persistent(training_data)
 
-    def train_on_word(self, word: str) -> Optional[bool]:
+    def train_mode(self, word: str) -> Optional[bool]:
         """
         Main logic for processing a single word:
         Decompose -> Predict -> User Choice -> Train -> Save
@@ -115,7 +78,7 @@ class InteractiveTrainer:
         scores = None
         if self.training_count > 0:
             try:
-                encoded_chains = [self.encode_suffix_chain(chain) for chain in suffix_chains]
+                encoded_chains = [Translation().encode_suffix_chain(chain) for chain in suffix_chains]
                 _, scores = self.trainer.predict(encoded_chains)
                 print(f"\n ML Model predictions shown")
             except Exception:
@@ -149,7 +112,7 @@ class InteractiveTrainer:
         
         return True
     
-    def evaluate_word(self, word: str):
+    def evaluation_mode(self, word: str):
         """Evaluate model on a word without training"""
         decompositions = self.data_manager.decompose(word)
         if not decompositions:
@@ -159,7 +122,7 @@ class InteractiveTrainer:
         suffix_chains = [chain for _, _, chain, _ in decompositions]
         
         try:
-            encoded_chains = [self.encode_suffix_chain(chain) for chain in suffix_chains]
+            encoded_chains = [Translation().encode_suffix_chain(chain) for chain in suffix_chains]
             pred_idx, scores = self.trainer.predict(encoded_chains)
             
             print(f"\n🤖 ML Model's top prediction:")
@@ -169,7 +132,7 @@ class InteractiveTrainer:
         except Exception as e:
             print(f"\n Error: {e}")
 
-    def batch_train_from_file(self, filepath: Optional[str] = None):
+    def relearn_mode(self, filepath: Optional[str] = None):
         """Train on all logged valid decompositions."""
         entries = self.data_manager.get_valid_decomps()
         
@@ -189,13 +152,13 @@ class InteractiveTrainer:
                     skipped += 1
                     continue
                 
-                correct_indices = self._match_decompositions(correct_entries, decompositions)
+                correct_indices = Translation._match_decompositions(correct_entries, decompositions)
                 if not correct_indices:
                     skipped += 1
                     continue
                 
                 suffix_chains = [chain for _, _, chain, _ in decompositions]
-                encoded_chains = [self.encode_suffix_chain(chain) for chain in suffix_chains]
+                encoded_chains = [Translation().encode_suffix_chain(chain) for chain in suffix_chains]
                 
                 for idx in correct_indices:
                     training_data.append(([], encoded_chains, idx))
@@ -217,27 +180,15 @@ class InteractiveTrainer:
         Display.show_batch_summary(len(training_data), skipped, final_loss, self.training_count)
         self.save()
 
-    def _match_decompositions(self, entries: List[Dict], decompositions: List[Tuple]) -> List[int]:
-        """Helper to match logged decomposition strings back to current decomposition indices."""
-        indices = []
-        for entry in entries:
-            entry_root = entry['root']
-            entry_suffixes = [s['name'] for s in entry.get('suffixes', [])]
-            
-            for idx, (root, _, chain, _) in enumerate(decompositions):
-                if root != entry_root:
-                    continue
-                chain_suffixes = [s.name for s in chain] if chain else []
-                if chain_suffixes == entry_suffixes and idx not in indices:
-                    indices.append(idx)
-                    break
-        return indices
-
     def auto_mode(self):
         """Loop that picks random words and prompts the user."""
         print(f"   Words deleted if root exists in dictionary")
         print(f"   Press 'q' to exit\n")
-        
+        auto_stats = {
+            'words_processed': 0,
+            'words_deleted': 0,
+            'words_skipped': 0
+        }
         while True:
             try:
                 word = self.data_manager.random_word()
@@ -245,20 +196,20 @@ class InteractiveTrainer:
                     print("\n✅ No more words!")
                     break
                 
-                self.auto_stats['words_processed'] += 1
+                auto_stats['words_processed'] += 1
                 result = self.train_on_word(word)
                 
                 if result is None: # User Quit
-                    self.auto_stats['words_processed'] -= 1 
+                    auto_stats['words_processed'] -= 1 
                     print("\n Exiting auto mode...")
                     break
                 
                 if result is False: # Skipped
-                    self.auto_stats['words_skipped'] += 1
+                    auto_stats['words_skipped'] += 1
                 
                 # Check deletion status
                 if self.data_manager.exists(word.lower()) == 0: 
-                    self.auto_stats['words_deleted'] += 1
+                    auto_stats['words_deleted'] += 1
                     
             except KeyboardInterrupt:
                 break
@@ -266,7 +217,7 @@ class InteractiveTrainer:
                 print(f"\n Error: {e}")
                 break
         
-        Display.show_auto_summary(self.auto_stats)
+        Display.show_auto_summary(auto_stats)
 
     def text_mode(self):
         """
@@ -320,7 +271,7 @@ class InteractiveTrainer:
             else:
                 # Encode for ML
                 suffix_chains = [chain for _, _, chain, _ in decomps]
-                encoded_chains = [self.encode_suffix_chain(chain) for chain in suffix_chains]
+                encoded_chains = [Translation().encode_suffix_chain(chain) for chain in suffix_chains]
                 ambiguous_batches.append((i, encoded_chains))
                 cache[word] = ("__WAITING__", decomps)
 
@@ -353,7 +304,8 @@ class InteractiveTrainer:
         self.data_manager.write_decomposed_text(output_text)
         print("    Done.")
 
-    def interactive_loop(self):
+    def menu(self):
+
         """Main entry point."""
         Display.welcome()
         
@@ -374,12 +326,12 @@ class InteractiveTrainer:
                     self.auto_mode()
                 elif cmd == 'text':
                     self.text_mode()
-                elif cmd == 'batch':
-                    self.batch_train_from_file()
+                elif cmd == 'relearn':
+                    self.relearn_mode()
                 elif cmd.startswith('eval '):
-                    self.evaluate_word(cmd[5:].strip())
+                    self.evaluation_mode(cmd[5:].strip())
                 else:
-                    result = self.train_on_word(cmd)
+                    result = self.train_mode(cmd)
                     if result is None and Display.confirm_save():
                         self.save()
                         break
@@ -390,3 +342,46 @@ class InteractiveTrainer:
                 break
             except Exception as e:
                 print(f"\n Error: {e}")
+    
+
+        ##abstract
+    
+    
+class Translation:   
+    def _match_decompositions(self, entries: List[Dict], decompositions: List[Tuple]) -> List[int]:
+        """Helper to match logged decomposition strings back to current decomposition indices."""
+        indices = []
+        for entry in entries:
+            entry_root = entry['root']
+            entry_suffixes = [s['name'] for s in entry.get('suffixes', [])]
+            
+            for idx, (root, _, chain, _) in enumerate(decompositions):
+                if root != entry_root:
+                    continue
+                chain_suffixes = [s.name for s in chain] if chain else []
+                if chain_suffixes == entry_suffixes and idx not in indices:
+                    indices.append(idx)
+                    break
+        return indices
+
+    def encode_suffix_chain(self, suffix_chain: List[Suffix]) -> List[Tuple[int, int]]:
+        """
+        Convert a list of Suffix objects into (suffix_id, category_id) tuples 
+        that the ML model can understand.
+        """
+        suffix_to_id = {
+            suffix.name: idx + 1  
+            for idx, suffix in enumerate(sfx.ALL_SUFFIXES)
+        }
+        category_to_id = {'Noun': 0, 'Verb': 1}
+        if not suffix_chain:
+            return []
+        
+        encoded = []
+        for suffix_obj in suffix_chain:
+            suffix_id = suffix_to_id.get(suffix_obj.name, 0)
+            category_id = category_to_id.get(suffix_obj.makes.name, 0)
+            encoded.append((suffix_id, category_id))
+        
+        return encoded
+    

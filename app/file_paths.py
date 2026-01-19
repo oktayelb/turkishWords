@@ -1,9 +1,9 @@
 class FilePaths:
     
-    words_path: str = "data/words.txt"
-    training_count_file: str = "data/training_count.txt"
-    valid_decompositions_file: str = "data/valid_decompositions.jsonl"
-    sample_text_file: str = "sample/sample.txt"
-    sample_decomposed_file: str = "sample/sample_decomposed.txt"
+    words_path: str                 = "data/words.txt"
+    training_count_path: str        = "data/training_count.txt"
+    valid_decompositions_path: str  = "data/valid_decompositions.jsonl"
+    sample_text_path: str           = "sample/sample.txt"
+    sample_decomposed_path: str     = "sample/sample_decomposed.txt"
     
 

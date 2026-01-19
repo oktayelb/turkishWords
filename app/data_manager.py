@@ -1,8 +1,8 @@
 import os
 import json
+import string
 import random
 from typing import List, Optional, Tuple, Dict
-import string
 
 from app.file_paths import FilePaths
 import util.decomposer as sfx
@@ -13,18 +13,17 @@ class DataManager:
     """Manages file operations for training data, words, and text processing"""
 
     def __init__(self):
-        self.config = FilePaths()
+        self.paths = FilePaths()
         self.words = self._load_words()
-        self.suffixes = sfx.ALL_SUFFIXES
 
 ##load
     def _load_words(self) -> List[str]:
         """Load words from the dictionary file"""
         try:
-            with open(self.config.words_path, "r", encoding="utf-8") as f:
+            with open(self.paths.words_path, "r", encoding="utf-8") as f:
                 return [line.strip() for line in f if line.strip()]
         except FileNotFoundError:
-            print(f"⚠️  Warning: {self.config.words_path} not found")
+            print(f"⚠️  Warning: {self.paths.words_path} not found")
             return []
     
     def _reload_words(self):
@@ -34,8 +33,8 @@ class DataManager:
     def load_training_count(self) -> int:
         """Load training count from file"""
         try:
-            if os.path.exists(self.config.training_count_file):
-                with open(self.config.training_count_file, "r") as f:
+            if os.path.exists(self.paths.training_count_path):
+                with open(self.paths.training_count_path, "r") as f:
                     return int(f.read().strip())
         except Exception:
             pass
@@ -53,7 +52,7 @@ class DataManager:
         2. Replaces all other punctuation with spaces.
         3. Returns a list of words split by whitespace (all lowercase).
         """
-        text_path = self.config.sample_text_file
+        text_path = self.paths.sample_text_path
         
         try:
             with open(text_path, "r", encoding="utf-8") as f:
@@ -89,7 +88,7 @@ class DataManager:
         """Load all valid decompositions from log file"""
         entries = []
         try:    
-            with open(self.config.valid_decompositions_file, 'r', encoding='utf-8') as f:
+            with open(self.paths.valid_decompositions_path, 'r', encoding='utf-8') as f:
                 for i, line in enumerate(f, 1):
                     line = line.strip()
                     if line:
@@ -111,18 +110,18 @@ class DataManager:
 
     def get_sample_text_path(self) -> str:
         """Get the path to the sample text file"""
-        return self.config.sample_text_file
+        return self.paths.sample_text_path
     
     def get_decomposed_text_path(self) -> str:
         """Get the path to the output decomposed text file"""
-        return self.config.sample_decomposed_file
+        return self.paths.sample_decomposed_path
  
 ##write
     def log_decompositions(self, word: str, correct_indices: List[int], 
                           decompositions: List[Tuple]):
         """Save validated decompositions to file"""
         try:
-            with open(self.config.valid_decompositions_file, 'a', encoding='utf-8') as f:
+            with open(self.paths.valid_decompositions_path, 'a', encoding='utf-8') as f:
                 for idx in correct_indices:
                     entry = self._create_log_entry(word, decompositions[idx])
                     f.write(json.dumps(entry, ensure_ascii=False) + '\n')
@@ -159,7 +158,7 @@ class DataManager:
         Write decomposed text to output file.
         Output file will be named sample_decomposed.txt in data folder.
         """
-        output_path = self.config.sample_decomposed_file
+        output_path = self.paths.sample_decomposed_path
         
         try:
             with open(output_path, "w", encoding="utf-8") as f:
@@ -182,14 +181,14 @@ class DataManager:
                 return False
             
             self.words.remove(word)
-            with open(self.config.words_path, "w", encoding="utf-8") as f:
+            with open(self.paths.words_path, "w", encoding="utf-8") as f:
                 for w in self.words:
                     f.write(w + "\n")
             
             return True
 
         except FileNotFoundError:
-            print(f"❌ Error: {self.config.words_path} not found.")
+            print(f"❌ Error: {self.paths.words_path} not found.")
             return False
         except Exception as e:
             print(f"❌ An error occurred: {e}")

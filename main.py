@@ -1,11 +1,10 @@
-from interactive.interactive_trainer import InteractiveTrainer
-def main():
+from app.interactive_trainer import InteractiveTrainer
 
-    trainer = InteractiveTrainer()
-    trainer.interactive_loop()
     
 
 if __name__ == "__main__":
-    main()
+    
+    trainer = InteractiveTrainer()
+    trainer.menu()
 
 

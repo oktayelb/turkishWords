@@ -93,6 +93,7 @@ class Trainer:
         self.model = model
         
         # Load settings from config
+        self.checkpoint_frequency = config.checkpoint_frequency
         self.batch_size = config.batch_size
         self.patience = config.patience
         self.path = str(config.model_path) # Convert Path object to string for torch
@@ -257,7 +258,7 @@ class Trainer:
                     start = end
         return results
 
-    def save_checkpoint(self, path: str):
+    def save_checkpoint(self):
         torch.save({
             'model_state': self.model.state_dict(),
             'optimizer_state': self.optimizer.state_dict(),
@@ -266,8 +267,8 @@ class Trainer:
             'val_history': self.val_history,
             'best_val_loss': self.best_val_loss,
             'global_step': self.global_step
-        }, path)
-        print(f"✓ Saved to {path}")
+        }, self.path)
+        print(f"✓ Saved to {self.path}")
     
     def load_checkpoint(self, path: str):
         ckpt = torch.load(path, map_location=self.device)

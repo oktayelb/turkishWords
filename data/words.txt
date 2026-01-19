@@ -8866,7 +8866,7 @@ duygunluk
 duygusal
 duygusuz
 duygusuzluk
-duyma
+duymak
 duysal
 duyu
 duyulma
