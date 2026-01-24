@@ -5,7 +5,6 @@ import random
 from typing import List, Optional, Tuple, Dict
 
 from app.file_paths import FilePaths
-import util.decomposer as sfx
 
 
 
@@ -196,6 +195,7 @@ class DataManager:
 
     def delete_word_if_root_exists(self, word: str, correct_indices: List[int], 
                                    decompositions: List[Tuple]) -> bool:
+        import util.word_methods as wrd
         """
         Check if word should be deleted (root exists in dictionary) and perform deletion.
         Returns True if the word was successfully deleted.
@@ -208,12 +208,12 @@ class DataManager:
             if root == word_lower:
                 continue
             
-            if self.exists(root) > 0:
+            if self.exists(root) is  True:
                 if self.delete(word_lower):
                     print(f"🗑️  Deleted '{word}' (root '{root}' exists)")
                     return True 
                 
-                infinitive_form = self._infinitive(word_lower)  # word infinitive i suffix ile cekiyoruz
+                infinitive_form = wrd.infinitive(word_lower)  # word infinitive i suffix ile cekiyoruz
                 if infinitive_form and infinitive_form != word_lower:
                     if self.delete(infinitive_form):
                         print(f"🗑️  Deleted infinitive '{infinitive_form}' for '{word}' (root '{root}' exists)")
@@ -223,41 +223,6 @@ class DataManager:
 
 #check
     def exists(self, word: str) -> int:
-        """
-        Check if word exists in dictionary.
-        Returns: 0=no, 1=exists as-is, 2=infinitive exists
-        """
-        if not word:
-            return 0
-
-        # Normal kelime kontrolü
-        infinitive = self._infinitive(word)
-        if infinitive and infinitive in self.words:
-            return 2    
-        
-        if word in self.words:
-            return 1
-        
-        # 'İnce L' (Soft L) Kontrolü
-        if word.endswith("l"):
-            # DÜZELTME BURADA: Önce soft_l değişkenini tanımlıyoruz
-            soft_l = word[:-1] + "ł"
-
-            # Şimdi tanımlanmış değişkeni kullanabiliriz
-            soft_l_inf = self._infinitive(soft_l) 
-            if soft_l_inf and soft_l_inf in self.words:
-                return 2
-
-            # Kök halini kontrol et
-            if soft_l in self.words:
-                return 1
-
-        return 0
- ###3 these functions dont really go here   
-    def decompose(self, word): ## cheap wrapper to free interactivetrainer from suffix import
-        return sfx.decompose(word)
-    
-    def _infinitive(self,word): ##cheap wrapper that uses wrd to use infinitives (acutally harmonies) easily 
         import util.word_methods as wrd
-
-        return wrd.infinitive(word)
+        
+        return wrd.can_be_noun(word) or wrd.can_be_verb(word)

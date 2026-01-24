@@ -55,6 +55,16 @@ def can_be_noun(word: str) -> bool:
 
 def can_be_verb(word: str) -> bool:
     """Checks if a root is a verb by verifying its infinitive form."""
+    if word == "e":
+        return 0
+    if word == "ha":
+        return 0
+    if word == "da":
+        return 0
+    if word == "ra":
+        return 0
+    if word == "ço":
+        return 0
     return can_be_noun(infinitive(word))
 
 

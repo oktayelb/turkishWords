@@ -10,7 +10,7 @@ DATA_DIR = BASE_DIR / "data"
 @dataclass
 class MLConfig:
     # --- File Paths ---
-    model_path: Path = "ml/turkish_morph_model.pt"
+    model_path: Path = "ml/model.pt"
     training_count_file: Path = DATA_DIR / "training_count.txt"
     
     # --- Model Architecture ---
