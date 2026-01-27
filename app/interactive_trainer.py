@@ -7,43 +7,36 @@ import app.display as display
 from app.data_manager import DataManager
 from ml.ml_ranking_model import Ranker, Trainer
 import util.decomposer as sfx
+import util.word_methods as wrd # <--- LOGIC IMPORT ADDED
 from util.suffix import Suffix
 
 
 class InteractiveTrainer:
     """
     Handles the interactive training loop.
-    Delegates ML logic and configuration to the ml.ranker module.
+    Now contains logic for formatting logs and validating dictionary rules.
     """
     
     def __init__(self):
-        # 1. Initialize Components
         self.data_manager = DataManager()
-
         self.model = Ranker(suffix_vocab_size=len(sfx.ALL_SUFFIXES))
         self.trainer = Trainer(model=self.model)
-
         self.training_count = self.data_manager.load_training_count()
 
     def save(self):
-        """Trigger a save."""
         self.trainer.save_checkpoint()
         with open(self.data_manager.paths.training_count_path, "w") as f:
             f.write(str(self.training_count))
         print(f"Model saved")
     
     def train_mode(self, word: str) -> Optional[bool]:
-        """
-        Main logic for processing a single word:
-        Decompose -> Predict -> User Choice -> Train -> Save
-        """
         decompositions = sfx.decompose(word)
 
         if not decompositions:
             print(f"\n  No decompositions found for '{word}'")
             return False
         
-        # 1. Get Predictions if available
+        # 1. Get Predictions
         scores = None
         suffix_chains = [chain for _, _, chain, _ in decompositions]
         
@@ -59,21 +52,17 @@ class InteractiveTrainer:
             except Exception:
                 pass
         
-        # 2. Sort and Prepare Data for Display
-        # Combine decomps with scores (default to 0.0 if None)
+        # 2. Sort and Prepare Data
         scored_decomps = []
         for i, decomp in enumerate(decompositions):
             score = scores[i] if scores else 0.0
             scored_decomps.append((score, decomp))
         
-        # Sort by score (ascending: lower is better usually, or descending depending on loss)
-        # Assuming lower score/distance is better
         if scores:
             scored_decomps.sort(key=lambda x: x[0])
 
-        # Prepare View Models (Strings) using Translation class
         view_models = []
-        sorted_decomps = [] # Keep track of the actual objects in sorted order
+        sorted_decomps = []
         
         translator = Translation()
         for score, decomp in scored_decomps:
@@ -86,34 +75,66 @@ class InteractiveTrainer:
         display.show_decompositions(word, view_models)
         
         # 4. Get User Input
-        # choices are 0-based indices referring to the *sorted* list we just displayed
         choices = display.get_user_choices(len(sorted_decomps))
         
-        if choices is None: # User typed 'q'
-            return None
-        if choices == [-1]: # User typed 's'
-            return False
+        if choices is None: return None
+        if choices == [-1]: return False
         
-        # Map sorted indices back to actual decompositions
         correct_decomps = [sorted_decomps[i] for i in choices]
-        
-        # We need original indices for DataManager? 
-        # Actually DataManager.log_decompositions usually expects the full list and indices, 
-        # but simpler to just pass the objects if we refactor DataManager, 
-        # OR we just find the index of the chosen object in the original unsorted list.
-        # Let's map back to original indices for consistency with existing data manager
-        original_indices = []
-        for correct_d in correct_decomps:
-            original_indices.append(decompositions.index(correct_d))
+        original_indices = [decompositions.index(d) for d in correct_decomps]
 
-        # Logging & Cleanup
-        self.data_manager.log_decompositions(word, original_indices, decompositions)
-        self.data_manager.delete_word_if_root_exists(word, original_indices, decompositions)
+        # --- MOVED LOGIC START: LOGGING ---
+        # Construct log entries directly here (formerly _create_log_entry)
+        log_entries = []
+        for decomp in correct_decomps:
+            root, pos, chain, final_pos = decomp
+            suffix_info = []
+            
+            if chain:
+                current = root
+                for suffix in chain:
+                    forms = suffix.form(current)
+                    used_form = forms[0] if forms else ""
+                    suffix_info.append({
+                        'name': suffix.name,
+                        'form': used_form,
+                        'makes': suffix.makes.name
+                    })
+                    current += used_form
+            
+            log_entries.append({
+                'word': word,
+                'root': root,
+                'suffixes': suffix_info,
+                'final_pos': final_pos
+            })
+            
+        self.data_manager.log_decompositions(log_entries)
+        # --- MOVED LOGIC END: LOGGING ---
+
+        # --- MOVED LOGIC START: DELETIONS ---
+        # Logic moved from delete_word_if_root_exists to here
+        word_lower = word.lower()
+        for decomp in correct_decomps:
+            root = decomp[0].lower()
+            if root == word_lower:
+                continue
+            
+            # Use util.word_methods to check root existence
+            if wrd.can_be_noun(root) or wrd.can_be_verb(root):
+                if self.data_manager.delete(word_lower):
+                    print(f"🗑️  Deleted '{word}' (root '{root}' exists)")
+                    
+                    # Also check infinitive
+                    infinitive_form = wrd.infinitive(word_lower)
+                    if infinitive_form and infinitive_form != word_lower:
+                        if self.data_manager.delete(infinitive_form):
+                            print(f"🗑️  Deleted infinitive '{infinitive_form}'")
+        # --- MOVED LOGIC END: DELETIONS ---
         
-        # --- Training Logic ---
+        # Training Logic
         encoded_chains = [Translation().encode_suffix_chain(chain) for chain in suffix_chains]
         
-        # Train on the Original Indices (because encoded_chains matches original order)
         training_data = [
             ([], encoded_chains, idx) for idx in original_indices
         ]
@@ -130,7 +151,6 @@ class InteractiveTrainer:
         return True
     
     def evaluation_mode(self, word: str):
-        """Evaluate model on a word without training"""
         decompositions = sfx.decompose(word)
         if not decompositions:
             print(f"\n  No decompositions found")
@@ -144,19 +164,16 @@ class InteractiveTrainer:
             
             print(f"\n🤖 ML Model's top prediction:")
             
-            # Prepare view model for the single best result
             best_decomp = decompositions[pred_idx]
             vm = Translation().reconstruct_morphology(word, best_decomp)
             vm['score'] = scores[pred_idx]
             
-            # Use display's single option printer (accessed via list for simplicity)
             display.show_decompositions(word, [vm])
 
         except Exception as e:
             print(f"\n Error: {e}")
 
     def relearn_mode(self):
-        """Train on all logged valid decompositions."""
         entries = self.data_manager.get_valid_decomps()
         
         word_groups = {}
@@ -201,7 +218,6 @@ class InteractiveTrainer:
         self.save()
 
     def auto_words_mode(self):
-        """Loop that picks random words and prompts the user."""
         print(f"   Words deleted if root exists in dictionary")
         print(f"   Press 'q' to exit\n")
         auto_stats = {
@@ -219,16 +235,16 @@ class InteractiveTrainer:
                 auto_stats['words_processed'] += 1
                 result = self.train_mode(word)
                 
-                if result is None: # User Quit
+                if result is None:
                     auto_stats['words_processed'] -= 1 
                     print("\n Exiting auto mode...")
                     break
                 
-                if result is False: # Skipped
+                if result is False: 
                     auto_stats['words_skipped'] += 1
                 
-                if self.data_manager.exists(word.lower()) == 0: 
-                    auto_stats['words_deleted'] += 1
+                # Note: We can't accurately track 'words_deleted' here anymore
+                # because the logic is internal to train_mode.
                     
             except KeyboardInterrupt:
                 break
@@ -239,9 +255,6 @@ class InteractiveTrainer:
         display.show_auto_summary(auto_stats)
 
     def sample_mode(self):
-        """
-        Decompose a full text file using Multiprocessing, then use Batch AI to rank.
-        """
         print(f"\nExample: 'sample.txt'")
         filename = input("Enter filename (default: sample.txt): ").strip()
         if not filename: filename = "sample.txt"
@@ -257,7 +270,6 @@ class InteractiveTrainer:
             return
             
         print(f"    Input: {len(text)} tokens")
-        
         unique_words = list(set(text))
         print(f"    Unique words: {len(unique_words)}")
         
@@ -279,7 +291,6 @@ class InteractiveTrainer:
             if not decomps:
                 cache[word] = word
             elif len(decomps) == 1:
-                # Use simplified format logic here or call Translation if strictly needed
                 cache[word] = display.format_decomposition(word, decomps[0], simple=True)
             else:
                 suffix_chains = [chain for _, _, chain, _ in decomps]
@@ -313,7 +324,6 @@ class InteractiveTrainer:
         print("    Done.")
 
     def stat_mode(self):
-        """Display comprehensive training statistics"""
         print(f"\n Training Statistics:")
         print(f"  Total examples: {self.trainer.training_count}")
         
@@ -324,22 +334,9 @@ class InteractiveTrainer:
         
         if self.trainer.trainer.validation_history:
             print(f"  Best validation: {self.trainer.trainer.best_val_loss:.4f}")
-        
-        if self.trainer.auto_stats['words_processed'] > 0:
-            print(f"\n  Auto mode:")
-            print(f"    - Processed: {self.trainer.auto_stats['words_processed']}")
-            print(f"    - Deleted: {self.trainer.auto_stats['words_deleted']}")
-            print(f"    - Skipped: {self.trainer.auto_stats['words_skipped']}")
-        
-        print(f"\n  Model config:")
-        print(f"    - Architecture: {'LSTM' if self.trainer.model.use_lstm else 'Transformer'}")
-        print(f"    - Loss: {'Triplet' if self.trainer.trainer.use_triplet_loss else 'Contrastive'}")
-        print(f"    - Batch size: {self.trainer.trainer.batch_size}")
 
     def menu(self):
-        """Main entry point."""
         display.welcome()
-        
         while True:
             try:
                 cmd = input("\n Enter word or command: ").strip().lower()
@@ -366,7 +363,6 @@ class InteractiveTrainer:
                     if result is None and display.confirm_save():
                         self.save()
                         break
-            
             except KeyboardInterrupt:
                 if display.confirm_save():
                     self.save()
@@ -379,7 +375,6 @@ class Translation:
     """Helper class for translating between Suffix objects, Strings, and ML Vectors."""
     
     def _match_decompositions(self, entries: List[Dict], decompositions: List[Tuple]) -> List[int]:
-        """Helper to match logged decomposition strings back to current decomposition indices."""
         indices = []
         for entry in entries:
             entry_root = entry['root']
@@ -395,7 +390,6 @@ class Translation:
         return indices
 
     def encode_suffix_chain(self, suffix_chain: List[Suffix]) -> List[Tuple[int, int]]:
-        """Convert Suffix objects into (suffix_id, category_id) tuples."""
         suffix_to_id = {
             suffix.name: idx + 1  
             for idx, suffix in enumerate(sfx.ALL_SUFFIXES)
@@ -413,12 +407,7 @@ class Translation:
         return encoded
 
     def reconstruct_morphology(self, word: str, decomposition: Tuple) -> Dict[str, Any]:
-        """
-        Reconstructs the surface forms of the suffixes based on the root and chain.
-        Returns a dict ready for display.
-        """
         root, pos, chain, final_pos = decomposition
-        
         if not chain:
             verb_marker = "-" if pos == "verb" else ""
             return {
@@ -428,7 +417,6 @@ class Translation:
                 'formation_str': f"{root}{verb_marker} (no suffixes)"
             }
         
-        # --- Logic Moved from display.py ---
         current_stem = root
         suffix_forms = []
         suffix_names = []
@@ -437,7 +425,6 @@ class Translation:
         cursor = len(root)
         start_idx = 0
         
-        # 1. HANDLE SPECIAL PREFIX CASE (PEKISTIRME)
         if chain and chain[0].name == "pekistirme":
             root_idx = word.find(root)
             if root_idx > 0:
@@ -449,7 +436,6 @@ class Translation:
                 cursor = root_idx + len(root)
                 start_idx = 1
 
-        # 2. HANDLE STANDARD SUFFIXES (Initial Check)
         if start_idx == 0:
             if not word.startswith(root) and chain:
                 first_suffix = chain[0]
@@ -466,19 +452,16 @@ class Translation:
                             break
                     if match_found: break
 
-        # 3. MAIN LOOP
         for i in range(start_idx, len(chain)):
             suffix_obj = chain[i]
             possible_forms = suffix_obj.form(current_stem)
             found_form = None 
             
-            # A. Exact Match
             for form in possible_forms:
                 if word.startswith(form, cursor):
                     found_form = form
                     break
             
-            # B. Narrowing Match (Extended Lookahead for -iyor)
             if found_form is None:
                 has_iyor_ahead = False
                 for k in range(i + 1, len(chain)):
@@ -494,7 +477,6 @@ class Translation:
                                 found_form = shortened
                                 break
 
-            # C. Soft Match
             if found_form is None:
                 for form in possible_forms:
                     if len(form) > 0 and word.startswith(form, cursor - 1):
