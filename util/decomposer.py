@@ -224,7 +224,7 @@ def get_pekistirme_analyses(word: str) -> List[Tuple]:
             # Greedy search: match longest possible valid dictionary word
             for k in range(len(potential_rest), 1, -1):
                 candidate = potential_rest[:k]
-                if wrd.exists(candidate):
+                if wrd.can_be_noun(candidate) or wrd.can_be_verb(candidate):
                     return word[:prefix_len], candidate
         return None, None
 

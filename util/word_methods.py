@@ -37,6 +37,10 @@ class MinorHarmony(Enum):
 with open(DATA_FILE, "r", encoding="utf-8") as f:
     WORDS = set(line.strip() for line in f if line.strip())
 
+
+def exists(word: str) -> bool:
+    return can_be_noun(word) or can_be_verb(word)
+
 def can_be_noun(word: str) -> bool:
     if not word:
         return 0

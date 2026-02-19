@@ -32,12 +32,11 @@ def form_for_active_it(word, suffix_obj):
     t_form = 't'
     t_form = Suffix._apply_consonant_hardening(word, t_form) # d -> t (nadiren)
     
-    # Kelime ünlüyle bitiyorsa 't' ekle
+    # Kelime ünlü ya da r ya da l ile bitiyorsa 't' ekle
     if  word[-1] in wrd.VOWELS or  word[-1] in ['r', 'l']:
         result_list.append(t_form)
     
-    # Özel durum: Çok heceli ve 'r' veya 'l' ile biten bazı kelimelerde de 't' gelebilir
-    # (Bu kısım kural tabanlı sistemde karmaşıktır, basit bırakıyoruz)
+
     
     return result_list
 
@@ -119,14 +118,14 @@ reflexive_in = Suffix("reflexive_in", "in", Type.VERB, Type.VERB, major_harmony=
 
 randomative_ele = Suffix("randomative_ele", "ele", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.VERB_DERIVATIONAL, is_unique=False)
 
-possibiliative_ebil = Suffix("possibilitative_ebil", "ebil", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.VERB_COMPOUND, is_unique=True)
+possibiliative_ebil = Suffix("possibilitative_ebil", "ebil", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No,needs_y_buffer=True, group=SuffixGroup.VERB_COMPOUND, is_unique=True)
 
 # Olumsuzluk (Negative): Gel-me.
 # Bu ek Yapım eklerinden sonra gelir, ama Çekim eklerinden önce gelir.
 # Hiyerarşide VERB_DERIVATIONAL grubunda kalabilir ama is_unique=True olmalı.
 negative_me = Suffix("negative_me", "me", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.VERB_NEGATING, is_unique=True)
 
-negative_consto = Suffix("negative_consto", "eme", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.VERB_NEGATING, is_unique=True)
+negative_consto = Suffix("negative_consto", "eme", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes,needs_y_buffer=True, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.VERB_NEGATING, is_unique=True)
 
 VERB2VERB =   [
     value for name, value in globals().items() 

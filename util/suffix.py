@@ -3,12 +3,12 @@ import util.word_methods as wrd
 
 # Eklerin hiyerarşisi.
 # Kural: Bir ek, kendinden daha düşük numaralı bir gruptan sonra GELEMEZ.
-## TODO belki fiiller için ayrı hiyerarşi
-class SuffixGroup(IntEnum):
+class SuffixGroup(IntEnum):                                                                                         
     VERB_DERIVATIONAL = 5  # v2v
     VERB_NEGATING = 7   # Olumsuzluk eki ()
     VERB_COMPOUND = 8     # Fiil Tamlama Ekleri (-r)
     DERIVATIONAL = 10      # Yapım Ekleri (ve -ler çoğul eki dosyanızdaki yapıya göre)
+    N2V_DERIVATIONAL = 10 # İsimden Fiile 
     DERIVATIONAL_LOCKING = 15 # Yapım Ekleri - Kilitli (Bazı ekler geldikten sonra başka yapım eki gelmez
     POSSESSIVE = 30        # İyelik Ekleri (-im, -in)
     COMPOUND = 35          # İsim Tamlama Ekleri (-in)
