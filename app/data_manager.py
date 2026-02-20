@@ -111,3 +111,25 @@ class DataManager:
         except Exception as e:
             print(f"❌ An error occurred: {e}")
             return False
+    def log_sentence_decompositions(self, log_entries: List[Dict], original_sentence: str):
+        """
+        Logs a full sentence as a single entry in the JSONL file.
+        Format: {original_sentence, decomposed_sentence, words: [...]}
+        """
+        try:
+            # Construct the readable decomposed string (e.g., "Ben ev+datif_e git+yor_um")
+            # We assume 'morphology_string' is added by the trainer or we fallback to word
+            decomposed_str = " ".join([e.get('morphology_string', e['word']) for e in log_entries])
+            
+            sentence_entry = {
+                'type': 'sentence',
+                'original_sentence': original_sentence,
+                'decomposed_sentence': decomposed_str,
+                'words': log_entries
+            }
+            
+            with open(self.paths.valid_decompositions_path, 'a', encoding='utf-8') as f:
+                f.write(json.dumps(sentence_entry, ensure_ascii=False) + '\n')
+            print(f"📝 Saved sentence decomposition")
+        except Exception as e:
+            print(f"⚠️  Could not save sentence: {e}")

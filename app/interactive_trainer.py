@@ -294,6 +294,7 @@ class InteractiveTrainer:
             wd = word_data[w_idx]
             word = wd['word']
             decomps = wd['decomps']
+            typing_str = wd['typing_strings'][correct_d_idx]
             
             suffix_chains = [chain for _, _, chain, _ in decomps]
             encoded_chains = [translator.encode_suffix_chain(chain) for chain in suffix_chains]
@@ -315,12 +316,13 @@ class InteractiveTrainer:
                     
             log_entries.append({
                 'word': word,
+                'morphology_string': typing_str,
                 'root': root,
                 'suffixes': suffix_info,
                 'final_pos': final_pos
             })
 
-        self.data_manager.log_decompositions(log_entries)
+        self.data_manager.log_sentence_decompositions(log_entries, sentence)
         
         print("\nTraining...")
         loss = self.trainer.train_persistent(training_data)
