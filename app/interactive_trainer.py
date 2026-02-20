@@ -1,20 +1,37 @@
+import sys
+import os
+import itertools
 import concurrent.futures
 import multiprocessing
 from typing import List, Optional, Tuple, Dict, Any
 
-# Internal Project Imports
+try:
+    import msvcrt
+    def getch():
+        return msvcrt.getwch()
+except ImportError:
+    import tty, termios
+    def getch():
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(sys.stdin.fileno())
+            ch = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return ch
+
 import app.display as display
 from app.data_manager import DataManager
 from ml.ml_ranking_model import Ranker, Trainer
 import util.decomposer as sfx
-import util.word_methods as wrd # <--- LOGIC IMPORT ADDED
+import util.word_methods as wrd 
 from util.suffix import Suffix
-
 
 class InteractiveTrainer:
     """
     Handles the interactive training loop.
-    Now contains logic for formatting logs and validating dictionary rules.
+    Contains logic for formatting logs, validating dictionary rules, and processing sentences.
     """
     
     def __init__(self):
@@ -36,7 +53,6 @@ class InteractiveTrainer:
             print(f"\n  No decompositions found for '{word}'")
             return False
         
-        # 1. Get Predictions
         scores = None
         suffix_chains = [chain for _, _, chain, _ in decompositions]
         
@@ -52,7 +68,6 @@ class InteractiveTrainer:
             except Exception:
                 pass
         
-        # 2. Sort and Prepare Data
         scored_decomps = []
         for i, decomp in enumerate(decompositions):
             score = scores[i] if scores else 0.0
@@ -71,10 +86,8 @@ class InteractiveTrainer:
             view_models.append(vm)
             sorted_decomps.append(decomp)
 
-        # 3. Show Display
         display.show_decompositions(word, view_models)
         
-        # 4. Get User Input
         choices = display.get_user_choices(len(sorted_decomps))
         
         if choices is None: return None
@@ -83,8 +96,6 @@ class InteractiveTrainer:
         correct_decomps = [sorted_decomps[i] for i in choices]
         original_indices = [decompositions.index(d) for d in correct_decomps]
 
-        # --- MOVED LOGIC START: LOGGING ---
-        # Construct log entries directly here (formerly _create_log_entry)
         log_entries = []
         for decomp in correct_decomps:
             root, pos, chain, final_pos = decomp
@@ -110,29 +121,22 @@ class InteractiveTrainer:
             })
             
         self.data_manager.log_decompositions(log_entries)
-        # --- MOVED LOGIC END: LOGGING ---
 
-        # --- MOVED LOGIC START: DELETIONS ---
-        # Logic moved from delete_word_if_root_exists to here
         word_lower = word.lower()
         for decomp in correct_decomps:
             root = decomp[0].lower()
             if root == word_lower:
                 continue
             
-            # Use util.word_methods to check root existence
             if wrd.can_be_noun(root) or wrd.can_be_verb(root):
                 if self.data_manager.delete(word_lower):
-                    print(f"🗑️  Deleted '{word}' (root '{root}' exists)")
+                    print(f"  Deleted '{word}' (root '{root}' exists)")
                     
-                    # Also check infinitive
                     infinitive_form = wrd.infinitive(word_lower)
                     if infinitive_form and infinitive_form != word_lower:
                         if self.data_manager.delete(infinitive_form):
-                            print(f"🗑️  Deleted infinitive '{infinitive_form}'")
-        # --- MOVED LOGIC END: DELETIONS ---
+                            print(f"  Deleted infinitive '{infinitive_form}'")
         
-        # Training Logic
         encoded_chains = [Translation().encode_suffix_chain(chain) for chain in suffix_chains]
         
         training_data = [
@@ -149,6 +153,184 @@ class InteractiveTrainer:
             self.save()
         
         return True
+
+    def _format_aligned_sentence(self, words: List[str], parts: List[str]) -> str:
+        """Aligns words and their decomposed parts into two padded rows."""
+        top_line = ""
+        bot_line = ""
+        for w, p in zip(words, parts):
+            width = max(len(w), len(p))
+            top_line += w.ljust(width) + "   "
+            bot_line += p.ljust(width) + "   "
+        return f"{top_line.strip()}\n    {bot_line.strip()}"
+
+    def sentence_train_mode(self, sentence: str) -> Optional[bool]:
+        words = sentence.strip().split()
+        if not words:
+            return False
+
+        word_data = []
+        for word in words:
+            decomps = sfx.decompose(word)
+            if not decomps:
+                print(f"\nNo decompositions found for '{word}'. Skipping sentence.")
+                return False
+            word_data.append({'word': word, 'decomps': decomps})
+
+        translator = Translation()
+        all_chains_to_predict = []
+        
+        for wd in word_data:
+            suffix_chains = [chain for _, _, chain, _ in wd['decomps']]
+            encoded_chains = [translator.encode_suffix_chain(chain) for chain in suffix_chains]
+            all_chains_to_predict.append(encoded_chains)
+
+        batch_results = self.trainer.batch_predict(all_chains_to_predict)
+
+        for i, wd in enumerate(word_data):
+            wd['scores'] = batch_results[i][1]
+            wd['vms'] = []
+            wd['typing_strings'] = []
+            
+            for decomp in wd['decomps']:
+                vm = translator.reconstruct_morphology(wd['word'], decomp)
+                wd['vms'].append(vm)
+                
+                root = decomp[0]
+                if vm['has_chain']:
+                    suffixes = vm['suffixes_str'].replace(" + ", " ")
+                    wd['typing_strings'].append(f"{root} {suffixes}")
+                else:
+                    wd['typing_strings'].append(root)
+
+        decomp_indices = [list(range(len(wd['decomps']))) for wd in word_data]
+        all_combinations = list(itertools.product(*decomp_indices))
+        
+        all_sentences = []
+        for combo in all_combinations:
+            total_score = sum(word_data[w_idx]['scores'][d_idx] for w_idx, d_idx in enumerate(combo))
+            text_parts = [word_data[w_idx]['typing_strings'][d_idx] for w_idx, d_idx in enumerate(combo)]
+            text_str = " ".join(text_parts)
+            all_sentences.append({
+                'score': total_score,
+                'combo_indices': combo,
+                'text': text_str,
+                'parts': text_parts
+            })
+
+        all_sentences.sort(key=lambda x: x['score'], reverse=True)
+        top_k_sentences = all_sentences[:10]
+
+        current_input = ""
+        correct_combo = None
+        locked_in = False
+        display_list = top_k_sentences
+
+        while True:
+            if not locked_in:
+                matches = [c for c in all_sentences if c['text'].startswith(current_input)]
+                display_list = top_k_sentences if current_input == "" else matches[:10]
+                
+                if len(matches) == 1 and current_input != "":
+                    correct_combo = matches[0]['combo_indices']
+                    print(f"\nAuto-selected: {matches[0]['text']}")
+                    break
+                    
+            os.system('cls' if os.name == 'nt' else 'clear')
+            print(f"Sentence: {sentence}\n")
+            
+            if not display_list:
+                print("No matching decompositions found for your input.")
+            else:
+                print("Predictions:" if not locked_in else "Locked Predictions (Select by number):")
+                for i, c in enumerate(display_list):
+                    aligned_display = self._format_aligned_sentence(words, c['parts'])
+                    vms = [word_data[w_idx]['vms'][d_idx] for w_idx, d_idx in enumerate(c['combo_indices'])]
+                    
+                    display_idx = i if locked_in or current_input == "" else "-"
+                    display.show_sentence_prediction(display_idx, c['score'], words, vms, aligned_display)
+                    
+            if locked_in:
+                print(f"\nLocked on: '{current_input}'")
+                print(f"Press 0-{len(display_list)-1} to select, or Backspace to edit: ", end="", flush=True)
+            else:
+                print(f"\nType decomposition (Press Enter to lock options): {current_input}", end="", flush=True)
+            
+            ch = getch()
+            
+            if ch in ('\r', '\n'):
+                if not locked_in and display_list:
+                    locked_in = True
+            elif ch in ('\x08', '\x7f'):
+                if locked_in:
+                    locked_in = False
+                else:
+                    current_input = current_input[:-1]
+            elif ch == '\x03': 
+                return None
+            elif ch == '\x1b': 
+                return False
+            elif locked_in and ch.isdigit():
+                idx = int(ch)
+                if idx < len(display_list):
+                    correct_combo = display_list[idx]['combo_indices']
+                    break
+            elif not locked_in:
+                if current_input == "" and ch.isdigit():
+                    idx = int(ch)
+                    if idx < len(display_list):
+                        correct_combo = display_list[idx]['combo_indices']
+                        break
+                else:
+                    current_input += ch
+
+        if not correct_combo:
+            return False
+
+        training_data = []
+        log_entries = []
+        
+        for w_idx, correct_d_idx in enumerate(correct_combo):
+            wd = word_data[w_idx]
+            word = wd['word']
+            decomps = wd['decomps']
+            
+            suffix_chains = [chain for _, _, chain, _ in decomps]
+            encoded_chains = [translator.encode_suffix_chain(chain) for chain in suffix_chains]
+            training_data.append(([], encoded_chains, correct_d_idx))
+            
+            root, pos, chain, final_pos = decomps[correct_d_idx]
+            suffix_info = []
+            if chain:
+                current = root
+                for suffix in chain:
+                    forms = suffix.form(current)
+                    used_form = forms[0] if forms else ""
+                    suffix_info.append({
+                        'name': suffix.name,
+                        'form': used_form,
+                        'makes': suffix.makes.name
+                    })
+                    current += used_form
+                    
+            log_entries.append({
+                'word': word,
+                'root': root,
+                'suffixes': suffix_info,
+                'final_pos': final_pos
+            })
+
+        self.data_manager.log_decompositions(log_entries)
+        
+        print("\nTraining...")
+        loss = self.trainer.train_persistent(training_data)
+        print(f"Average word loss: {loss:.4f}")
+
+        self.training_count += len(training_data)
+        if self.training_count % self.trainer.checkpoint_frequency == 0:
+            self.save()
+            
+        return True
     
     def evaluation_mode(self, word: str):
         decompositions = sfx.decompose(word)
@@ -162,7 +344,7 @@ class InteractiveTrainer:
             encoded_chains = [Translation().encode_suffix_chain(chain) for chain in suffix_chains]
             pred_idx, scores = self.trainer.predict(encoded_chains)
             
-            print(f"\n🤖 ML Model's top prediction:")
+            print(f"\n ML Model's top prediction:")
             
             best_decomp = decompositions[pred_idx]
             vm = Translation().reconstruct_morphology(word, best_decomp)
@@ -229,7 +411,7 @@ class InteractiveTrainer:
             try:
                 word = self.data_manager.random_word()
                 if not word:
-                    print("\n✅ No more words!")
+                    print("\n No more words!")
                     break
                 
                 auto_stats['words_processed'] += 1
@@ -242,9 +424,6 @@ class InteractiveTrainer:
                 
                 if result is False: 
                     auto_stats['words_skipped'] += 1
-                
-                # Note: We can't accurately track 'words_deleted' here anymore
-                # because the logic is internal to train_mode.
                     
             except KeyboardInterrupt:
                 break
@@ -358,6 +537,11 @@ class InteractiveTrainer:
                     self.relearn_mode()
                 elif cmd.startswith('eval '):
                     self.evaluation_mode(cmd[5:].strip())
+                elif cmd.startswith('sentence '):
+                    result = self.sentence_train_mode(cmd[9:].strip())
+                    if result is None and display.confirm_save():
+                        self.save()
+                        break
                 else:
                     result = self.train_mode(cmd)
                     if result is None and display.confirm_save():
@@ -369,7 +553,6 @@ class InteractiveTrainer:
                 break
             except Exception as e:
                 print(f"\n Error: {e}")
-
 
 class Translation:
     """Helper class for translating between Suffix objects, Strings, and ML Vectors."""

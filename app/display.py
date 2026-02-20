@@ -4,6 +4,7 @@ def welcome():
     """Show welcome message and available commands"""
     print("\n Commands:")
     print("  - Enter a word to analyze and train")
+    print("  - 'sentence <text>' - Train on a full sentence")
     print("  - 'auto' - Start auto mode (random words from dictionary)")
     print("  - 'eval <word>' - Evaluate model on a word")
     print("  - 'relearn' - Train on all logged decompositions")
@@ -31,7 +32,6 @@ def _show_single_option(display_idx: int, vm: Dict[str, Any]):
     
     print(f"Root:      {vm['root_str']}")
     
-    # If it has suffix chain info
     if vm.get('has_chain'):
         print(f"Suffixes:  {vm['suffixes_str']}")
         print(f"Names:     {vm['names_str']}")
@@ -40,6 +40,23 @@ def _show_single_option(display_idx: int, vm: Dict[str, Any]):
         print(f"Formation: {vm['root_str']} (no suffixes)")
     
     print(f"Final POS: {vm['final_pos']}")
+    print("-" * 70)
+
+def show_sentence_prediction(display_idx: int, score: float, words: List[str], view_models: List[Dict[str, Any]], aligned_str: str) -> None:
+    """Format and print a sentence prediction with detailed word breakdowns."""
+    print(f"\n[Option {display_idx}] Score: {score:.4f}")
+    print(f"    {aligned_str}\n")
+    
+    for w, vm in zip(words, view_models):
+        print(f"  {w}:")
+        print(f"    Root:      {vm['root_str']}")
+        if vm.get('has_chain'):
+            print(f"    Suffixes:  {vm['suffixes_str']}")
+            print(f"    Names:     {vm['names_str']}")
+            print(f"    Formation: {vm['formation_str']}")
+        else:
+            print(f"    Formation: {vm['root_str']} (no suffixes)")
+        print(f"    Final POS: {vm['final_pos']}")
     print("-" * 70)
 
 def get_user_choices(num_options: int) -> Optional[List[int]]:
@@ -56,7 +73,6 @@ def get_user_choices(num_options: int) -> Optional[List[int]]:
         
         parsed = _parse_numbers(choice, num_options)
         if parsed is not None:
-            # Returns 0-based indices corresponding to the display order
             return [c - 1 for c in parsed]
 
 def _parse_numbers(input_str: str, max_value: int) -> Optional[List[int]]:
@@ -109,7 +125,6 @@ def format_decomposition(word: str, decomposition: Tuple, simple: bool = False) 
     if not chain:
         return root
     
-    # Simple display-only formatting
     suffix_names = [suffix.name for suffix in chain]
     result = root + '+' + '+'.join(suffix_names)
     return result

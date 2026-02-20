@@ -342,7 +342,7 @@ def form_for_accusative(word, suffix_obj):
 # SUFFIX DEFINITIONS
 # ============================================================================
 
-
+## LERI GECE-LERI EKLENMEKLİ Mİ? 
 #-- new group, can only get predicative
 approximative_imtrak = Suffix("approximative_imtrak", "imtrak", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL_LOCKING)
 temporative_leyin = Suffix("temporative_leyin", "leyin", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL_LOCKING)
