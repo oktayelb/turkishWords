@@ -40,14 +40,15 @@ def form_for_active_it(word, suffix_obj):
     
     return result_list
 
-
+## DEPRACTED  il ekinin n li varyasyonunu da işin içine katmak çok etimolojik detay. Gereksiz. Default form kullanılacak.
+"""
 def form_for_passive_il(word, suffix_obj):
-    """
+    
     Form function for passive_il (Edilgen) suffix
     - Normali: -il, -ıl, -ul, -ül (Yap-ıl)
     - Sonu 'l' ile bitiyorsa: -in, -ın, -un, -ün (Bul-un)
     - Sonu ünlü ile bitiyorsa: -n (Ara-n)
-    """
+    
     result_list = []
     
 
@@ -76,6 +77,7 @@ def form_for_passive_il(word, suffix_obj):
         result_list.append(il_base)
 
     return result_list
+"""
 
 def form_for_active_ir(word, suffix_obj):
 
@@ -88,6 +90,14 @@ def form_for_active_ir(word, suffix_obj):
     base2 = Suffix._apply_minor_harmony(word, base2, suffix_obj.minor_harmony)
     return [base, base2]
 
+def form_for_possibiliative_ebil(word, suffix_obj):
+    e_base = "e"
+    e_base = Suffix._apply_major_harmony(word, e_base, suffix_obj.major_harmony)
+
+    if word and word[-1] not in wrd.VOWELS:
+        return [e_base + "bil"]
+    else:
+        return ["y" + e_base + "bil"]    
 # ============================================================================
 # VERB TO VERB SUFFIXES (v2v) - Hepsi VERB_DERIVATIONAL (Grup 10)
 # ============================================================================
@@ -111,14 +121,15 @@ active_dir = Suffix("active_dir", "dir", Type.VERB, Type.VERB, major_harmony=Has
 active_ir = Suffix("active_ir", "ir", Type.VERB, Type.VERB, form_function=form_for_active_ir, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.VERB_DERIVATIONAL, is_unique=False)
 
 # Edilgen (Passive): Yap-ıl, Bul-un
-passive_il = Suffix("passive_il", "il", Type.VERB, Type.VERB, form_function=form_for_passive_il, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.VERB_DERIVATIONAL, is_unique=False)
+passive_il = Suffix("passive_il", "il", Type.VERB, Type.VERB,  major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.VERB_DERIVATIONAL, is_unique=False)
 
 # Dönüşlü (Reflexive) -in: Giy-in, Sev-in
 reflexive_in = Suffix("reflexive_in", "in", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.VERB_DERIVATIONAL, is_unique=False)
 
 randomative_ele = Suffix("randomative_ele", "ele", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.VERB_DERIVATIONAL, is_unique=False)
 
-possibiliative_ebil = Suffix("possibilitative_ebil", "ebil", Type.VERB, Type.VERB, major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No,needs_y_buffer=True, group=SuffixGroup.VERB_COMPOUND, is_unique=True)
+### Buranın ayrılması laaızm daha temiz bir mimari... ebilmek evermek eyazmak şeylerini halletmeli.
+possibiliative_ebil = Suffix("possibilitative_ebil", "ebil", Type.VERB, Type.VERB, form_function=form_for_possibiliative_ebil, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No,needs_y_buffer=True, group=SuffixGroup.VERB_COMPOUND, is_unique=True)
 
 # Olumsuzluk (Negative): Gel-me.
 # Bu ek Yapım eklerinden sonra gelir, ama Çekim eklerinden önce gelir.

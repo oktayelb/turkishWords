@@ -1,9 +1,9 @@
-from app.interactive_trainer import InteractiveTrainer
+from app.cli import AppCLI
 
     
 if __name__ == "__main__":
     
-    trainer = InteractiveTrainer()
-    trainer.menu()
+    cli = AppCLI()
+    cli.run()
 
 

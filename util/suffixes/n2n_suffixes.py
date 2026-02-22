@@ -319,7 +319,7 @@ def form_for_copula_mis (word, suffix_obj):
     return [base]
 
 def form_for_noun_compound_suffix(word, suffix_obj):
-    base = "ın"
+    base = "in"
     base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
     base = Suffix._apply_minor_harmony(word, base, suffix_obj.minor_harmony)
     if word and word[-1] in VOWELS:
@@ -374,7 +374,7 @@ posessive_2sg = Suffix("posessive_2sg", "in", Type.NOUN, Type.NOUN, major_harmon
 posessive_3sg = Suffix("posessive_3sg", "i", Type.NOUN, Type.NOUN, form_function=form_for_posessive_3sg, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.POSSESSIVE)
 posessive_1pl = Suffix("posessive_1pl", "imiz", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.POSSESSIVE)
 posessive_2pl = Suffix("posessive_2pl", "iniz", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.POSSESSIVE)
-posessive_3pl = Suffix("posessive_3pl", "leri", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.POSSESSIVE)
+posessive_3pl = Suffix("posessive_3pl", "leri", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No , group=SuffixGroup.POSSESSIVE)
 
 noun_compound = Suffix("noun_compound", "in", Type.NOUN, Type.NOUN, form_function=form_for_noun_compound_suffix, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.COMPOUND)
 

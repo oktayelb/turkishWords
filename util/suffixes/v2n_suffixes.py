@@ -351,7 +351,7 @@ adverbial_ip   = Suffix("adverbial_ip", "ip", Type.VERB, Type.NOUN, major_harmon
 adverbial_e    = Suffix("adverbial_e", "e", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, needs_y_buffer=True, group=SuffixGroup.DERIVATIONAL_LOCKING)
 adverbial_esi  = Suffix("adverbial_esi", "esi", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, needs_y_buffer=True, group=SuffixGroup.DERIVATIONAL) # Ölesiye (kalıplaşmış olsa da genelde zarftır)
 adverbial_ince = Suffix("adverbial_ince", "ince", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
-
+adverbial_dikçe = Suffix("adverbial_dikçe", "dikçe", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL_LOCKING)
 VERB2NOUN = [
     value for name, value in globals().items() 
     if isinstance(value, Suffix) and name != "Suffix"
