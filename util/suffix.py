@@ -2,16 +2,17 @@ from enum import Enum, IntEnum
 import util.word_methods as wrd
 
 # Eklerin hiyerarşisi.
-# Kural: Bir ek, kendinden daha düşük numaralı bir gruptan sonra GELEMEZ.
+# Kural: Bir ek, kendinden daha BÜYÜK numaralı bir gruptan sonra GELEMEZ.
 class SuffixGroup(IntEnum):                                                                                         
     VERB_DERIVATIONAL = 5  # v2v
     VERB_NEGATING = 7   # Olumsuzluk eki ()
     VERB_COMPOUND = 8     # Fiil Tamlama Ekleri (-r)
-    DERIVATIONAL = 10      # Yapım Ekleri (ve -ler çoğul eki dosyanızdaki yapıya göre)
     N2V_DERIVATIONAL = 10 # İsimden Fiile 
+    PLURAL = 10      # 
+    DERIVATIONAL = 10      # Yapım Ekleri (ve -ler çoğul eki dosyanızdaki yapıya göre)
     DERIVATIONAL_LOCKING = 15 # Yapım Ekleri - Kilitli (Bazı ekler geldikten sonra başka yapım eki gelmez
     POSSESSIVE = 30        # İyelik Ekleri (-im, -in)
-    COMPOUND = 35          # İsim Tamlama Ekleri (-in)
+    # COMPOUND = 35          # İsim Tamlama Ekleri (-in) tam emin olana kadar bekle
     CASE = 40              # Hal Ekleri (-e, -de)
     POST_CASE = 45         # Hal eki sonrası istisnalar (-ki)
     PREDICATIVE = 50       # Bildirme / Ek-fiil (-dir, -di, -miş, -se)
@@ -62,7 +63,7 @@ class Suffix:
         base = Suffix._apply_consonant_hardening(word, base)
         
         candidates = [] # Start empty!
-
+    
         # 4. Çarpışma Kontrolü (Collision Check)
         vowel_collision = Suffix._vowel_collision(word, base)
 
@@ -157,10 +158,7 @@ class Suffix:
         # Diğer yumuşamalar (Suffixlerde daha nadir ama mümkün)
         elif last_char == 'ç':
             return form[:-1] + 'c'
-        elif last_char == 'p':
-            return form[:-1] + 'b'
-        elif last_char == 't':
-            return form[:-1] + 'd'
+
         
         # Eğer yumuşama yoksa orijinali döndür
         return form

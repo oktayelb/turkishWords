@@ -8630,7 +8630,6 @@ dönüştürme
 dönüştürmek
 dönüştürücü
 dönüştürülme
-dönüştürülmek
 dönüştürüm
 dönüşüm
 dönüşümcü
@@ -24147,6 +24146,7 @@ nevazil
 nevaziş
 nevbahar
 neveser
+nevi
 nevir
 nevmit
 nevralji
@@ -24413,6 +24413,7 @@ nütasyon
 nüve
 nüzuł
 nüzullü
+o
 oba
 obabaşı
 obelisk

@@ -1,28 +1,15 @@
 import os
 import json
 import string
-import random
+import re
 from typing import List, Optional, Dict
 
 from app.file_paths import FilePaths
+import util.word_methods as wrd
 
 class DataManager:
-    """Manages file operations (I/O only)"""
-
     def __init__(self):
         self.paths = FilePaths()
-        self.words = self._load_words()
-
-    def _load_words(self) -> List[str]:
-        try:
-            with open(self.paths.words_path, "r", encoding="utf-8") as f:
-                return [line.strip() for line in f if line.strip()]
-        except FileNotFoundError:
-            print(f"Warning: {self.paths.words_path} not found")
-            return []
-    
-    def _reload_words(self):
-        self.words = self._load_words()
 
     def load_training_count(self) -> int:
         try:
@@ -33,29 +20,38 @@ class DataManager:
             pass
         return 0
 
-    def random_word(self) -> Optional[str]:
-        self._reload_words()
-        return random.choice(self.words) if self.words else None
+    def save_training_count(self, count: int):
+        try:
+            with open(self.paths.training_count_path, "w") as f:
+                f.write(str(count))
+        except Exception:
+            pass
 
-    def get_text_tokenized(self) -> List[str]:
-        text_path = self.paths.sample_text_path
+    def random_word(self) -> Optional[str]:
+        return wrd.get_random_word()
+
+    def get_text_tokenized(self, filename: str = None) -> List[str]:
+        text_path = filename if filename and os.path.exists(filename) else self.paths.sample_text_path
         try:
             with open(text_path, "r", encoding="utf-8") as f:
                 content = f.read()
-            content = content.replace("'", "").replace("’", "")
-            other_punct = string.punctuation.replace("'", "")
-            translator = str.maketrans(other_punct, ' ' * len(other_punct))
-            content = content.translate(translator)
+                
+            content = re.sub(r"['’‘]", "", content)
+            content = re.sub(r'[^\w\s]|_', ' ', content)
+            
             words = [word.lower() for word in content.split()]
-            print(f"Loaded {len(words)} words from {text_path}")
             return words
-        except FileNotFoundError:
-            print(f"Error: {text_path} not found")
+        except Exception:
             return []
-        except Exception as e:
-            print(f"Error reading text file: {e}")
-            return []
-        
+            
+    def get_raw_sentences_text(self) -> str:
+        text_path = getattr(self.paths, 'sample_sentence_path', 'sample/sample_sentence.txt')
+        try:
+            with open(text_path, "r", encoding="utf-8") as f:
+                return f.read()
+        except Exception:
+            return ""
+
     def get_valid_decomps(self) -> List[Dict]:
         entries = []
         try:    
@@ -70,42 +66,45 @@ class DataManager:
             return []
         return entries
 
-    def log_decompositions(self, log_entries: List[Dict]):
+    def log_decompositions(self, log_entries: List[Dict]) -> bool:
         try:
             with open(self.paths.valid_decompositions_path, 'a', encoding='utf-8') as f:
                 for entry in log_entries:
                     f.write(json.dumps(entry, ensure_ascii=False) + '\n')
-            print(f"Saved {len(log_entries)} decompositions")
-        except Exception as e:
-            print(f"Could not save: {e}")
+            return True
+        except Exception:
+            return False
 
-    def write_decomposed_text(self, text: str):
+    def write_decomposed_text(self, text: str) -> bool:
         output_path = self.paths.sample_decomposed_path
         try:
             with open(output_path, "w", encoding="utf-8") as f:
                 f.write(text)
-            print(f"Decomposed text saved to {output_path}")
             return True
-        except Exception as e:
-            print(f"Error writing decomposed text: {e}")
+        except Exception:
+            return False
+            
+    def write_decomposed_sentences(self, text: str) -> bool:
+        output_path = getattr(self.paths, 'sample_sentence_decomposed_path', 'sample/sample_sentence_decomposed.txt')
+        try:
+            with open(output_path, "w", encoding="utf-8") as f:
+                f.write(text)
+            return True
+        except Exception:
             return False
     
     def delete(self, word: str) -> bool:
-        self._reload_words()
         try:
-            if word not in self.words:
-                return False
-            
-            self.words.remove(word)
-            with open(self.paths.words_path, "w", encoding="utf-8") as f:
-                for w in self.words:
-                    f.write(w + "\n")
-            return True
-        except Exception as e:
-            print(f"An error occurred: {e}")
+            if wrd.delete_word(word):
+                with open(self.paths.words_path, "w", encoding="utf-8") as f:
+                    for w in wrd.get_all_words():
+                        f.write(w + "\n")
+                return True
+            return False
+        except Exception:
             return False
 
-    def log_sentence_decompositions(self, log_entries: List[Dict], original_sentence: str):
+    def log_sentence_decompositions(self, log_entries: List[Dict], original_sentence: str) -> bool:
         try:
             decomposed_str = " ".join([e.get('morphology_string', e['word']) for e in log_entries])
             sentence_entry = {
@@ -116,6 +115,6 @@ class DataManager:
             }
             with open(self.paths.valid_decompositions_path, 'a', encoding='utf-8') as f:
                 f.write(json.dumps(sentence_entry, ensure_ascii=False) + '\n')
-            print(f"Saved sentence decomposition")
-        except Exception as e:
-            print(f"Could not save sentence: {e}")
+            return True
+        except Exception:
+            return False

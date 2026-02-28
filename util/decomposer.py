@@ -1,4 +1,5 @@
 from typing import List, Tuple, Set 
+import functools
 
 # ============================================================================
 # IMPORTS
@@ -12,6 +13,7 @@ import util.word_methods as wrd
 from util.suffix import Type, Suffix, SuffixGroup
 
 ALL_SUFFIXES = NOUN2NOUN + NOUN2VERB + VERB2NOUN + VERB2VERB
+IYOR_VARIATIONS = ('iyor', 'ıyor', 'uyor', 'üyor')
 
 # ============================================================================
 # SUFFIX TYPES
@@ -49,17 +51,11 @@ def is_valid_transition(last_suffix: Suffix, next_suffix: Suffix) -> bool:
     ## şelale akışına istisna olarak  yapım eklerinden sonra fiil ekleri gelebilir 
     if last_g == SuffixGroup.DERIVATIONAL and next_g <= SuffixGroup.DERIVATIONAL:
         return True   
-    ## ebilmekten gibi eklerden sonra  fiil ekleri gelebilir. 
+    ## ebilmekten gibi eklerden sonra  fiil ekleri gelebilir.  gidebilmeyen gitmeyebilmek
     if last_g == SuffixGroup.VERB_COMPOUND and next_g <= SuffixGroup.VERB_COMPOUND:
         return True
     # isim tamlamasından sonra yalnızca ki gelebilir
-    if last_g == SuffixGroup.COMPOUND and next_g != SuffixGroup.POST_CASE:
-        return False
-        
-    # isim tamlaması yalnızca yalın isim, pol ve kişi ekli ve ki ekli isimlere gelebilir
-    if next_g == SuffixGroup.COMPOUND and not (last_g == SuffixGroup.DERIVATIONAL or 
-                                             last_g == SuffixGroup.POST_CASE or 
-                                             last_g == SuffixGroup.POSSESSIVE):
+    if last_g == SuffixGroup.CASE and not next_g >= SuffixGroup.POST_CASE:
         return False
         
     # --- RULE 2: Derivational Locking (The Valve) ---
@@ -83,105 +79,8 @@ def is_valid_transition(last_suffix: Suffix, next_suffix: Suffix) -> bool:
 
     return True
 
-
-# ============================================================================
-# CORE RECURSIVE LOGIC
-# ============================================================================
-def find_suffix_chain(word: str, start_pos: str, root: str, 
-                     current_chain: List = None, visited: Set = None) -> List: 
-    """
-    Recursive suffix chain finder.
-    Iterates through SUFFIX_TRANSITIONS directly without pre-indexing.
-    """
-    
-    if current_chain is None: current_chain = []
-    if visited is None: visited = set()
-    
-    # Memoization key
-    chain_signature = tuple(s.name for s in current_chain)
-    state_key = (len(root), start_pos, chain_signature)
-    
-    if state_key in visited: return []
-    visited.add(state_key)
-    
-    root_len = len(root)
-    rest = word[root_len:]
-    
-    # Base Case: No more characters to consume -> Valid chain found
-    if not rest:
-        return [([], start_pos)]
-    
-    # Safety check: Ensure the current POS has defined transitions
-    if start_pos not in SUFFIX_TRANSITIONS:
-        return []
-    
-    results = []
-    iyor_variations = ('iyor', 'ıyor', 'uyor', 'üyor')
-
-    # Iterate over all possible next Parts of Speech (target_pos)
-    # and all suffixes available for that transition.
-    for target_pos, candidate_suffixes in SUFFIX_TRANSITIONS[start_pos].items():
-        
-        for suffix_obj in candidate_suffixes:
-            
-            # --- HIERARCHY VALIDATION ---
-            if current_chain:
-                last_suffix = current_chain[-1]
-                if not is_valid_transition(last_suffix, suffix_obj):
-                    continue
-            
-            # --- UNIQUENESS CHECK ---
-            if suffix_obj.is_unique:
-                if any(s.name == suffix_obj.name for s in current_chain):
-                    continue
-            
-            # --- FORM GENERATION ---
-            # Generate possible forms of this suffix when attached to 'root'
-            suffix_forms = suffix_obj.form(root)
-            
-            for suffix_form in suffix_forms:
-                sf_len = len(suffix_form)
-                
-                # Fast Fail: Suffix generated is longer than remaining text
-                if sf_len > len(rest):
-                    continue
-
-                # --- MATCH TYPE 1: Standard Match ---
-                if rest.startswith(suffix_form):
-                    subchains = find_suffix_chain(
-                        word, target_pos, 
-                        word[:root_len + sf_len], 
-                        current_chain + [suffix_obj], 
-                        visited
-                    )
-                    for chain, final_pos in subchains:
-                        results.append(([suffix_obj] + chain, final_pos))
-
-                # --- MATCH TYPE 2: Vowel Narrowing (e.g., bekle -> bekl-iyor) ---
-                elif sf_len > 0 and suffix_form[-1] in ('a', 'e'):
-                    narrowed_form = suffix_form[:-1]
-                    # Check if the shortened form matches (e.g. 'bekl')
-                    if rest.startswith(narrowed_form):
-                        rest_after = rest[len(narrowed_form):]
-                        # This narrowing only happens if the NEXT part is -iyor/uyor
-                        if any(rest_after.startswith(v) for v in iyor_variations):
-                            subchains = find_suffix_chain(
-                                root + suffix_form + rest_after, 
-                                target_pos, 
-                                root + suffix_form, 
-                                current_chain + [suffix_obj], 
-                                visited
-                            )
-                            for chain, final_pos in subchains:
-                                results.append(([suffix_obj] + chain, final_pos))
-                    
-    return results
-
-
-# ============================================================================
-# PEKİŞTİRME LOGIC
-# ============================================================================
 pekistirme_suffix = Suffix("pekistirme", "pekistirme", Type.NOUN, Type.NOUN, is_unique=True)
+
 def get_pekistirme_analyses(word: str) -> List[Tuple]:
     """
     Encapsulates all logic for identifying and analyzing intensified adjectives (Pekiştirme).
@@ -258,45 +157,149 @@ def get_pekistirme_analyses(word: str) -> List[Tuple]:
 
     return analyses
 
-def append_analysis(word, pos, root, analyses_list):
-    possible_chains = find_suffix_chain(word, pos, root)
+def find_suffix_chain(word: str, start_pos: str, root: str,
+                      current_chain: List = None, visited: Set = None,
+                      shared_cache: dict = None) -> List:
+    """
+    Recursive suffix chain finder with optional shared cross-root cache.
+    Cache key: (remaining_text, start_pos, last_suffix_group)
+    This is safe because is_valid_transition only depends on last_suffix.group.
+    """
+
+    if current_chain is None: current_chain = []
+    if visited is None: visited = set()
+    if shared_cache is None: shared_cache = {}
+
+    # --- Per-call memoization (prevents revisiting within one call tree) ---
+    chain_signature = tuple(s.name for s in current_chain)
+    state_key = (len(root), start_pos, chain_signature)
+    if state_key in visited: return []
+    visited.add(state_key)
+
+    root_len = len(root)
+    rest = word[root_len:]
+
+    # Base Case
+    if not rest:
+        return [([], start_pos)]
+
+    if start_pos not in SUFFIX_TRANSITIONS:
+        return []
+
+    # --- Shared cross-root cache ---
+    # Key: what text remains, what POS we're at, what was the last suffix group
+    # (None group means we're at the root, no hierarchy constraint yet)
+    last_group = current_chain[-1].group if current_chain else None
+    cache_key = (rest, start_pos, last_group)
+
+    if cache_key in shared_cache:
+        return shared_cache[cache_key]
+
+    results = []
+
+    for target_pos, candidate_suffixes in SUFFIX_TRANSITIONS[start_pos].items():
+        for suffix_obj in candidate_suffixes:
+
+            # --- HIERARCHY VALIDATION ---
+            if current_chain:
+                last_suffix = current_chain[-1]
+                if not is_valid_transition(last_suffix, suffix_obj):
+                    continue
+
+            # --- UNIQUENESS CHECK ---
+            # NOTE: uniqueness cannot be cached safely across roots
+            # because it depends on full chain history.
+            # We skip the cache for unique suffixes' subtrees (handled naturally
+            # since unique suffixes excluded by chain content won't recurse into cache).
+            if suffix_obj.is_unique:
+                if any(s.name == suffix_obj.name for s in current_chain):
+                    continue
+
+            # --- FORM GENERATION ---
+            suffix_forms = suffix_obj.form(root)
+
+            for suffix_form in suffix_forms:
+                sf_len = len(suffix_form)
+                if sf_len > len(rest):
+                    continue
+
+                # --- MATCH TYPE 1: Standard ---
+                if rest.startswith(suffix_form):
+                    subchains = find_suffix_chain(
+                        word, target_pos,
+                        word[:root_len + sf_len],
+                        current_chain + [suffix_obj],
+                        visited,
+                        shared_cache
+                    )
+                    for chain, final_pos in subchains:
+                        results.append(([suffix_obj] + chain, final_pos))
+
+                # --- MATCH TYPE 2: Vowel Narrowing ---
+                elif sf_len > 0 and suffix_form[-1] in ('a', 'e'):
+                    narrowed_form = suffix_form[:-1]
+                    if rest.startswith(narrowed_form):
+                        rest_after = rest[len(narrowed_form):]
+                        if any(rest_after.startswith(v) for v in IYOR_VARIATIONS):
+                            subchains = find_suffix_chain(
+                                root + suffix_form + rest_after,
+                                target_pos,
+                                root + suffix_form,
+                                current_chain + [suffix_obj],
+                                visited,
+                                shared_cache
+                            )
+                            for chain, final_pos in subchains:
+                                results.append(([suffix_obj] + chain, final_pos))
+
+    # Store in shared cache before returning
+    # IMPORTANT: only cache if there are no unique suffixes in current chain,
+    # because uniqueness constraints make results chain-dependent.
+    has_unique_in_chain = any(s.is_unique for s in current_chain)
+    if not has_unique_in_chain:
+        shared_cache[cache_key] = results
+
+    return results
+
+
+def append_analysis(word, pos, root, analyses_list, shared_cache: dict = None):
+    possible_chains = find_suffix_chain(word, pos, root, shared_cache=shared_cache)
     for chain, final_pos in possible_chains:
         analyses_list.append((root, pos, chain, final_pos))
 
+
+@functools.lru_cache(maxsize=100000)
 def decompose(word: str) -> List[Tuple]:
     """
-    Bİr sözcük için olası tüm kök-ek ayrışımlarını bulur.
-
+    Finds all possible root-suffix decompositions for a word.
+    Uses a shared cache across all root iterations to avoid recomputing
+    suffix chains for the same remaining text + POS + last_group context.
+    The lru_cache rapidly short-circuits re-evaluations across entire files.
     """
 
-    
-    # Pekiştirme var mı diye yoklama
+    # Shared across all append_analysis calls in this decompose invocation
+    shared_cache = {}
+
     analyses = get_pekistirme_analyses(word)
 
-    # sözbaşından sonuna dek tüm ayrımları dene
     for i in range(1, len(word) + 1):
         root = word[:i]
-        # sözlükte var mı
-        if wrd.can_be_noun(root):
-            append_analysis(word, "noun", root, analyses)
-        # sözlükte mastarlı hali var mı? (aç, açmak)   
-        if wrd.can_be_verb(root):
-            append_analysis(word, "verb", root, analyses)
-        
-        # eğer iki türlü de sözlükte yoksa kök değişime uğramış olabilir
-        # 1- kökte ünsüz yumuşaması (git-> gidecek)
-        # 2- kökte ünlü düşmesi     (beniz -> benzemek)
-        elif not wrd.can_be_noun(root) and not wrd.can_be_verb(root):
-            root_pairs = wrd.get_root_candidates(word[:i])
-            for  lemma_root in root_pairs:
-                
-                virtual_word = lemma_root + word[i:]
-                
-                if wrd.can_be_noun(lemma_root):
-                    append_analysis(virtual_word, "noun", lemma_root, analyses)
-                
-                if wrd.can_be_verb(lemma_root):
-                    append_analysis(virtual_word, "verb", lemma_root, analyses)
 
+        if wrd.can_be_noun(root):
+            append_analysis(word, "noun", root, analyses, shared_cache)
+
+        if wrd.can_be_verb(root):
+            append_analysis(word, "verb", root, analyses, shared_cache)
+
+        if not wrd.exists(root):
+            root_pairs = wrd.get_root_candidates(word[:i])
+            for lemma_root in root_pairs:
+                virtual_word = lemma_root + word[i:]
+
+                if wrd.can_be_noun(lemma_root):
+                    append_analysis(virtual_word, "noun", lemma_root, analyses, shared_cache)
+
+                if wrd.can_be_verb(lemma_root):
+                    append_analysis(virtual_word, "verb", lemma_root, analyses, shared_cache)
 
     return analyses

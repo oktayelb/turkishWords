@@ -191,6 +191,7 @@ class SentenceDisambiguator(nn.Module):
         self,
         suffix_ids:   torch.Tensor,   # (B, L)
         category_ids: torch.Tensor,   # (B, L)
+        pad_mask:     Optional[torch.Tensor] = None,  # (B, L)
     ) -> torch.Tensor:
         """
         Returns token-level log-probs of shape (B, L-1):
@@ -198,10 +199,17 @@ class SentenceDisambiguator(nn.Module):
 
         Used during scoring to evaluate candidate decompositions.
         """
-        logits = self.forward(suffix_ids, category_ids)  # (B, L, V)
+        logits = self.forward(suffix_ids, category_ids, pad_mask=pad_mask)  # (B, L, V)
         log_p  = F.log_softmax(logits[:, :-1, :], dim=-1)  # (B, L-1, V)
         targets = suffix_ids[:, 1:]                          # (B, L-1)
-        return log_p.gather(dim=-1, index=targets.unsqueeze(-1)).squeeze(-1)  # (B, L-1)
+        token_log_probs = log_p.gather(dim=-1, index=targets.unsqueeze(-1)).squeeze(-1)  # (B, L-1)
+
+        if pad_mask is not None:
+            # Mask out padding tokens in the target
+            target_mask = pad_mask[:, 1:]
+            token_log_probs.masked_fill_(target_mask, 0.0)
+
+        return token_log_probs
 
 
 # ============================================================================
@@ -245,11 +253,11 @@ class Trainer:
 
         try:
             self.load_checkpoint(self.path)
-            print(f"✅ Loaded model from {self.path}")
+            print(f"Loaded model from {self.path}")
         except FileNotFoundError:
-            print(f"⚠️  Starting fresh (no checkpoint found at {self.path})")
+            print(f"Starting fresh (no checkpoint found at {self.path})")
         except Exception as e:
-            print(f"⚠️  Could not load checkpoint: {e}")
+            print(f"Could not load checkpoint: {e}")
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -262,6 +270,14 @@ class Trainer:
         s = torch.tensor(suffix_ids,   dtype=torch.long, device=self.device).unsqueeze(0)
         c = torch.tensor(category_ids, dtype=torch.long, device=self.device).unsqueeze(0)
         return s, c
+
+    def _get_best_index(self, scores: List[float]) -> int:
+        """Helper to pick the best score, explicitly ignoring 0.0 to prevent bare-root dominance."""
+        valid_indices = [i for i, s in enumerate(scores) if s != 0.0]
+        if valid_indices:
+            return int(max(valid_indices, key=lambda i: scores[i]))
+        # Fallback if somehow everything is 0.0
+        return int(max(range(len(scores)), key=lambda i: scores[i]))
 
     # ------------------------------------------------------------------
     # Training
@@ -300,7 +316,7 @@ class Trainer:
         self.model.train()
         final_loss = 0.0
 
-        print(f"   💪 Learning sentence context...", end="", flush=True)
+        print(f"   Learning sentence context...", end="", flush=True)
 
         for attempt in range(max_retries):
             logits = self.model(input_s, input_c)            # (1, L-1, V)
@@ -431,6 +447,73 @@ class Trainer:
 
         return scores
 
+    def fast_batch_predict(
+        self,
+        all_candidates: List[List[List[Tuple[int, int]]]],
+        batch_size: int = 512
+    ) -> List[int]:
+        """
+        Evaluates a large list of words, each having multiple candidate chains,
+        using padded GPU batches to maximize throughput.
+        Returns a list of best_indices (one per word).
+        """
+        self.model.eval()
+
+        # Flatten into one list of jobs: (word_idx, cand_idx, suffix_seq, cat_seq)
+        flat_jobs = []
+        for w_idx, candidates in enumerate(all_candidates):
+            for c_idx, chain in enumerate(candidates):
+                cand_s, cand_c = build_sentence_sequence([chain])
+                flat_jobs.append((w_idx, c_idx, cand_s, cand_c))
+
+        if not flat_jobs:
+            return []
+
+        # w_idx -> list of scores (same order as candidates)
+        scores_map = {w_idx: [] for w_idx in range(len(all_candidates))}
+
+        with torch.no_grad():
+            for i in range(0, len(flat_jobs), batch_size):
+                batch = flat_jobs[i:i + batch_size]
+                max_len = max(len(job[2]) for job in batch)
+
+                if max_len < 2:
+                    for job in batch:
+                        scores_map[job[0]].append(0.0)
+                    continue
+
+                bsz = len(batch)
+                
+                # Allocate tensors
+                s_t = torch.full((bsz, max_len), SPECIAL_PAD, dtype=torch.long, device=self.device)
+                c_t = torch.full((bsz, max_len), CATEGORY_SPECIAL, dtype=torch.long, device=self.device)
+                p_mask = torch.ones((bsz, max_len), dtype=torch.bool, device=self.device) # True = pad
+
+                for b_idx, (_, _, seq_s, seq_c) in enumerate(batch):
+                    seq_len = len(seq_s)
+                    s_t[b_idx, :seq_len] = torch.tensor(seq_s, dtype=torch.long, device=self.device)
+                    c_t[b_idx, :seq_len] = torch.tensor(seq_c, dtype=torch.long, device=self.device)
+                    p_mask[b_idx, :seq_len] = False
+
+                lp = self.model.log_probs(s_t, c_t, pad_mask=p_mask) # (bsz, max_len - 1)
+
+                # Sum the log probabilities for each sequence
+                sums = lp.sum(dim=1).tolist()
+
+                for b_idx, job in enumerate(batch):
+                    scores_map[job[0]].append(sums[b_idx])
+
+        # Pick best index per word
+        best_indices = []
+        for w_idx in range(len(all_candidates)):
+            c_scores = scores_map[w_idx]
+            if not c_scores:
+                best_indices.append(0)
+            else:
+                best_indices.append(self._get_best_index(c_scores))
+
+        return best_indices
+
     def predict(
         self,
         candidates: List[List[Tuple[int, int]]],
@@ -443,7 +526,7 @@ class Trainer:
         """
         ctx = context_chains or []
         scores = self.score_candidates(ctx, candidates)
-        best   = int(max(range(len(scores)), key=lambda i: scores[i]))
+        best = self._get_best_index(scores)
         return best, scores
 
     def batch_predict(
@@ -479,7 +562,7 @@ class Trainer:
 
         for candidates in all_candidates:
             scores  = self.score_candidates(committed, candidates)
-            best    = int(max(range(len(scores)), key=lambda i: scores[i]))
+            best    = self._get_best_index(scores)
             results.append((best, scores))
             committed.append(candidates[best])
 
@@ -499,7 +582,7 @@ class Trainer:
             'best_val_loss':   self.best_val_loss,
             'global_step':     self.global_step,
         }, self.path)
-        print(f"✓ Saved to {self.path}")
+        print(f"Saved to {self.path}")
 
     def load_checkpoint(self, path: str):
         ckpt = torch.load(path, map_location=self.device)
@@ -510,4 +593,4 @@ class Trainer:
         self.val_history   = ckpt.get('val_history',   [])
         self.best_val_loss = ckpt.get('best_val_loss', float('inf'))
         self.global_step   = ckpt.get('global_step',   0)
-        print(f"✓ Loaded from {path} (step {self.global_step})")
+        print(f"Loaded from {path} (step {self.global_step})")

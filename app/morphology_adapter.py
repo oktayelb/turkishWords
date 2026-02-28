@@ -3,6 +3,8 @@ import util.decomposer as sfx
 from ml.ml_ranking_model import SUFFIX_OFFSET
 from util.suffix import Suffix
 
+
+## translatxions between representations
 def match_decompositions(entries: List[Dict], decompositions: List[Tuple]) -> List[int]:
     """Matches logged decomposition entries against dynamically generated decompositions."""
     indices = []
@@ -134,3 +136,27 @@ def reconstruct_morphology(word: str, decomposition: Tuple) -> Dict[str, Any]:
         'names_str':     ' + '.join(suffix_names),
         'formation_str': ' → '.join(formation),
     }
+
+def format_detailed_decomp(decomp: Tuple) -> str:
+    """
+    Formats the decomposition to include both suffix name and specific surface form.
+    Example: ev+plural_ler+ablative_de+marking_ki
+    """
+    root, pos, chain, final_pos = decomp
+    if not chain:
+        return root
+        
+    parts = [root]
+    current = root
+    for suffix in chain:
+        forms = suffix.form(current)
+        used_form = forms[0] if forms else suffix.suffix
+        
+        if used_form:
+            parts.append(f"{suffix.name}_{used_form}")
+        else:
+            parts.append(suffix.name)
+            
+        current += used_form
+        
+    return "+".join(parts)

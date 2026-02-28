@@ -1,13 +1,12 @@
-import concurrent.futures
-import multiprocessing
+import re
 from typing import List, Optional, Tuple, Dict, Any
 
 import util.decomposer as sfx
 import util.word_methods as wrd 
-from ml.ml_ranking_model import SentenceDisambiguator, Trainer
 from app.data_manager import DataManager
 import app.morphology_adapter as morph
-from app.sequence_matcher import find_matching_combinations
+from app.sequence_matcher import find_matching_combinations, get_top_sentence_predictions
+from ml.ml_ranking_model import SentenceDisambiguator, Trainer
 
 class WorkflowEngine:
     def __init__(self):
@@ -24,9 +23,7 @@ class WorkflowEngine:
 
     def save(self):
         self.trainer.save_checkpoint()
-        with open(self.data_manager.paths.training_count_path, "w") as f:
-            f.write(str(self.training_count))
-        print("Model saved")
+        self.data_manager.save_training_count(self.training_count)
 
     def prepare_word_training(self, word: str) -> Optional[Dict[str, Any]]:
         decompositions = self.get_decompositions(word)
@@ -49,7 +46,13 @@ class WorkflowEngine:
         scored_decomps = []
         for i, decomp in enumerate(decompositions):
             score = scores[i] if scores else 0.0
+            if scores and score == 0.0:
+                continue
             scored_decomps.append((score, decomp))
+            
+        if not scored_decomps and scores:
+            for i, decomp in enumerate(decompositions):
+                scored_decomps.append((0.0, decomp))
         
         if scores:
             scored_decomps.sort(key=lambda x: x[0])
@@ -72,8 +75,10 @@ class WorkflowEngine:
             'original_decompositions': decompositions
         }
 
-    def commit_word_training(self, word: str, correct_decomps: List[Tuple], encoded_chains: List[List[Tuple[int, int]]], original_indices: List[int]) -> float:
+    def commit_word_training(self, word: str, correct_decomps: List[Tuple], encoded_chains: List[List[Tuple[int, int]]], original_indices: List[int]) -> Tuple[float, List[str]]:
         log_entries = []
+        deleted_messages = []
+        
         for decomp in correct_decomps:
             root, pos, chain, final_pos = decomp
             suffix_info = []
@@ -85,7 +90,7 @@ class WorkflowEngine:
                     suffix_info.append({
                         'name': suffix.name,
                         'form': used_form,
-                        'makes': suffix.makes.name,
+                        'makes': suffix.makes.name if suffix.makes else None,
                     })
                     current += used_form
             log_entries.append({
@@ -101,13 +106,11 @@ class WorkflowEngine:
             root = decomp[0].lower()
             if root == word_lower:
                 continue
-            if wrd.can_be_noun(root) or wrd.can_be_verb(root):
-                if self.data_manager.delete(word_lower):
-                    print(f"  Deleted '{word}' (root '{root}' exists)")
-                    infinitive_form = wrd.infinitive(word_lower)
-                    if infinitive_form and infinitive_form != word_lower:
-                        if self.data_manager.delete(infinitive_form):
-                            print(f"  Deleted infinitive '{infinitive_form}'")
+            if self.data_manager.delete(word_lower):
+                deleted_messages.append(f"Deleted '{word}' (root '{root}' exists)")
+            infinitive_form = wrd.infinitive(word_lower)
+            if self.data_manager.delete(infinitive_form):
+                deleted_messages.append(f"Deleted infinitive '{infinitive_form}'")
 
         loss = 0.0
         for idx in original_indices:
@@ -117,7 +120,7 @@ class WorkflowEngine:
         self.training_count += 1
         if self.training_count % self.trainer.checkpoint_frequency == 0:
             self.save()
-        return loss
+        return loss, deleted_messages
 
     def prepare_sentence_training(self, sentence: str) -> Optional[List[Dict]]:
         words = sentence.strip().split()
@@ -128,7 +131,6 @@ class WorkflowEngine:
         for word in words:
             decomps = self.get_decompositions(word)
             if not decomps:
-                print(f"No decompositions found for '{word}'. Skipping sentence.")
                 return None
             word_data.append({'word': word, 'decomps': decomps})
 
@@ -175,7 +177,7 @@ class WorkflowEngine:
                     suffix_info.append({
                         'name': suffix.name,
                         'form': used_form,
-                        'makes': suffix.makes.name,
+                        'makes': suffix.makes.name if suffix.makes else None,
                     })
                     current += used_form
             log_entries.append({
@@ -268,79 +270,103 @@ class WorkflowEngine:
         encoded_chains = [morph.encode_suffix_chain(chain) for chain in suffix_chains]
 
         try:
-            pred_idx, scores = self.trainer.predict(encoded_chains)
-            best_decomp = decompositions[pred_idx]
+            _, scores = self.trainer.predict(encoded_chains)
+            valid_pairs = [(scores[i], i) for i in range(len(scores)) if scores[i] != 0.0]
+            
+            if not valid_pairs:
+                best_idx = 0
+            else:
+                best_score, best_idx = min(valid_pairs, key=lambda x: x[0])
+                
+            best_decomp = decompositions[best_idx]
             vm = morph.reconstruct_morphology(word, best_decomp)
-            vm['score'] = scores[pred_idx]
+            vm['score'] = scores[best_idx]
             return vm
-        except Exception as e:
-            print(f"Error evaluating: {e}")
+        except Exception:
             return None
 
     def sample_text(self, filename: str) -> bool:
-        text = self.data_manager.get_text_tokenized()
+        text = self.data_manager.get_text_tokenized(filename)
         if not text:
             return False
             
-        print(f"Input: {len(text)} tokens")
         unique_words = list(set(text))
-        print(f"Unique words: {len(unique_words)}")
-        
-        num_cores = max(1, multiprocessing.cpu_count() - 1)
-        print(f"Spawning {num_cores} worker processes...")
-        
-        word_results = {}
-        with concurrent.futures.ProcessPoolExecutor(max_workers=num_cores) as executor:
-            results = executor.map(sfx.decompose, unique_words, chunksize=100)
-            for word, decompositions in zip(unique_words, results):
-                word_results[word] = decompositions
-
-        print("Preparing AI Batch...")
         cache = {}
-        ambiguous_batches = []
         
-        for i, word in enumerate(unique_words):
-            decomps = word_results[word]
+        for word in unique_words:
+            decomps = self.get_decompositions(word)
             if not decomps:
                 cache[word] = word
             elif len(decomps) == 1:
-                cache[word] = self._format_simple_decomp(word, decomps[0])
+                cache[word] = morph.format_detailed_decomp(decomps[0])
             else:
                 suffix_chains = [chain for _, _, chain, _ in decomps]
                 encoded_chains = [morph.encode_suffix_chain(chain) for chain in suffix_chains]
-                ambiguous_batches.append((i, encoded_chains))
-                cache[word] = ("__WAITING__", decomps)
+                
+                best_idx = 0
+                if self.training_count > 0:
+                    try:
+                        _, scores = self.trainer.predict(encoded_chains)
+                        valid_pairs = [(scores[i], i) for i in range(len(scores)) if scores[i] != 0.0]
+                        if valid_pairs:
+                            best_idx = min(valid_pairs, key=lambda x: x[0])[1]
+                        else:
+                            best_idx = 0
+                    except Exception:
+                        best_idx = 0
+                
+                if best_idx >= len(decomps):
+                    best_idx = 0
+                        
+                cache[word] = morph.format_detailed_decomp(decomps[best_idx])
 
-        if ambiguous_batches:
-            print(f"Ranking {len(ambiguous_batches)} ambiguous words...")
-            just_chains = [x[1] for x in ambiguous_batches]
-            batch_predictions = self.trainer.batch_predict(just_chains)
-
-            for idx, (original_idx, _) in enumerate(ambiguous_batches):
-                best_idx_in_decomp = batch_predictions[idx][0]
-                word = unique_words[original_idx]
-                _, decomps = cache[word]
-                if best_idx_in_decomp >= len(decomps):
-                    best_idx_in_decomp = 0
-                best_decomp = decomps[best_idx_in_decomp]
-                cache[word] = self._format_simple_decomp(word, best_decomp)
-
-        print("Reconstructing...")
-        final_output = []
-        for word in text:
-            final_output.append(cache.get(word, word))
-            
+        final_output = [cache.get(word, word) for word in text]
         output_text = '\n'.join(final_output)
-        self.data_manager.write_decomposed_text(output_text)
-        print("Done.")
-        return True
-
-    def _format_simple_decomp(self, word: str, decomposition: Tuple) -> str:
-        root, pos, chain, final_pos = decomposition
-        if not chain:
-            return root
-        suffix_names = [suffix.name for suffix in chain]
-        return root + '+' + '+'.join(suffix_names)
+        return self.data_manager.write_decomposed_text(output_text)
+        
+    def sample_sentences(self) -> bool:
+        raw_text = self.data_manager.get_raw_sentences_text()
+        if not raw_text:
+            return False
+            
+        output_lines = []
+        lines = raw_text.split('\n')
+        
+        for line in lines:
+            if not line.strip():
+                output_lines.append("")
+                continue
+                
+            sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', line) if s.strip()]
+            line_output = []
+            
+            for sentence in sentences:
+                clean_sentence = re.sub(r"['’‘]", "", sentence)
+                clean_sentence = re.sub(r'[^\w\s]|_', ' ', clean_sentence).lower()
+                
+                word_data = self.prepare_sentence_training(clean_sentence)
+                
+                if not word_data:
+                    line_output.append(sentence)
+                    continue
+                
+                top_predictions = get_top_sentence_predictions(word_data, self.trainer, top_k=1)
+                
+                if top_predictions:
+                    best_combo = top_predictions[0]['combo_indices']
+                    decomposed_words = []
+                    for w_idx, cand_idx in enumerate(best_combo):
+                        decomp = word_data[w_idx]['decomps'][cand_idx]
+                        decomposed_words.append(morph.format_detailed_decomp(decomp))
+                    
+                    line_output.append(" ".join(decomposed_words) + ".")
+                else:
+                    line_output.append(sentence)
+                    
+            output_lines.append("  ".join(line_output))
+            
+        final_output = "\n".join(output_lines)
+        return self.data_manager.write_decomposed_sentences(final_output)
 
     def get_stats(self) -> Dict:
         stats = {

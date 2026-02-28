@@ -1,6 +1,7 @@
 import os
 from typing import List, Optional, Dict, Any
 from app.workflows import WorkflowEngine
+from app.sequence_matcher import get_top_sentence_predictions
 
 class AppCLI:
     def __init__(self):
@@ -10,13 +11,24 @@ class AppCLI:
         print("\n Commands:")
         print("  - Enter a word to analyze and train")
         print("  - 'sentence <text>' - Train on a full sentence")
+        print("  - 'eval sentence <text>' - Evaluate model's top 10 guesses on a sentence")
         print("  - 'auto' - Start auto mode (random words from dictionary)")
         print("  - 'eval <word>' - Evaluate model on a word")
         print("  - 'relearn' - Train on all logged decompositions")
         print("  - 'stats' - Show training statistics")
-        print("  - 'sample' - Analyze a text.")
+        print("  - 'sample' - Analyze a text word by word.")
+        print("  - 'sample sentence' - Analyze a text sentence by sentence.")
         print("  - 'save' - Save model")
         print("  - 'quit' - Exit")
+
+    def show_message(self, msg: str):
+        print(msg)
+
+    def get_input(self, prompt: str) -> str:
+        return input(prompt)
+
+    def clear_screen(self):
+        os.system('cls' if os.name == 'nt' else 'clear')
 
     def _show_single_option(self, display_idx: int, vm: Dict[str, Any]):
         print(f"\n[Option {display_idx}]")
@@ -51,6 +63,19 @@ class AppCLI:
                 print(f"    Formation: {vm['root_str']} (no suffixes)")
             print(f"    Final POS: {vm['final_pos']}")
         print("-" * 70)
+
+    def show_stats(self, stats: Dict[str, Any]):
+        print("\n Training Statistics:")
+        print(f"  Total examples: {stats['total']}")
+        if stats['recent_avg'] > 0:
+            print(f"  Recent avg loss: {stats['recent_avg']:.4f}")
+            print(f"  Latest loss: {stats['latest']:.4f}")
+        if stats['best_val'] < float('inf'):
+            print(f"  Best validation: {stats['best_val']:.4f}")
+
+    def show_auto_summary(self, processed: int, skipped: int):
+        print(f"\n{'='*70}\nAUTO MODE SUMMARY\n{'='*70}")
+        print(f" Processed: {processed}\n Skipped: {skipped}\n{'='*70}\n")
 
     def get_user_choices(self, num_options: int) -> Optional[List[int]]:
         while True:
@@ -88,70 +113,78 @@ class AppCLI:
             bot_line += p.ljust(width) + "   "
         return f"{top_line.strip()}\n    {bot_line.strip()}"
 
-    def handle_train_word(self, word: str) -> Optional[bool]:
+    def handle_word(self, word: str) -> Optional[bool]:
         result = self.engine.prepare_word_training(word)
         if not result:
-            print(f"\n  No decompositions found for '{word}'")
+            self.show_message(f"\n  No decompositions found for '{word}'")
             return False
         
         if result.get('single_decomposition'):
-            print(f"\n Only one decomposition for '{word}' - skipping")
+            self.show_message(f"\n Only one decomposition for '{word}' - skipping")
             return False
             
         if result.get('has_scores'):
-            print("\n ML Model predictions shown")
+            self.show_message("\n ML Model predictions shown")
 
         self.show_decompositions(word, result['view_models'])
         
         choices = self.get_user_choices(len(result['sorted_decomps']))
-        if choices is None: return None
-        if choices == [-1]: return False
+        if choices is None: 
+            return None
+        if choices == [-1]: 
+            return False
 
         correct_decomps = [result['sorted_decomps'][i] for i in choices]
         original_indices = [result['original_decompositions'].index(d) for d in correct_decomps]
         
-        loss = self.engine.commit_word_training(word, correct_decomps, result['encoded_chains'], original_indices)
-        print(f"\n Training complete. Loss: {loss:.4f}")
-        print(f"Total examples: {self.engine.training_count}")
+        loss, deleted_msgs = self.engine.commit_word_training(word, correct_decomps, result['encoded_chains'], original_indices)
+        
+        for msg in deleted_msgs:
+            print(f"  {msg}")
+            
+        self.show_message(f"\n Training complete. Loss: {loss:.4f}")
+        self.show_message(f"Total examples: {self.engine.training_count}")
         return True
 
-    def handle_sentence_train(self, sentence: str) -> Optional[bool]:
-        word_data = self.engine.prepare_sentence_training(sentence)
-        if not word_data:
-            return False
+    def handle_sentence(self, sentence: str, word_data: Optional[List[Dict]] = None) -> Optional[bool]:
+        if word_data is None:
+            word_data = self.engine.prepare_sentence_training(sentence)
+            if not word_data:
+                self.show_message(f"\n Could not parse all words in: {sentence}")
+                return False
 
-        os.system('cls' if os.name == 'nt' else 'clear')
-        print(f"Sentence: {sentence}\n")
+            self.clear_screen()
+            self.show_message(f"Sentence: {sentence}\n")
+        
+        words = sentence.strip().split()
         
         while True:
-            target_str = input("Enter correct decomposition string (or prefix) ['q' to cancel]: ").strip()
+            target_str = self.get_input("Enter correct decomposition string (or prefix) ['q' to cancel]: ").strip()
             if target_str.lower() == 'q':
                 return False
                 
-            print("\nSearching for legal combinations...")
+            self.show_message("\nSearching for legal combinations...")
             all_sentences, furthest_text, furthest_idx = self.engine.evaluate_sentence_target(word_data, target_str)
             
             if not all_sentences:
-                words = sentence.strip().split()
-                print(f"\n[!] Invalid Decomposition Provided: '{target_str}'")
+                self.show_message(f"\n[!] Invalid Decomposition Provided: '{target_str}'")
                 if furthest_idx < len(words):
                     failed_word = words[furthest_idx]
                     prefix_msg = f"'{furthest_text}'" if furthest_text else "(None)"
-                    print(f" -> Matched successfully up to: {prefix_msg}")
-                    print(f" -> Mismatch detected at word {furthest_idx + 1}: '{failed_word}'")
-                    print(f" -> Valid morphological variations for '{failed_word}':")
+                    self.show_message(f" -> Matched successfully up to: {prefix_msg}")
+                    self.show_message(f" -> Mismatch detected at word {furthest_idx + 1}: '{failed_word}'")
+                    self.show_message(f" -> Valid morphological variations for '{failed_word}':")
                     unique_options = list(dict.fromkeys(word_data[furthest_idx]['typing_strings']))
                     for opt in unique_options:
-                        print(f"      - {opt}")
-                print("\nPlease try again.\n")
+                        self.show_message(f"      - {opt}")
+                self.show_message("\nPlease try again.\n")
                 continue
             break
 
-        words = sentence.strip().split()
         display_list = all_sentences
         
         if len(display_list) == 1:
-            print("\nAuto-selected the only legal match:")
+            self.show_message("\nAuto-selected the only legal match:")
             c = display_list[0]
             aligned_display = self._format_aligned_sentence(words, c['parts'])
             vms = [word_data[w_idx]['vms'][c['combo_indices'][w_idx]] for w_idx in range(len(words))]
@@ -166,7 +199,7 @@ class AppCLI:
             if not varying_indices:
                 varying_indices = list(range(len(words)))
 
-            print("\nPredictions (showing only ambiguous words):")
+            self.show_message("\nPredictions (showing only ambiguous words):")
             for i, c in enumerate(display_list):
                 filt_words = [words[idx] for idx in varying_indices]
                 filt_parts = [c['parts'][idx] for idx in varying_indices]
@@ -175,24 +208,80 @@ class AppCLI:
                 self.show_sentence_prediction(i, c['score'], filt_words, filt_vms, aligned_display)
 
             while True:
-                choice = input(f"\nSelect by number (0-{len(display_list)-1}) or 'q' to cancel: ").strip()
+                choice = self.get_input(f"\nSelect by number (0-{len(display_list)-1}) or 'q' to cancel: ").strip()
                 if choice.lower() == 'q':
                     return False
                 if choice.isdigit() and int(choice) < len(display_list):
                     correct_combo = display_list[int(choice)]['combo_indices']
                     break
-                print("Invalid selection.")
+                self.show_message("Invalid selection.")
 
-        print("\nTraining on full sentence context...")
+        self.show_message("\nTraining on full sentence context...")
         loss = self.engine.commit_sentence_training(sentence, words, word_data, correct_combo)
-        print(f"Sentence loss: {loss:.4f}")
+        self.show_message(f"Sentence loss: {loss:.4f}")
         return True
+
+    def handle_eval_sentence(self, sentence: str) -> Optional[bool]:
+        word_data = self.engine.prepare_sentence_training(sentence)
+        if not word_data:
+            self.show_message("\n Could not parse sentence.")
+            return False
+
+        self.clear_screen()
+        self.show_message(f"Sentence: {sentence}\n")
+        self.show_message("Evaluating top predictions (Beam Search)...")
+        
+        top_predictions = get_top_sentence_predictions(word_data, self.engine.trainer, top_k=10)
+        words = sentence.strip().split()
+        
+        for i, c in enumerate(top_predictions):
+            aligned_display = self._format_aligned_sentence(words, c['parts'])
+            vms = [word_data[w_idx]['vms'][c['combo_indices'][w_idx]] for w_idx in range(len(words))]
+            self.show_sentence_prediction(i, c['score'], words, vms, aligned_display)
+            
+        while True:
+            choice = self.get_input(f"\nSelect correct decomposition by number (0-{len(top_predictions)-1}), 'm' to manually enter target string, or 'q' to cancel: ").strip().lower()
+            
+            if choice == 'q':
+                return False
+                
+            if choice == 'm':
+                return self.handle_sentence(sentence, word_data=word_data)
+                
+            if choice.isdigit() and int(choice) < len(top_predictions):
+                correct_combo = top_predictions[int(choice)]['combo_indices']
+                break
+                
+            self.show_message("Invalid selection.")
+            
+        self.show_message("\nTraining on full sentence context...")
+        loss = self.engine.commit_sentence_training(sentence, words, word_data, correct_combo)
+        self.show_message(f"Sentence loss: {loss:.4f}")
+        return True
+
+    def run_auto_mode(self):
+        self.show_message("   Words deleted if root exists in dictionary\n   Press 'q' to exit\n")
+        processed, skipped = 0, 0
+        while True:
+            word = self.engine.data_manager.random_word()
+            if not word:
+                self.show_message("\n No more words!")
+                break
+            processed += 1
+            result = self.handle_word(word)
+            if result is None:
+                processed -= 1
+                self.show_message("\n Exiting auto mode...")
+                break
+            if result is False:
+                skipped += 1
+        self.show_auto_summary(processed, skipped)
 
     def run(self):
         self.welcome()
         while True:
             try:
-                cmd = input("\n Enter word or command: ").strip().lower()
+                cmd = self.get_input("\n Enter word or command: ").strip().lower()
                 if not cmd:
                     continue
 
@@ -202,65 +291,58 @@ class AppCLI:
                     break
                 elif cmd == 'save':
                     self.engine.save()
+                    self.show_message("Model saved.")
                 elif cmd == 'stats':
                     stats = self.engine.get_stats()
-                    print("\n Training Statistics:")
-                    print(f"  Total examples: {stats['total']}")
-                    if stats['recent_avg'] > 0:
-                        print(f"  Recent avg loss: {stats['recent_avg']:.4f}")
-                        print(f"  Latest loss: {stats['latest']:.4f}")
-                    if stats['best_val'] < float('inf'):
-                        print(f"  Best validation: {stats['best_val']:.4f}")
+                    self.show_stats(stats)
                 elif cmd == 'auto':
-                    print("   Words deleted if root exists in dictionary")
-                    print("   Press 'q' to exit\n")
-                    processed, deleted, skipped = 0, 0, 0
-                    while True:
-                        word = self.engine.data_manager.random_word()
-                        if not word:
-                            print("\n No more words!")
-                            break
-                        processed += 1
-                        result = self.handle_train_word(word)
-                        if result is None:
-                            processed -= 1
-                            print("\n Exiting auto mode...")
-                            break
-                        if result is False:
-                            skipped += 1
-                    print(f"\n{'='*70}\nAUTO MODE SUMMARY\n{'='*70}")
-                    print(f" Processed: {processed}\n Skipped: {skipped}\n{'='*70}\n")
+                    self.run_auto_mode()
                 elif cmd == 'sample':
-                    filename = input("Enter filename (default: sample.txt): ").strip()
+                    filename = self.get_input("Enter filename (default: sample.txt): ").strip()
                     if not filename: filename = "sample.txt"
-                    self.engine.sample_text(filename)
+                    self.show_message("Decomposing and ranking words...")
+                    success = self.engine.sample_text(filename)
+                    if success:
+                        self.show_message("Sample text processing complete.")
+                    else:
+                        self.show_message("Failed to process sample text.")
+                elif cmd == 'sample sentence':
+                    self.show_message("Processing sentences from sample/sample_sentence.txt...")
+                    success = self.engine.sample_sentences()
+                    if success:
+                        self.show_message("Sentence sampling complete.")
+                    else:
+                        self.show_message("Failed to process sentence samples.")
                 elif cmd == 'relearn':
                     trained, skipped = self.engine.relearn_all()
-                    print(f"\n  Trained on {trained} examples, skipped {skipped}.")
+                    self.show_message(f"\n  Trained on {trained} examples, skipped {skipped}.")
+                elif cmd.startswith('eval sentence '):
+                    result = self.handle_eval_sentence(cmd[14:].strip())
+                    if result is None and self.confirm_save():
+                        self.engine.save()
+                        break
                 elif cmd.startswith('eval '):
                     word = cmd[5:].strip()
                     vm = self.engine.evaluate_word(word)
                     if vm:
-                        print("\n ML Model's top prediction:")
+                        self.show_message("\n ML Model's top prediction:")
                         self.show_decompositions(word, [vm])
                     else:
-                        print("\n  No decompositions found")
+                        self.show_message("\n  No decompositions found")
                 elif cmd.startswith('sentence '):
-                    result = self.handle_sentence_train(cmd[9:].strip())
+                    result = self.handle_sentence(cmd[9:].strip())
                     if result is None and self.confirm_save():
                         self.engine.save()
                         break
                 else:
-                    result = self.handle_train_word(cmd)
+                    result = self.handle_word(cmd)
                     if result is None and self.confirm_save():
                         self.engine.save()
                         break
+
             except KeyboardInterrupt:
                 if self.confirm_save():
                     self.engine.save()
                 break
             except Exception as e:
                 print(f"\n Error: {e}")
-
-if __name__ == "__main__":
-    AppCLI().run()

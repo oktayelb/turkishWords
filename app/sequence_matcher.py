@@ -86,3 +86,40 @@ def find_matching_combinations(word_data: List[Dict], target_str: str, trainer) 
             
     scored_matches.sort(key=lambda x: x['score'], reverse=True)
     return scored_matches, furthest_match_text, furthest_word_idx
+
+def get_top_sentence_predictions(word_data: List[Dict], trainer, top_k: int = 10, beam_width: int = 50) -> List[Dict]:
+    """
+    Uses Beam Search to find the top scoring sentence combinations without a target string.
+    """
+    beams = [{'score': 0.0, 'combo_indices': [], 'parts': []}]
+    
+    trainer.model.eval()
+    with torch.no_grad():
+        for w_idx, wd in enumerate(word_data):
+            new_beams = []
+            for beam in beams:
+                for d_idx in range(len(wd['decomps'])):
+                    new_indices = beam['combo_indices'] + [d_idx]
+                    new_parts = beam['parts'] + [wd['typing_strings'][d_idx]]
+                    
+                    sentence_chains = [word_data[i]['encoded_chains'][idx] for i, idx in enumerate(new_indices)]
+                    full_s, full_c = build_sentence_sequence(sentence_chains)
+                    
+                    if len(full_s) < 2:
+                        score = 0.0
+                    else:
+                        s_t, c_t = trainer._to_tensor(full_s, full_c)
+                        lp = trainer.model.log_probs(s_t, c_t)
+                        score = lp.sum().item()
+                        
+                    new_beams.append({
+                        'score': score,
+                        'combo_indices': new_indices,
+                        'parts': new_parts,
+                        'text': " ".join(new_parts).strip()
+                    })
+            
+            new_beams.sort(key=lambda x: x['score'], reverse=True)
+            beams = new_beams[:beam_width]
+            
+    return beams[:top_k]
