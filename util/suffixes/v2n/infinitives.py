@@ -1,12 +1,12 @@
-from util.suffix import Suffix, Type, HasMajorHarmony, HasMinorHarmony, SuffixGroup
+from util.suffix import Suffix, Type, SuffixGroup
 
 ## COMPLETE
 class Infinitive(Suffix):
     def __init__(self, name, suffix, 
                  comes_to=Type.VERB,
                  makes=Type.NOUN,
-                 major_harmony=HasMajorHarmony.Yes, 
-                 minor_harmony=HasMinorHarmony.Yes,  # Set to None to detect if the user passed a value
+                 has_major_harmony=True, 
+                 has_minor_harmony=True,  # Set to None to detect if the user passed a value
                  needs_y_buffer=None, 
                  form_function=None,
                  group=SuffixGroup.DERIVATIONAL, 
@@ -24,8 +24,8 @@ class Infinitive(Suffix):
             comes_to=Type.VERB,
             makes=Type.NOUN,
             form_function=form_function, # Force the use of the overridden _default_form
-            major_harmony=major_harmony,
-            minor_harmony=minor_harmony,
+            has_major_harmony=has_major_harmony,
+            has_minor_harmony=has_minor_harmony,
             needs_y_buffer=needs_y_buffer,
             group=group,
             is_unique=is_unique

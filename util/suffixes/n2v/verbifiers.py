@@ -1,23 +1,23 @@
-from util.suffix import Suffix, Type, HasMajorHarmony, HasMinorHarmony, SuffixGroup
+from util.suffix import Suffix, Type, SuffixGroup
 ## COMPLETE
 class VerbifierSuffix(Suffix):
     def __init__(self, name, suffix, 
                  comes_to=Type.NOUN,
                  makes=Type.VERB,
-                 major_harmony=HasMajorHarmony.Yes, 
-                 minor_harmony=None, 
+                 has_major_harmony=True, 
+                 has_minor_harmony=None, 
                  needs_y_buffer=False, 
                  form_function=None,
                  group=SuffixGroup.N2V_DERIVATIONAL, 
                  is_unique=False):
         
                 # Dynamic default assignment for minor harmony
-        if minor_harmony is None:
+        if has_minor_harmony is None:
             # If the suffix contains any narrow vowel, it defaults to having minor harmony
             if any(vowel in suffix for vowel in ['ı', 'i', 'u', 'ü']): # only i is enough bc of the standart narrow front vowel converntion
-                minor_harmony = HasMinorHarmony.Yes
+                has_minor_harmony = True
             else:
-                minor_harmony = HasMinorHarmony.No
+                has_minor_harmony = False
 
         super().__init__(
             name=name,
@@ -25,8 +25,8 @@ class VerbifierSuffix(Suffix):
             comes_to=comes_to,
             makes=makes,
             form_function=form_function, 
-            major_harmony=major_harmony,
-            minor_harmony=minor_harmony,
+            has_major_harmony=has_major_harmony,
+            has_minor_harmony=has_minor_harmony,
             needs_y_buffer=needs_y_buffer,
             group=group,
             is_unique=is_unique

@@ -1,30 +1,30 @@
-from util.suffix import Suffix, Type, HasMajorHarmony, HasMinorHarmony, SuffixGroup
+from util.suffix import Suffix, Type, SuffixGroup
 ## COMPLETE
 class CaseSuffix(Suffix):
     def __init__(self, name, suffix, 
                 comes_to=Type.NOUN,
                 makes=Type.NOUN,
-                major_harmony=HasMajorHarmony.Yes, 
-                minor_harmony=None,  # Set to None to detect if the user passed a value
+                has_major_harmony=True, 
+                has_minor_harmony=None,  # Set to None to detect if the user passed a value
                 needs_y_buffer=False, 
                 group=SuffixGroup.CASE, 
                 is_unique=False):
         
         # Dynamic default assignment for minor harmony
-        if minor_harmony is None:
+        if has_minor_harmony is None:
             # If the suffix contains any narrow vowel, it defaults to having minor harmony
             if any(vowel in suffix for vowel in ['ı', 'i', 'u', 'ü']): # only i is enough bc of the standart narrow front vowel converntion
-                minor_harmony = HasMinorHarmony.Yes
+                has_minor_harmony = True
             else:
-                minor_harmony = HasMinorHarmony.No
+                has_minor_harmony = False
         super().__init__(
             name=name,
             suffix=suffix,
             comes_to=Type.NOUN,
             makes=Type.NOUN,
             form_function=None, # Force the use of the overridden _default_form
-            major_harmony=major_harmony,
-            minor_harmony=minor_harmony,
+            has_major_harmony=has_major_harmony,
+            has_minor_harmony=has_minor_harmony,
             needs_y_buffer=needs_y_buffer,
             group=group,
             is_unique=is_unique
@@ -41,8 +41,8 @@ class CaseSuffix(Suffix):
         base = suffix_obj.suffix
         candidates = []
         # Apply standard harmonies using the parent class's static methods
-        base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
-        base = Suffix._apply_minor_harmony(word, base, suffix_obj.minor_harmony)
+        base = Suffix._apply_major_harmony(word, base, suffix_obj.has_major_harmony)
+        base = Suffix._apply_minor_harmony(word, base, suffix_obj.has_minor_harmony)
         base = Suffix._apply_consonant_hardening(word, base)
         
         candidates.append(base)  # Always include the base form

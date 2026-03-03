@@ -1,12 +1,12 @@
-from util.suffix import Suffix, Type, HasMajorHarmony, HasMinorHarmony, SuffixGroup
+from util.suffix import Suffix, Type, SuffixGroup
 
-
+## COMPLETE
 class VerbNegativeSuffix(Suffix):
     def __init__(self, name, suffix, 
                 comes_to=Type.VERB,
                 makes=Type.VERB,
-                major_harmony=HasMajorHarmony.Yes, 
-                minor_harmony=HasMinorHarmony.No, 
+                has_major_harmony=True, 
+                has_minor_harmony=False, 
                 needs_y_buffer=None, 
                 group=SuffixGroup.VERB_NEGATING, 
                 is_unique=True):
@@ -23,8 +23,8 @@ class VerbNegativeSuffix(Suffix):
             comes_to=comes_to,
             makes=makes,
             form_function=None, # Force the use of the overridden _default_form
-            major_harmony=major_harmony,
-            minor_harmony=minor_harmony,
+            has_major_harmony=has_major_harmony,
+            has_minor_harmony=has_minor_harmony,
             needs_y_buffer=needs_y_buffer,
             group=group,
             is_unique=is_unique

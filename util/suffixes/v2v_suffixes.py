@@ -1,4 +1,4 @@
-from util.suffix import Suffix, Type, HasMajorHarmony, HasMinorHarmony, SuffixGroup
+from util.suffix import Suffix, Type,  SuffixGroup
 import util.word_methods as wrd
 
 
@@ -8,7 +8,7 @@ from util.suffixes.v2v.verb_negative import VERB_NEGATIVES
 
 def form_for_possibiliative_ebil(word, suffix_obj):
     e_base = "e"
-    e_base = Suffix._apply_major_harmony(word, e_base, suffix_obj.major_harmony)
+    e_base = Suffix._apply_has_major_harmony(word, e_base, suffix_obj.has_major_harmony)
 
     if word and word[-1] not in wrd.VOWELS:
         return [e_base + "bil"]
@@ -19,7 +19,7 @@ def form_for_possibiliative_ebil(word, suffix_obj):
 # ============================================================================
 
 ### Buranın ayrılması laaızm daha temiz bir mimari... ebilmek evermek eyazmak şeylerini halletmeli.
-possibiliative_ebil = Suffix("possibilitative_ebil", "ebil", Type.VERB, Type.VERB, form_function=form_for_possibiliative_ebil, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No,needs_y_buffer=True, group=SuffixGroup.VERB_COMPOUND, is_unique=True)
+possibiliative_ebil = Suffix("possibilitative_ebil", "ebil", Type.VERB, Type.VERB, form_function=form_for_possibiliative_ebil, has_major_harmony=True, has_minor_harmony=False,needs_y_buffer=True, group=SuffixGroup.VERB_COMPOUND, is_unique=True)
 
 # Olumsuzluk (Negative): Gel-me.
 # Bu ek Yapım eklerinden sonra gelir, ama Çekim eklerinden önce gelir.

@@ -1,4 +1,4 @@
-from util.suffix import Suffix, Type, HasMajorHarmony, HasMinorHarmony, SuffixGroup
+from util.suffix import Suffix, Type, SuffixGroup
 import util.word_methods as wrd
 
 VOWELS = ["a","e","ı","i","o","ö","u","ü"]
@@ -22,8 +22,8 @@ def form_for_conjugation_1sg(word, suffix_obj):
     #TODO eyim geleyim gideyim ekle
     # 2. Durum: Standart -im hali (Geleceğ-im, Doktor-um, Arkadaşlar-ım)
     base = "im"
-    base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
-    base = Suffix._apply_minor_harmony(word, base, suffix_obj.minor_harmony)
+    base = Suffix._apply_major_harmony(word, base, suffix_obj.has_major_harmony)
+    base = Suffix._apply_minor_harmony(word, base, suffix_obj.has_minor_harmony)
     
     # Kaynaştırma harfi (Hasta-y-ım)
     if word and word[-1] in VOWELS:
@@ -52,13 +52,13 @@ def form_for_conjugation_2sg(word, suffix_obj):
     
     # 2. Durum: Standart -sin hali (Predicative / Geniş Zaman / Şimdiki Zaman)
     sin_base = "sin"
-    sin_base = Suffix._apply_major_harmony(word, sin_base, suffix_obj.major_harmony)
-    sin_base = Suffix._apply_minor_harmony(word, sin_base, suffix_obj.minor_harmony)
+    sin_base = Suffix._apply_major_harmony(word, sin_base, suffix_obj.has_major_harmony)
+    sin_base = Suffix._apply_minor_harmony(word, sin_base, suffix_obj.has_minor_harmony)
     return_list.append(sin_base)
 
     in_base = "in"
-    in_base = Suffix._apply_major_harmony(word, in_base, suffix_obj.major_harmony)
-    in_base = Suffix._apply_minor_harmony(word, in_base, suffix_obj.minor_harmony)
+    in_base = Suffix._apply_major_harmony(word, in_base, suffix_obj.has_major_harmony)
+    in_base = Suffix._apply_minor_harmony(word, in_base, suffix_obj.has_minor_harmony)
     if word and word[-1] in VOWELS:
         return_list.append('y' + in_base)
     else:
@@ -75,15 +75,15 @@ def form_for_conjugation_3sg(word, suffix_obj):
     # "O doktor-sun" denmez, "O doktor" denir. O yüzden her yere -sin eklemiyoruz.
     if len(word) > 2 and word[-2:] in ["me","ma"]:
          sin_base = "sin"
-         sin_base = Suffix._apply_major_harmony(word, sin_base, suffix_obj.major_harmony)
-         sin_base = Suffix._apply_minor_harmony(word, sin_base, suffix_obj.minor_harmony)
+         sin_base = Suffix._apply_major_harmony(word, sin_base, suffix_obj.has_major_harmony)
+         sin_base = Suffix._apply_minor_harmony(word, sin_base, suffix_obj.has_minor_harmony)
          return [sin_base]
 
     # Eğer kelime saf fiil kökü ise (Gel-sin)
     if wrd.can_be_verb(word):
          sin_base = "sin"
-         sin_base = Suffix._apply_major_harmony(word, sin_base, suffix_obj.major_harmony)
-         sin_base = Suffix._apply_minor_harmony(word, sin_base, suffix_obj.minor_harmony)
+         sin_base = Suffix._apply_major_harmony(word, sin_base, suffix_obj.has_major_harmony)
+         sin_base = Suffix._apply_minor_harmony(word, sin_base, suffix_obj.has_minor_harmony)
          # Bunu listeye ekleyelim ama return etmeyelim, belki aşağıdan boş string de döner.
          # Ancak 3. tekil şahıs genelde null suffix'tir.
          return [sin_base, ""]
@@ -108,8 +108,8 @@ def form_for_conjugation_1pl(word, suffix_obj):
         
     # 2. Durum: Standart -iz hali
     iz_base = "iz"
-    iz_base = Suffix._apply_major_harmony(word, iz_base, suffix_obj.major_harmony)
-    iz_base = Suffix._apply_minor_harmony(word, iz_base, suffix_obj.minor_harmony)
+    iz_base = Suffix._apply_major_harmony(word, iz_base, suffix_obj.has_major_harmony)
+    iz_base = Suffix._apply_minor_harmony(word, iz_base, suffix_obj.has_minor_harmony)
 
     if word and word[-1] in VOWELS:
         return_list.append('y' + iz_base)
@@ -131,21 +131,21 @@ def form_for_conjugation_2pl(word, suffix_obj):
     # 1. Durum: Geçmiş zaman (-di) ve Şart (-se) sonrası '-niz'
     if len(word) > 2 and word[-2:] in ["di","dı","du","dü", "ti","tı","tu","tü", "se","sa"]:
         niz_base = "niz"
-        niz_base = Suffix._apply_major_harmony(word, niz_base, suffix_obj.major_harmony)
-        niz_base = Suffix._apply_minor_harmony(word, niz_base, suffix_obj.minor_harmony)
+        niz_base = Suffix._apply_major_harmony(word, niz_base, suffix_obj.has_major_harmony)
+        niz_base = Suffix._apply_minor_harmony(word, niz_base, suffix_obj.has_minor_harmony)
         return_list.append(niz_base)
         
     # 2. Durum: Standart -siniz (Predicative)
     siniz_base = "siniz"
-    siniz_base = Suffix._apply_major_harmony(word, siniz_base, suffix_obj.major_harmony)
-    siniz_base = Suffix._apply_minor_harmony(word, siniz_base, suffix_obj.minor_harmony)
+    siniz_base = Suffix._apply_major_harmony(word, siniz_base, suffix_obj.has_major_harmony)
+    siniz_base = Suffix._apply_minor_harmony(word, siniz_base, suffix_obj.has_minor_harmony)
     return_list.append(siniz_base)
     
     # 3. Durum: Emir kipi (Gel-in, Gel-iniz) - Sadece fiilse
     if wrd.can_be_verb(word) or (len(word)>2 and word[-2:] in ["me","ma"]):
          in_base = "in"
-         in_base = Suffix._apply_major_harmony(word, in_base, suffix_obj.major_harmony)
-         in_base = Suffix._apply_minor_harmony(word, in_base, suffix_obj.minor_harmony)
+         in_base = Suffix._apply_major_harmony(word, in_base, suffix_obj.has_major_harmony)
+         in_base = Suffix._apply_minor_harmony(word, in_base, suffix_obj.has_minor_harmony)
          
          if word[-1] in VOWELS:
              return_list.append('y' + in_base)
@@ -159,27 +159,27 @@ def form_for_conjugation_3pl(word, suffix_obj):
     result_list  = []
     # Standart: -ler (Gel-ir-ler, Ev-ler)
     base = "ler"
-    base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
-    base = Suffix._apply_minor_harmony(word, base, suffix_obj.minor_harmony)
+    base = Suffix._apply_major_harmony(word, base, suffix_obj.has_major_harmony)
+    base = Suffix._apply_minor_harmony(word, base, suffix_obj.has_minor_harmony)
     result_list.append(base)
     
     # Emir kipi 3. çoğul: Gel-sin-ler
     if(wrd.can_be_verb(word)) or word[-2:] in ['me','ma']:
         base_2 = "sinler"
-        base_2 = Suffix._apply_major_harmony(word, base_2, suffix_obj.major_harmony)
-        base_2 = Suffix._apply_minor_harmony(word, base_2, suffix_obj.minor_harmony)
+        base_2 = Suffix._apply_major_harmony(word, base_2, suffix_obj.has_major_harmony)
+        base_2 = Suffix._apply_minor_harmony(word, base_2, suffix_obj.has_minor_harmony)
         result_list.append(base_2)
 
     return result_list
 
 
-conjugation_1sg = Suffix("conjugation_1sg", "im", Type.BOTH, Type.NOUN, form_function= form_for_conjugation_1sg, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, is_unique=True, group=SuffixGroup.CONJUGATION)
-conjugation_2sg = Suffix("conjugation_2sg","sin", Type.BOTH, Type.NOUN, form_function= form_for_conjugation_2sg, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, is_unique=True, group=SuffixGroup.CONJUGATION)
-conjugation_3sg = Suffix("conjugation_3sg", "", Type.BOTH, Type.NOUN, form_function=form_for_conjugation_3sg , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, is_unique=True, group=SuffixGroup.CONJUGATION)
+conjugation_1sg = Suffix("conjugation_1sg", "im", Type.BOTH, Type.NOUN, form_function= form_for_conjugation_1sg, has_major_harmony=True, has_minor_harmony=True, is_unique=True, group=SuffixGroup.CONJUGATION)
+conjugation_2sg = Suffix("conjugation_2sg","sin", Type.BOTH, Type.NOUN, form_function= form_for_conjugation_2sg, has_major_harmony=True, has_minor_harmony=True, is_unique=True, group=SuffixGroup.CONJUGATION)
+conjugation_3sg = Suffix("conjugation_3sg", "", Type.BOTH, Type.NOUN, form_function=form_for_conjugation_3sg , has_major_harmony=True, has_minor_harmony=True, is_unique=True, group=SuffixGroup.CONJUGATION)
 
-conjugation_1pl = Suffix("conjugation_1pl", "iz", Type.BOTH, Type.NOUN, form_function= form_for_conjugation_1pl, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, is_unique=True, group=SuffixGroup.CONJUGATION)
-conjugation_2pl = Suffix("conjugation_2pl", "siniz", Type.BOTH, Type.NOUN, form_function=form_for_conjugation_2pl , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, is_unique=True, group=SuffixGroup.CONJUGATION)
-conjugation_3pl = Suffix("conjugation_3pl", "ler", Type.BOTH, Type.NOUN, form_function=form_for_conjugation_3pl , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, is_unique=True, group=SuffixGroup.CONJUGATION)
+conjugation_1pl = Suffix("conjugation_1pl", "iz", Type.BOTH, Type.NOUN, form_function= form_for_conjugation_1pl, has_major_harmony=True, has_minor_harmony=True, is_unique=True, group=SuffixGroup.CONJUGATION)
+conjugation_2pl = Suffix("conjugation_2pl", "siniz", Type.BOTH, Type.NOUN, form_function=form_for_conjugation_2pl , has_major_harmony=True, has_minor_harmony=True, is_unique=True, group=SuffixGroup.CONJUGATION)
+conjugation_3pl = Suffix("conjugation_3pl", "ler", Type.BOTH, Type.NOUN, form_function=form_for_conjugation_3pl , has_major_harmony=True, has_minor_harmony=True, is_unique=True, group=SuffixGroup.CONJUGATION)
 
 CONJUGATIONS = [
     value for name, value in globals().items() 

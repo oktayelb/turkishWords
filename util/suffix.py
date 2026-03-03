@@ -4,45 +4,37 @@ import util.word_methods as wrd
 # Eklerin hiyerarşisi.
 # Kural: Bir ek, kendinden daha BÜYÜK numaralı bir gruptan sonra GELEMEZ.
 class SuffixGroup(IntEnum):                                                                                         
-    VERB_DERIVATIONAL = 5  # v2v
-    VERB_NEGATING = 7   # Olumsuzluk eki ()
-    VERB_COMPOUND = 8     # Fiil Tamlama Ekleri (-r)
-    N2V_DERIVATIONAL = 10 # İsimden Fiile 
-    PLURAL = 10      # 
-    DERIVATIONAL = 10      # Yapım Ekleri (ve -ler çoğul eki dosyanızdaki yapıya göre)
-    DERIVATIONAL_LOCKING = 15 # Yapım Ekleri - Kilitli (Bazı ekler geldikten sonra başka yapım eki gelmez
-    POSSESSIVE = 30        # İyelik Ekleri (-im, -in)
-    # COMPOUND = 35          # İsim Tamlama Ekleri (-in) tam emin olana kadar bekle
-    CASE = 40              # Hal Ekleri (-e, -de)
-    MARKING_KI = 45         # Hal eki sonrası istisnalar (-ki)
-    WITH_LE = 46             # Hal eki sonrası istisnalar (-le)
-    PREDICATIVE = 50       # Bildirme / Ek-fiil (-dir, -di, -miş, -se)
-    CONJUGATION = 60          # Şahıs Ekleri (-im, -sin, -ler)
+    VERB_DERIVATIONAL = 25    # fiilden fiil yapan ekler; -iş -il -in -tir...
+    VERB_NEGATING = 35        # fiili olumsuz yapan ekler; -me -eme
+    VERB_COMPOUND = 40        # birleşik fiil ekleri, -ebil -eyaz -edur...
+    N2V_DERIVATIONAL = 50     # İsimden Fiile yapım ekleri; -le  -e -se...
+    PLURAL = 50               # Çoğul eki  -ler
+    DERIVATIONAL = 50         # İsimden isim yapım ekleri -lık -lı -cı...
+    DERIVATIONAL_LOCKING = 75 # Zarf yapan ekler; -ip -erek -e -dikçe...
+    POSSESSIVE = 150          # İyelik Ekleri; -im -in -imiz
+    CASE = 200                # Hal Ekleri -e -de -i -den -nin
+    MARKING_KI = 225          # İşaret eki -ki
+    WITH_LE = 230             # Birliktelik eki -le
+    PREDICATIVE = 250         # Ek-fiil -dir -idi -imiş -ise
+    CONJUGATION = 300         # Fiil şahıs çekimleri -im -sin -ler
 
 class Type(Enum):
     NOUN = "noun"
     VERB = "verb"
     BOTH = "both"
 
-class HasMajorHarmony(Enum):
-    Yes = 0
-    No = 1
-
-class HasMinorHarmony(Enum):
-    Yes = 0
-    No = 1
 
 class Suffix:
     def __init__(self, name, suffix, comes_to, makes, 
-                 form_function=None, major_harmony=None, minor_harmony=None, needs_y_buffer=False,
+                 form_function=None, has_major_harmony=None, has_minor_harmony=None, needs_y_buffer=False,
                  group=SuffixGroup.DERIVATIONAL, is_unique=False):
         
         self.name = name
         self.suffix = str(suffix)
         self.comes_to = comes_to
         self.makes = makes
-        self.major_harmony = major_harmony
-        self.minor_harmony = minor_harmony
+        self.has_major_harmony = has_major_harmony
+        self.has_minor_harmony = has_minor_harmony
         self.needs_y_buffer = needs_y_buffer
         self.form_function = form_function if form_function else self._default_form
         
@@ -59,8 +51,8 @@ class Suffix:
         base = suffix_obj.suffix    
         
         # 2. Uyumları uygula
-        base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
-        base = Suffix._apply_minor_harmony(word, base, suffix_obj.minor_harmony)
+        base = Suffix._apply_major_harmony(word, base, suffix_obj.has_major_harmony)
+        base = Suffix._apply_minor_harmony(word, base, suffix_obj.has_minor_harmony)
         base = Suffix._apply_consonant_hardening(word, base)
         
         candidates = [] # Start empty!
@@ -91,11 +83,11 @@ class Suffix:
         return final_results
     
     @staticmethod
-    def _apply_major_harmony(word, result, major_harmony):
-        if major_harmony != HasMajorHarmony.Yes:
+    def _apply_major_harmony(word, result, has_major_harmony):
+        if has_major_harmony != True:
             return result
         
-        if wrd.major_harmony(word) == wrd.MajorHarmony.BACK:
+        if wrd.has_major_harmony(word) == wrd.MajorHarmony.BACK:
             result = result.replace("e", "a")
             result = result.replace("i", "ı")
             result = result.replace("ü", "u")
@@ -104,11 +96,11 @@ class Suffix:
         return result
     
     @staticmethod
-    def _apply_minor_harmony(word, result, minor_harmony):
-        if minor_harmony != HasMinorHarmony.Yes:
+    def _apply_minor_harmony(word, result, has_minor_harmony):
+        if has_minor_harmony != True:
             return result
         
-        word_harmony = wrd.minor_harmony(word)
+        word_harmony = wrd.has_minor_harmony(word)
         
         if word_harmony == wrd.MinorHarmony.BACK_ROUND:
             result = result.replace("ı", "u")

@@ -1,5 +1,4 @@
-from util.suffix import Suffix, Type, HasMajorHarmony, HasMinorHarmony, SuffixGroup
-import util.word_methods as wrd
+from util.suffix import Suffix, Type,  SuffixGroup
 
 VOWELS = ["a","e","ı","i","o","ö","u","ü"]
 
@@ -8,20 +7,20 @@ class Nounifier(Suffix):
     def __init__(self, name, suffix, 
                 comes_to=Type.VERB,
                 makes=Type.NOUN,
-                major_harmony=HasMajorHarmony.Yes, 
-                minor_harmony=None,  # Set to None to detect if the user passed a value
+                has_major_harmony=True, 
+                has_minor_harmony=None,  # Set to None to detect if the user passed a value
                 needs_y_buffer=None, 
                 group=SuffixGroup.DERIVATIONAL, 
                 is_unique=False,
                 form_function=None):
         
         # Dynamic default assignment for minor harmony
-        if minor_harmony is None:
+        if has_minor_harmony is None:
             # If the suffix contains any narrow vowel, it defaults to having minor harmony
             if any(vowel in suffix for vowel in ['ı', 'i', 'u', 'ü']): # only i is enough bc of the standart narrow front vowel converntion
-                minor_harmony = HasMinorHarmony.Yes
+                has_minor_harmony = True
             else:
-                minor_harmony = HasMinorHarmony.No
+                has_minor_harmony = False
 
         if needs_y_buffer is None:
             if suffix[0] in ['a', 'e', 'ı', 'i', 'o', 'ö', 'u', 'ü']:
@@ -34,8 +33,8 @@ class Nounifier(Suffix):
             comes_to=comes_to,
             makes=makes,
             form_function=form_function,
-            major_harmony=major_harmony,
-            minor_harmony=minor_harmony,
+            has_major_harmony=has_major_harmony,
+            has_minor_harmony=has_minor_harmony,
             needs_y_buffer=needs_y_buffer,
             group=group,
             is_unique=is_unique
@@ -48,8 +47,8 @@ def form_for_perfectative_ik(word, suffix_obj):
     """
     result_list = []
     base = suffix_obj.suffix
-    base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
-    base = Suffix._apply_minor_harmony(word, base, suffix_obj.minor_harmony)
+    base = Suffix._apply_major_harmony(word, base, suffix_obj.has_major_harmony)
+    base = Suffix._apply_minor_harmony(word, base, suffix_obj.has_minor_harmony)
     base = Suffix._apply_consonant_hardening(word, base)
     result_list.append(base)
     
@@ -87,8 +86,8 @@ def form_for_perfectative_ik(word, suffix_obj):
 def form_for_nounifier_inti(word, suffix_obj):
     result_list = []
     base = suffix_obj.suffix
-    base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
-    base = Suffix._apply_minor_harmony(word, base, suffix_obj.minor_harmony)
+    base = Suffix._apply_major_harmony(word, base, suffix_obj.has_major_harmony)
+    base = Suffix._apply_minor_harmony(word, base, suffix_obj.has_minor_harmony)
     base = Suffix._apply_consonant_hardening(word, base)
     result_list.append(base)
     
@@ -101,7 +100,7 @@ def form_for_nounifier_inti(word, suffix_obj):
             last_two = word[-2:]
             if last_two in ['in', 'ın', 'un', 'ün']:
                 ti_form = 'ti'
-                ti_form = Suffix._apply_major_harmony(word, ti_form, suffix_obj.major_harmony)
+                ti_form = Suffix._apply_major_harmony(word, ti_form, suffix_obj.has_major_harmony)
                 ti_form = Suffix._apply_consonant_hardening(word, ti_form)
                 if ti_form not in result_list:
                     result_list.append(ti_form)
@@ -117,8 +116,8 @@ def form_for_toolifier_geç(word, suffix_obj):
     
     # Base: geç
     gec_base = suffix_obj.suffix    
-    gec_base = Suffix._apply_major_harmony(word, gec_base, suffix_obj.major_harmony)
-    gec_base = Suffix._apply_minor_harmony(word, gec_base, suffix_obj.minor_harmony)
+    gec_base = Suffix._apply_major_harmony(word, gec_base, suffix_obj.has_major_harmony)
+    gec_base = Suffix._apply_minor_harmony(word, gec_base, suffix_obj.has_minor_harmony)
     gec_base = Suffix._apply_consonant_hardening(word, gec_base)
     result_list.append(gec_base)
     result_list.append(gec_base[1:] ) # eç form 
@@ -131,33 +130,29 @@ def form_for_toolifier_geç(word, suffix_obj):
     return result_list
 
 
-toolative_ek = Nounifier("toolative_ek", "ek")
+toolative_ek        = Nounifier("toolative_ek", "ek")
 ##k lı biçimleri de eklenmeli , birleşebilir belki
 ##TODO form for form for constofactattive koy, agan eğen biçimleri için
 constofactative_gen = Nounifier("constofactative_gen", "gen")
 constofactative_gin = Nounifier("constofactative_gin", "gin")
-
-perfectative_ik = Nounifier("perfectative_ik", "ik", Type.VERB, Type.NOUN, form_function= form_for_perfectative_ik, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, needs_y_buffer=True, )
-nounifier_i  = Nounifier("nounifier_i" , "i")
+perfectative_ik     = Nounifier("perfectative_ik", "ik", form_function= form_for_perfectative_ik)
+nounifier_i         = Nounifier("nounifier_i" , "i",needs_y_buffer=False)
 #belki birleşebilir
-nounifier_gi = Nounifier("nounifier_gi", "gi")
-nounifier_ge = Nounifier("nounifier_ge", "ge")
-
-nounifier_im = Nounifier("nounifier_im", "im")
-nounifier_in = Nounifier("nounifier_in", "in")
-nounifier_it = Nounifier("nounifier_it", "it")
-nounifier_inç = Nounifier("nounifier_inç","inç")
-
+nounifier_gi        = Nounifier("nounifier_gi", "gi")
+nounifier_ge        = Nounifier("nounifier_ge", "ge")
+nounifier_im        = Nounifier("nounifier_im", "im",needs_y_buffer=False)
+nounifier_in        = Nounifier("nounifier_in", "in",needs_y_buffer=False)
+nounifier_it        = Nounifier("nounifier_it", "it")
+nounifier_inç       = Nounifier("nounifier_inç","inç")
 ## belki bu ek sadece ti olabilir
-nounifier_inti = Nounifier("nounifier_inti", "inti", Type.VERB, Type.NOUN, form_function= form_for_nounifier_inti, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, )
+nounifier_inti      = Nounifier("nounifier_inti", "inti", form_function= form_for_nounifier_inti)
 #birleştirilebilir
-toolifier_geç = Nounifier("toolifier_geç", "geç", Type.VERB, Type.NOUN, form_function= form_for_toolifier_geç, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, )
-subjectifier_giç = Nounifier("subjectifier_giç", "giç")
+toolifier_geç       = Nounifier("toolifier_geç", "geç",  form_function= form_for_toolifier_geç)
+subjectifier_giç    = Nounifier("subjectifier_giç", "giç")
 #birleştirilebilir
-nounifier_anak = Nounifier("nounifier_anak", "anak")
-nounifier_amak = Nounifier("nounifier_amak", "amak" )
-
-subjectifier_men = Nounifier("subjectifier_men", "men") 
+nounifier_anak      = Nounifier("nounifier_anak", "anak")
+nounifier_amak      = Nounifier("nounifier_amak", "amak")
+subjectifier_men    = Nounifier("subjectifier_men", "men") 
 
 
 #nounifier_ce   = Nounifier("nounifier_ce", "ce", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, )

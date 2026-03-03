@@ -1,5 +1,4 @@
-from util.suffix import Suffix, Type, HasMajorHarmony, HasMinorHarmony, SuffixGroup
-import util.word_methods as wrd
+from util.suffix import Suffix, Type,  SuffixGroup
 
 from util.suffixes.v2n.gerunds import GERUNDS
 from util.suffixes.v2n.infinitives import INFINITIVES
@@ -13,8 +12,8 @@ VOWELS = ["a","e","ı","i","o","ö","u","ü"]
 
 def form_for_continuous_iyor(word, suffix_obj):
     base = "i"
-    base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
-    base = Suffix._apply_minor_harmony(word, base, suffix_obj.minor_harmony)
+    base = Suffix._apply_major_harmony(word, base, suffix_obj.has_major_harmony)
+    base = Suffix._apply_minor_harmony(word, base, suffix_obj.has_minor_harmony)
 
     base = base+"yor"
     return [base]
@@ -40,11 +39,11 @@ continuous_iyor = Suffix(
     Type.VERB,  # Fiile gelir
     Type.NOUN,  # İsimleştirir (üzerine şahıs eki alır: geliyor-um)
     form_function=form_for_continuous_iyor, 
-    major_harmony=HasMajorHarmony.Yes, # Fonksiyon hallediyor
-    minor_harmony=HasMinorHarmony.Yes, # Fonksiyon hallediyor
+    has_major_harmony=True, # Fonksiyon hallediyor
+    has_minor_harmony=True, # Fonksiyon hallediyor
     group=SuffixGroup.DERIVATIONAL #  derivational değil , değiştirmek için diğer doyaları halletmeli
 )
-wish_suffix = Suffix("wish_suffix", "se", Type.VERB, Type.NOUN,major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.PREDICATIVE, is_unique=True)
+wish_suffix = Suffix("wish_suffix", "se", Type.VERB, Type.NOUN,has_major_harmony=True, has_minor_harmony=False, group=SuffixGroup.PREDICATIVE, is_unique=True)
 
 VERB2NOUN = [
     value for name, value in globals().items() 
