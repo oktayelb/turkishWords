@@ -13,6 +13,21 @@ VOWELS = ["a","e","ı","i","o","ö","u","ü"]
 ###   Form for rest
 ####
 
+
+
+
+
+
+
+
+
+def form_for_when_ken(word, suffix_obj):
+    base = "ken"
+    if word and word[-1] in VOWELS:
+        base = "y" + base
+    return [base]
+
+
 def form_for_if_suffix  (word, suffix_obj):
 
     base= "se"
@@ -22,11 +37,6 @@ def form_for_if_suffix  (word, suffix_obj):
         base = "y" + base
     
     return [base]
-
-
-
-
-
 
 def form_for_pasttense_noundi(word,suffix_obj):
     # Hem "doktor-du" (Ek fiil) hem "gel-ecek-ti" (Hikaye birleşik zaman)
@@ -40,16 +50,6 @@ def form_for_pasttense_noundi(word,suffix_obj):
         return [ydi_base, di_base]
 
     return [di_base]
-
-def form_for_when_ken(word, suffix_obj):
-    base = "ken"
-    if word and word[-1] in VOWELS:
-        base = "y" + base
-    return [base]
-
-
-
-
 
 
 def form_for_copula_mis (word, suffix_obj):
