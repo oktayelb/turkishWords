@@ -1,5 +1,7 @@
 from util.suffix import Suffix, Type, HasMajorHarmony, HasMinorHarmony, SuffixGroup
 
+
+## COMPLETE
 class PosessiveSuffix(Suffix):
     def __init__(self, name, suffix, 
                  comes_to=Type.NOUN,

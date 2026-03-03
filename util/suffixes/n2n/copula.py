@@ -1,7 +1,8 @@
 from util.suffix import Suffix, Type, HasMajorHarmony, HasMinorHarmony, SuffixGroup
-import util.word_methods as wrd
+
 VOWELS = ["a","e","ı","i","o","ö","u","ü"]
 
+## COMPLETE
 class Copula(Suffix):
     def __init__(self, name, suffix, 
                 comes_to=Type.NOUN,
@@ -49,46 +50,14 @@ class Copula(Suffix):
         
         candidates.append(base)  # Always include the base form
         
-        if word and word[-1] in ["a","e","ı","i","o","ö","u","ü"]:  # If the last character is a vowel, we need to consider buffer consonants
+        if word and word[-1] in VOWELS:  # If the last character is a vowel, we need to consider buffer consonants
             if suffix_obj.needs_y_buffer:
                 candidates.append('y' + base)
         
         return candidates
 
 
-def form_for_if_suffix  (word, suffix_obj):
 
-    base= "se"
-    base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
-
-    if(word and word[-1] in VOWELS):
-        base = "y" + base
-    
-    return [base]
-
-def form_for_pasttense_noundi(word,suffix_obj):
-    # Hem "doktor-du" (Ek fiil) hem "gel-ecek-ti" (Hikaye birleşik zaman)
-    di_base = "di"
-    di_base = Suffix._apply_major_harmony(word, di_base, suffix_obj.major_harmony)
-    di_base = Suffix._apply_minor_harmony(word, di_base, suffix_obj.minor_harmony)
-    di_base = Suffix._apply_consonant_hardening(word, di_base)
-    
-    if word and word[-1] in VOWELS:
-        ydi_base = "y" + di_base
-        return [ydi_base, di_base]
-
-    return [di_base]
-
-
-def form_for_copula_mis (word, suffix_obj):
-    base = "miş"
-    base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
-    base = Suffix._apply_minor_harmony(word, base, suffix_obj.minor_harmony)
-    
-    if word and word[-1] in VOWELS:
-        base = "y" + base
-
-    return [base]
 
 
 nounaorist_dir =  Copula("nounaorist_dir", "dir",needs_y_buffer=False)
@@ -96,3 +65,9 @@ nounaorist_dir =  Copula("nounaorist_dir", "dir",needs_y_buffer=False)
 pasttense_noundi = Copula("pasttense_noundi", "di", comes_to=Type.BOTH)
 if_suffix = Copula("if_suffix", "se")
 copula_mis = Copula("copula_mis", "miş")
+
+
+COPULA = [
+    value for name, value in globals().items() 
+    if isinstance(value, Suffix) and name != "Suffix"
+]

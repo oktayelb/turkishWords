@@ -73,7 +73,7 @@ def form_for_factative_ir(word, suffix_obj):
     
     return result_list
 
-
+# gen gan ile birleşmesi söz konusu
 factative_en      = Participle("factative_en", "en")
 pastfactative_miş = Participle("pastfactative_miş", "miş")
 adjectifier_dik   = Participle("adjectifier_dik", "dik" )

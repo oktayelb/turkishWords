@@ -1,7 +1,6 @@
-from util import suffix
 from util.suffix import Suffix, Type, HasMajorHarmony, HasMinorHarmony, SuffixGroup
 
-
+## COMPLETE
 class Infinitive(Suffix):
     def __init__(self, name, suffix, 
                  comes_to=Type.VERB,

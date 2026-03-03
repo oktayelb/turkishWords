@@ -133,6 +133,7 @@ def form_for_toolifier_geç(word, suffix_obj):
 
 toolative_ek = Nounifier("toolative_ek", "ek")
 ##k lı biçimleri de eklenmeli , birleşebilir belki
+##TODO form for form for constofactattive koy, agan eğen biçimleri için
 constofactative_gen = Nounifier("constofactative_gen", "gen")
 constofactative_gin = Nounifier("constofactative_gin", "gin")
 
