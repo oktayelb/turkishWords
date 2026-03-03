@@ -80,22 +80,22 @@ def form_for_confactuous_le(word, suffix_obj):
 
 ## LERI GECE-LERI EKLENMEKLİ Mİ? 
 #-- new group, can only get predicative
-approximative_imtrak = Suffix("approximative_imtrak", "imtrak", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL_LOCKING)
 temporative_leyin = Suffix("temporative_leyin", "leyin", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL_LOCKING)
-#yazın kışın
-adverbial_ince = Suffix("adverbial_in", "in", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL_LOCKING)
+#tempolocative_lerin = Suffix("tempolocative_lerin", "lerin", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL_LOCKING)    
+adverbial_in = Suffix("adverbial_in", "in", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL_LOCKING)
 adverbial_cesine = Suffix("adverbial_cesine", "cesine", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL_LOCKING)
 when_ken = Suffix("when_ken", "ken", Type.NOUN, Type.NOUN, form_function= form_for_when_ken , major_harmony=HasMajorHarmony.No, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL_LOCKING) #zarf sanrırım
 
 # --- Group 45: POST_CASE (İstisna) ---                                                                 
-marking_ki = Suffix("marking_ki", "ki", Type.NOUN, Type.NOUN,major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.POST_CASE) # is_unique çünkü sadece bir kere gelebilir.
+marking_ki = Suffix("marking_ki", "ki", Type.NOUN, Type.NOUN,major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.MARKING_KI) # is_unique çünkü sadece bir kere gelebilir.
 ##le yi halletmeli
-confactous_le = Suffix("confactuous_le", "le", Type.NOUN, Type.NOUN, form_function= form_for_confactuous_le, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.POST_CASE, is_unique=True) 
+confactous_le = Suffix("confactuous_le", "le", Type.NOUN, Type.NOUN, form_function= form_for_confactuous_le, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.WITH_LE, is_unique=True) 
 # --- Group 50: PREDICATIVE (Bildirme/Şahıs Ekleri) ---
 nounaorist_dir =  Suffix("nounaorist_dir", "dir", Type.NOUN, Type.NOUN , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.PREDICATIVE)
 pasttense_noundi = Suffix("pasttense_noundi", "di", Type.BOTH, Type.NOUN,form_function= form_for_pasttense_noundi, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.PREDICATIVE)
 if_suffix = Suffix("if_suffix", "se", Type.NOUN, Type.NOUN, form_function= form_for_if_suffix ,major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.PREDICATIVE)
 copula_mis = Suffix("copula_mis", "miş", Type.NOUN, Type.NOUN,form_function= form_for_copula_mis , major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.PREDICATIVE)
+
 
 
 

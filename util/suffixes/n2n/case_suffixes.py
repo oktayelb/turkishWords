@@ -4,11 +4,11 @@ class CaseSuffix(Suffix):
     def __init__(self, name, suffix, 
                 comes_to=Type.NOUN,
                 makes=Type.NOUN,
-                 major_harmony=HasMajorHarmony.Yes, 
-                    minor_harmony=None,  # Set to None to detect if the user passed a value
-                 needs_y_buffer=False, 
-                 group=SuffixGroup.CASE, 
-                 is_unique=False):
+                major_harmony=HasMajorHarmony.Yes, 
+                minor_harmony=None,  # Set to None to detect if the user passed a value
+                needs_y_buffer=False, 
+                group=SuffixGroup.CASE, 
+                is_unique=False):
         
         # Dynamic default assignment for minor harmony
         if minor_harmony is None:
@@ -57,7 +57,7 @@ class CaseSuffix(Suffix):
         return candidates
 
 
-noun_compound = CaseSuffix("noun_compound"  , "in")
+noun_compound = CaseSuffix("noun_compound"  , "in") # köy ağzında needs_y_buffer doğru
 accusative_i  = CaseSuffix("accusative_i"   , "i", needs_y_buffer=True)
 locative_den  = CaseSuffix("locative_den"   , "den")
 dative_e      = CaseSuffix("dative_e"       , "e", needs_y_buffer=True)

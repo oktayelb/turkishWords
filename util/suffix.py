@@ -14,7 +14,8 @@ class SuffixGroup(IntEnum):
     POSSESSIVE = 30        # İyelik Ekleri (-im, -in)
     # COMPOUND = 35          # İsim Tamlama Ekleri (-in) tam emin olana kadar bekle
     CASE = 40              # Hal Ekleri (-e, -de)
-    POST_CASE = 45         # Hal eki sonrası istisnalar (-ki)
+    MARKING_KI = 45         # Hal eki sonrası istisnalar (-ki)
+    WITH_LE = 46             # Hal eki sonrası istisnalar (-le)
     PREDICATIVE = 50       # Bildirme / Ek-fiil (-dir, -di, -miş, -se)
     CONJUGATION = 60          # Şahıs Ekleri (-im, -sin, -ler)
 

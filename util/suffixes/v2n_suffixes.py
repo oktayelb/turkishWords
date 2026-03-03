@@ -4,6 +4,7 @@ import util.word_methods as wrd
 from util.suffixes.v2n.gerunds import GERUNDS
 from util.suffixes.v2n.infinitives import INFINITIVES
 from util.suffixes.v2n.participles import PARICIPLES
+from util.suffixes.v2n.nounifiers import NOUNIFIERS
 VOWELS = ["a","e","ı","i","o","ö","u","ü"]
 
 # ============================================================================
@@ -92,149 +93,6 @@ def form_for_nounifier_iş(word, suffix_obj):
 """
 
 
-def form_for_factative_ir(word, suffix_obj):
-    """
-    Form function for factative_ir suffix (Geniş Zaman Sıfat-Fiil)
-    - Default forms: er, ir, z (negative)
-    - Note: Does not soften (r and z are soft/continuant).
-    """
-    result_list = []
-    
-    # Geniş zamanın olumsuzu (maz/mez) kökü için 'z'
-    if len(word) > 2 and word[-2:] in ["ma","me"]:
-        if wrd.can_be_verb(word[:-2]):
-            z_base = "z"
-            result_list.append(z_base)
-
-    # ir form with harmony
-    ir_base = 'ir'
-    ir_base = Suffix._apply_major_harmony(word, ir_base, suffix_obj.major_harmony)
-    ir_base = Suffix._apply_minor_harmony(word, ir_base, suffix_obj.minor_harmony)
-    result_list.append(ir_base)
-    
-    # er form with harmony (Gider, Yapar)
-    er_base = 'er'
-    er_base = Suffix._apply_major_harmony(word, er_base, suffix_obj.major_harmony)
-    result_list.append(er_base)
-    
-    # Vowel drop variant for vowel-ending words (Oku-r)
-    if word and word[-1] in VOWELS:
-        r_form = 'r'
-        if r_form not in result_list:
-            result_list.append(r_form)
-    
-    return result_list
-
-
-def form_for_perfectative_ik(word, suffix_obj):
-    """
-    Form for perfectative_ik (e.g. Aç-ık -> Açığı)
-    Includes softening (k -> ğ).
-    """
-    result_list = []
-    base = suffix_obj.suffix
-    base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
-    base = Suffix._apply_minor_harmony(word, base, suffix_obj.minor_harmony)
-    base = Suffix._apply_consonant_hardening(word, base)
-    result_list.append(base)
-    
-
-    # Softening base: ik -> iğ
-    soft_base = Suffix._apply_softening(base)
-    if soft_base != base:
-        result_list.append(soft_base)
-    
-    if word[-2:] in ["me","ma"]:
-        result_list.append("y" + base)
-        result_list.append("y" + soft_base)
-
-    if word:
-        if word[-1] in VOWELS:
-            # y buffer
-            y_form = 'y' + base
-            result_list.append(y_form)
-            
-            soft_y = Suffix._apply_softening(y_form)
-            if soft_y != y_form:
-                result_list.append(soft_y)
-            
-            result_list.append('ğ' + base)
-            
-            # k variant
-            k_form = base[1:]
-            result_list.append(k_form)
-            
-            # Softening k variant: k -> ğ
-            soft_k = Suffix._apply_softening(k_form)
-            if soft_k != k_form:
-                result_list.append(soft_k)
-        
-        if word[-1] in ['n', 'r']:
-            k_form = 'k'
-            k_form = Suffix._apply_consonant_hardening(word, k_form)
-            if k_form not in result_list:
-                result_list.append(k_form)
-                
-                # Softening k form
-                soft_k_form = Suffix._apply_softening(k_form)
-                if soft_k_form != k_form:
-                    result_list.append(soft_k_form)
-
-
-    
-    return result_list
-
-
-
-
-def form_for_nounifier_inti(word, suffix_obj):
-    result_list = []
-    base = suffix_obj.suffix
-    base = Suffix._apply_major_harmony(word, base, suffix_obj.major_harmony)
-    base = Suffix._apply_minor_harmony(word, base, suffix_obj.minor_harmony)
-    base = Suffix._apply_consonant_hardening(word, base)
-    result_list.append(base)
-    
-    if word:
-        if word[-1] in VOWELS:
-            reduced = base[1:]
-            result_list.append(reduced)
-        
-        if len(word) >= 2:
-            last_two = word[-2:]
-            if last_two in ['in', 'ın', 'un', 'ün']:
-                ti_form = 'ti'
-                ti_form = Suffix._apply_major_harmony(word, ti_form, suffix_obj.major_harmony)
-                ti_form = Suffix._apply_consonant_hardening(word, ti_form)
-                if ti_form not in result_list:
-                    result_list.append(ti_form)
-    
-    return result_list
-
-
-def form_for_toolifier_geç(word, suffix_obj):
-    """
-    Form for toolifier_geç (Süz-geç -> Süz-gec-i)
-    Includes softening (ç -> c).
-    """
-    result_list = []
-    
-    # Base: geç
-    gec_base = suffix_obj.suffix    
-    gec_base = Suffix._apply_major_harmony(word, gec_base, suffix_obj.major_harmony)
-    gec_base = Suffix._apply_minor_harmony(word, gec_base, suffix_obj.minor_harmony)
-    gec_base = Suffix._apply_consonant_hardening(word, gec_base)
-    result_list.append(gec_base)
-    result_list.append(gec_base[1:] ) # eç form 
-    # Softening: geç -> gec 
-    soft_gec = Suffix._apply_softening(gec_base)  
-    result_list.append(soft_gec)
-    result_list.append(soft_gec[1:])   # ec form
-    
-
-    return result_list
-
-
 # ============================================================================
 # VERB TO NOUN SUFFIXES (v2n)
 # ============================================================================
@@ -245,25 +103,6 @@ def form_for_toolifier_geç(word, suffix_obj):
 
 ##TODO form for form for constofactattive koy, agan eğen biçimleri için
 
-toolative_ek = Suffix("toolative_ek", "ek", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
-constofactative_gen = Suffix("constofactative_gen", "gen", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
-constofactative_gin = Suffix("constofactative_gin", "gin", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
-perfectative_ik = Suffix("perfectative_ik", "ik", Type.VERB, Type.NOUN, form_function= form_for_perfectative_ik, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, needs_y_buffer=True, group=SuffixGroup.DERIVATIONAL)
-nounifier_i  = Suffix("nounifier_i" , "i" , Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
-nounifier_gi = Suffix("nounifier_gi", "gi", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
-nounifier_ge = Suffix("nounifier_ge", "ge", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No , group=SuffixGroup.DERIVATIONAL)
-nounifier_im = Suffix("nounifier_im", "im", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
-nounifier_in = Suffix("nounifier_in", "in", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
-nounifier_it = Suffix("nounifier_it", "it", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
-nounifier_inç = Suffix("nounifier_inç","inç", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
-nounifier_inti = Suffix("nounifier_inti", "inti", Type.VERB, Type.NOUN, form_function= form_for_nounifier_inti, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
-toolifier_geç = Suffix("toolifier_geç", "geç", Type.VERB, Type.NOUN, form_function= form_for_toolifier_geç, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
-subjectifier_giç = Suffix("subjectifier_giç", "giç", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL)
-nounifier_anak = Suffix("nounifier_anak", "anak", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
-nounifier_amak = Suffix("nounifier_amak", "amak", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
-nounifier_ce   = Suffix("nounifier_ce", "ce", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
-subjectifier_men = Suffix("subjectifier_men", "men", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL)
-# Sıfat-Fiil (Participles) - Bunlar da isimleşir, çekim alabilir (Bildiğ-im, Yapacağ-ım)
 
 
 ## bu ekin şu anki hali yanlış, aslında bu ek fiilken i eki alıp isim olmuş sözcüklere eklenir. 
@@ -278,7 +117,7 @@ continuous_iyor = Suffix(
     form_function=form_for_continuous_iyor, 
     major_harmony=HasMajorHarmony.Yes, # Fonksiyon hallediyor
     minor_harmony=HasMinorHarmony.Yes, # Fonksiyon hallediyor
-    group=SuffixGroup.DERIVATIONAL # Group 10 (En başa yakın)
+    group=SuffixGroup.DERIVATIONAL #  derivational değil , değiştirmek için diğer doyaları halletmeli
 )
 wish_suffix = Suffix("wish_suffix", "se", Type.VERB, Type.NOUN,major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.PREDICATIVE, is_unique=True)
 
@@ -286,4 +125,4 @@ VERB2NOUN = [
     value for name, value in globals().items() 
     if isinstance(value, Suffix) and name != "Suffix"
 ]
-VERB2NOUN = VERB2NOUN + PARICIPLES + INFINITIVES + GERUNDS  
+VERB2NOUN = VERB2NOUN + PARICIPLES + INFINITIVES + GERUNDS  +NOUNIFIERS

@@ -1,6 +1,6 @@
 from util.suffix import Suffix, Type, HasMajorHarmony, HasMinorHarmony, SuffixGroup
 import util.word_methods as wrd
-
+##yeni suffix hiyerarkı gerek
 class Gerund(Suffix):
     def __init__(self, name, suffix, 
                 comes_to=Type.VERB,
@@ -46,7 +46,7 @@ adverbial_dikçe   = Gerund("adverbial_dikçe", "dikçe")
 ##Bunu napacağız incele
 nondoing_meden = Suffix("adverbial_meden", "meden", Type.VERB, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.No, group=SuffixGroup.DERIVATIONAL_LOCKING)
 
-
+##esiye eklenmeli mi?
 GERUNDS = [
     value for name, value in globals().items() 
     if isinstance(value, Suffix) and name != "Suffix"
