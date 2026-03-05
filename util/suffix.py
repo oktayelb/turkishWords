@@ -4,19 +4,20 @@ import util.word_methods as wrd
 # Eklerin hiyerarşisi.
 # Kural: Bir ek, kendinden daha BÜYÜK numaralı bir gruptan sonra GELEMEZ.
 class SuffixGroup(IntEnum):                                                                                         
-    VERB_DERIVATIONAL = 25    # fiilden fiil yapan ekler; -iş -il -in -tir...
-    VERB_NEGATING = 35        # fiili olumsuz yapan ekler; -me -eme
-    VERB_COMPOUND = 40        # birleşik fiil ekleri, -ebil -eyaz -edur...
-    N2V_DERIVATIONAL = 50     # İsimden Fiile yapım ekleri; -le  -e -se...
-    PLURAL = 50               # Çoğul eki  -ler
-    DERIVATIONAL = 50         # İsimden isim yapım ekleri -lık -lı -cı...
-    DERIVATIONAL_LOCKING = 75 # Zarf yapan ekler; -ip -erek -e -dikçe...
-    POSSESSIVE = 150          # İyelik Ekleri; -im -in -imiz
-    CASE = 200                # Hal Ekleri -e -de -i -den -nin
-    MARKING_KI = 225          # İşaret eki -ki
-    WITH_LE = 230             # Birliktelik eki -le
-    PREDICATIVE = 250         # Ek-fiil -dir -idi -imiş -ise
-    CONJUGATION = 300         # Fiil şahıs çekimleri -im -sin -ler
+    V2V_DERIVATIONAL = 25     # fiilden fiil yapan ekler; -iş -il -in -tir...
+    VERB_NEGATING = 35         # fiili olumsuz yapan ekler; -me -eme
+    VERB_COMPOUND = 40         # birleşik fiil ekleri, -ebil -eyaz -edur...
+    N2V_DERIVATIONAL = 50      # İsimden Fiile yapım ekleri; -le  -e -se...
+    PLURAL = 50                # Çoğul eki  -ler
+    N2N_DERIVATIONAL = 50          # İsimden isim yapım ekleri -lık -lı -cı...
+    V2N_DERIVATIONAL = 50          # Fiilden isim yapan ekler; -iş -me -ma -ış...
+    POSSESSIVE = 150           # İyelik Ekleri; -im -in -imiz
+    CASE = 200                 # Hal Ekleri -e -de -i -den -nin
+    MARKING_KI = 225           # İşaret eki -ki
+    WITH_LE = 230              # Birliktelik eki -le
+    DERIVATIONAL_LOCKING = 240 # Zarf yapan ekler; -ip -erek -e -dikçe... (-erekten kabul etmez)
+    PREDICATIVE = 250          # Ek-fiil -dir -idi -imiş -ise
+    CONJUGATION = 300          # Fiil şahıs çekimleri -im -sin -ler
 
 class Type(Enum):
     NOUN = "noun"
@@ -27,7 +28,7 @@ class Type(Enum):
 class Suffix:
     def __init__(self, name, suffix, comes_to, makes, 
                  form_function=None, has_major_harmony=None, has_minor_harmony=None, needs_y_buffer=False,
-                 group=SuffixGroup.DERIVATIONAL, is_unique=False):
+                 group=None, is_unique=False):
         
         self.name = name
         self.suffix = str(suffix)
@@ -87,7 +88,7 @@ class Suffix:
         if has_major_harmony != True:
             return result
         
-        if wrd.has_major_harmony(word) == wrd.MajorHarmony.BACK:
+        if wrd.major_harmony(word) == wrd.MajorHarmony.BACK:
             result = result.replace("e", "a")
             result = result.replace("i", "ı")
             result = result.replace("ü", "u")
@@ -100,7 +101,7 @@ class Suffix:
         if has_minor_harmony != True:
             return result
         
-        word_harmony = wrd.has_minor_harmony(word)
+        word_harmony = wrd.minor_harmony(word)
         
         if word_harmony == wrd.MinorHarmony.BACK_ROUND:
             result = result.replace("ı", "u")

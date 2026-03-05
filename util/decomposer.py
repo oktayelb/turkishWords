@@ -45,11 +45,15 @@ def is_valid_transition(last_suffix: Suffix, next_suffix: Suffix) -> bool:
     last_g = last_suffix.group
     next_g = next_suffix.group
 
+    ## main waterfall rule.
+    if next_g < last_g:
+        return False
+
     # --- RULE 1: The Post-Case Loop (-ki Exception) ---
     if last_g == SuffixGroup.MARKING_KI and next_g <= SuffixGroup.MARKING_KI:
         return True
     ## şelale akışına istisna olarak  yapım eklerinden sonra fiil ekleri gelebilir 
-    if last_g == SuffixGroup.DERIVATIONAL and next_g <= SuffixGroup.DERIVATIONAL:
+    if last_g == SuffixGroup.N2N_DERIVATIONAL and next_g <= SuffixGroup.N2N_DERIVATIONAL:
         return True   
     ## ebilmekten gibi eklerden sonra  fiil ekleri gelebilir.  gidebilmeyen gitmeyebilmek
     if last_g == SuffixGroup.VERB_COMPOUND and next_g <= SuffixGroup.VERB_COMPOUND:
@@ -58,22 +62,10 @@ def is_valid_transition(last_suffix: Suffix, next_suffix: Suffix) -> bool:
     if last_g == SuffixGroup.CASE and not next_g >= SuffixGroup.MARKING_KI:
         return False
         
-    # --- RULE 2: Derivational Locking (The Valve) ---
-    if last_g == SuffixGroup.DERIVATIONAL_LOCKING:
-        if next_g < SuffixGroup.PREDICATIVE:
-            return False
-
-    # --- RULE 3: The Waterfall (Gravity) ---
-    if next_g < last_g:
-        return False
-    
-    # copula gibi eklerden sonra kişi çekim gelmeli
-    if last_g == SuffixGroup.PREDICATIVE and next_g != SuffixGroup.CONJUGATION:
-        return False
 
     # --- RULE 4: Self-Looping Constraints ---
     if next_g == last_g:
-        if last_g in [SuffixGroup.DERIVATIONAL, SuffixGroup.VERB_DERIVATIONAL, SuffixGroup.PREDICATIVE]:
+        if last_g in [SuffixGroup.N2N_DERIVATIONAL, SuffixGroup.V2V_DERIVATIONAL, SuffixGroup.PREDICATIVE]:
             return True
         return False
 
@@ -82,10 +74,7 @@ def is_valid_transition(last_suffix: Suffix, next_suffix: Suffix) -> bool:
 pekistirme_suffix = Suffix("pekistirme", "pekistirme", Type.NOUN, Type.NOUN, is_unique=True)
 
 def get_pekistirme_analyses(word: str) -> List[Tuple]:
-    """
-    Encapsulates all logic for identifying and analyzing intensified adjectives (Pekiştirme).
-    Example: 'masmavi' -> (mavi, noun, [pekistirme], noun)
-    """
+
 
     analyses = []
     
@@ -93,7 +82,7 @@ def get_pekistirme_analyses(word: str) -> List[Tuple]:
     if len(word) < 4: 
         return analyses
 
-    # 1. Detect Vowels and Special Letters (m, p, r, s)
+    # 1. Detect first wowel 
     first_vowel_index = -1
     for i in range(len(word)):
         if word[i] in wrd.VOWELS:
@@ -103,8 +92,6 @@ def get_pekistirme_analyses(word: str) -> List[Tuple]:
     if first_vowel_index == -1 or (first_vowel_index + 1) >= len(word):
         return analyses
 
-    if word[first_vowel_index + 1] not in "psrm":  
-        return analyses
 
     # 2. Strategy: Try to find a valid (Prefix, Root) pair
     detected_root = None
@@ -271,9 +258,9 @@ def append_analysis(word, pos, root, analyses_list, shared_cache: dict = None):
 @functools.lru_cache(maxsize=100000)
 def decompose(word: str) -> List[Tuple]:
     """
-    Finds all possible root-suffix decompositions for a word.
+    Finds all possible root-suffix decompositions for a word.\n
     Uses a shared cache across all root iterations to avoid recomputing
-    suffix chains for the same remaining text + POS + last_group context.
+    suffix chains for the same remaining text + POS + last_group context.\n
     The lru_cache rapidly short-circuits re-evaluations across entire files.
     """
 

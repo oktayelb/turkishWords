@@ -11,7 +11,7 @@ class Participle(Suffix):
                 has_minor_harmony=None,  # Set to None to detect if the user passed a value
                 needs_y_buffer=None,
                 form_function=None, 
-                group=SuffixGroup.DERIVATIONAL, 
+                group=SuffixGroup.V2N_DERIVATIONAL, 
                 is_unique=False):
         
         # Dynamic default assignment for minor harmony

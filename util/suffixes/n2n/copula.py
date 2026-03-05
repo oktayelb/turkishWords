@@ -60,11 +60,10 @@ class Copula(Suffix):
 
 
 
-nounaorist_dir =  Copula("nounaorist_dir", "dir",needs_y_buffer=False)
-## bu both ayrılabilir
-pasttense_noundi = Copula("pasttense_noundi", "di", comes_to=Type.BOTH)
-if_suffix = Copula("if_suffix", "se")
-copula_mis = Copula("copula_mis", "miş")
+nounaorist_dir  = Copula("nounaorist_dir"   , "dir",needs_y_buffer=False)
+pasttense_di    = Copula("pasttense_di"     , "di")
+silative_se     = Copula("silative_se"      , "se")
+copula_mis      = Copula("copula_mis"       , "miş")
 
 
 COPULA = [

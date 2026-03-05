@@ -9,7 +9,7 @@ class Infinitive(Suffix):
                  has_minor_harmony=True,  # Set to None to detect if the user passed a value
                  needs_y_buffer=None, 
                  form_function=None,
-                 group=SuffixGroup.DERIVATIONAL, 
+                 group=SuffixGroup.V2N_DERIVATIONAL, 
                  is_unique=False):
         
         if needs_y_buffer is None:

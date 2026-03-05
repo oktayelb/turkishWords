@@ -38,6 +38,7 @@ class CaseSuffix(Suffix):
         Consolidates 'n' and 'y' buffer logic for Turkish nominal inflection.
         
         """
+        
         base = suffix_obj.suffix
         candidates = []
         # Apply standard harmonies using the parent class's static methods

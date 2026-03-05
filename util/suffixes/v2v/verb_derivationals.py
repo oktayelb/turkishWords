@@ -11,16 +11,16 @@ class VerbDerivationalSuffix(Suffix):
                 has_major_harmony=True, 
                 has_minor_harmony=None,  # Set to None to detect if the user passed a value
                 needs_y_buffer=False, 
-                group=SuffixGroup.VERB_DERIVATIONAL, 
+                group=SuffixGroup.V2V_DERIVATIONAL, 
                 is_unique=False):
         
         # Dynamic default assignment for minor harmony
-        if minor_harmony is None:
+        if has_minor_harmony is None:
             # If the suffix contains any narrow vowel, it defaults to having minor harmony
             if any(vowel in suffix for vowel in ['ı', 'i', 'u', 'ü']): # only i is enough bc of the standart narrow front vowel converntion
-                minor_harmony = True
+                has_minor_harmony = True
             else:
-                minor_harmony = False
+                has_minor_harmony = False
 
         super().__init__(
             name=name,

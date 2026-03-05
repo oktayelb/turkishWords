@@ -7,6 +7,7 @@ from util.suffixes.n2n.plural_suffix            import PLURALS
 from util.suffixes.n2n.derivationals            import DERIVATIONALS
 from util.suffixes.n2n.conjugation_suffixes     import CONJUGATIONS 
 from util.suffixes.n2n.copula                   import COPULA
+from util.suffixes.n2n.marking_suffix           import MARKINGS   
 VOWELS = ["a","e","ı","i","o","ö","u","ü"]
 
 
@@ -44,7 +45,6 @@ adverbial_cesine = Suffix("adverbial_cesine", "cesine", Type.NOUN, Type.NOUN, ha
 when_ken = Suffix("when_ken", "ken", Type.NOUN, Type.NOUN, form_function= form_for_when_ken , has_major_harmony=False, has_minor_harmony=False, group=SuffixGroup.DERIVATIONAL_LOCKING) #zarf sanrırım
 
 # --- Group 45: POST_CASE (İstisna) ---                                                                 
-marking_ki = Suffix("marking_ki", "ki", Type.NOUN, Type.NOUN,has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.MARKING_KI) # is_unique çünkü sadece bir kere gelebilir.
 ##le yi halletmeli
 confactous_le = Suffix("confactuous_le", "le", Type.NOUN, Type.NOUN, form_function= form_for_confactuous_le, has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.WITH_LE, is_unique=True) 
 
@@ -55,4 +55,4 @@ NOUN2NOUN = [
     value for name, value in globals().items() 
     if isinstance(value, Suffix) and name != "Suffix"
 ]
-NOUN2NOUN = NOUN2NOUN + CASESUFFIX + POSESSIVE_SUFFIX + PLURALS + DERIVATIONALS +CONJUGATIONS + COPULA
+NOUN2NOUN = NOUN2NOUN + CASESUFFIX + POSESSIVE_SUFFIX + PLURALS + DERIVATIONALS +CONJUGATIONS + COPULA +MARKINGS
