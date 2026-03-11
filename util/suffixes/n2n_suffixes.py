@@ -42,6 +42,8 @@ temporative_leyin = Suffix("temporative_leyin", "leyin", Type.NOUN, Type.NOUN, h
 #tempolocative_leri = Suffix("tempolocative_leri", "leri", Type.NOUN, Type.NOUN, major_harmony=HasMajorHarmony.Yes, minor_harmony=HasMinorHarmony.Yes, group=SuffixGroup.DERIVATIONAL_LOCKING)    
 adverbial_in = Suffix("adverbial_in", "in", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.DERIVATIONAL_LOCKING)
 adverbial_cesine = Suffix("adverbial_cesine", "cesine", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=False, group=SuffixGroup.DERIVATIONAL_LOCKING)
+
+## le den sonra ken gelebiliyor
 when_ken = Suffix("when_ken", "ken", Type.NOUN, Type.NOUN, form_function= form_for_when_ken , has_major_harmony=False, has_minor_harmony=False, group=SuffixGroup.DERIVATIONAL_LOCKING) #zarf sanrırım
 
 # --- Group 45: POST_CASE (İstisna) ---                                                                 

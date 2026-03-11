@@ -1,34 +1,25 @@
 from util.suffix import Suffix, Type, SuffixGroup
-
+import util.word_methods as wrd
 ## COMPLETE
 class Infinitive(Suffix):
-    def __init__(self, name, suffix, 
-                 comes_to=Type.VERB,
-                 makes=Type.NOUN,
-                 has_major_harmony=True, 
-                 has_minor_harmony=True,  # Set to None to detect if the user passed a value
-                 needs_y_buffer=None, 
-                 form_function=None,
-                 group=SuffixGroup.V2N_DERIVATIONAL, 
-                 is_unique=False):
+    def __init__(self, name, suffix):
         
-        if needs_y_buffer is None:
-                if suffix[0] in ['a', 'e', 'ı', 'i', 'o', 'ö', 'u', 'ü']:
-                    needs_y_buffer = True
-                else:
-                    needs_y_buffer = False
+        needs_y_buffer = False
+        
+        if suffix[0] in wrd.VOWELS:
+            needs_y_buffer = True
 
         super().__init__(
             name=name,
             suffix=suffix,
             comes_to=Type.VERB,
             makes=Type.NOUN,
-            form_function=form_function, # Force the use of the overridden _default_form
-            has_major_harmony=has_major_harmony,
-            has_minor_harmony=has_minor_harmony,
+            form_function=None,
+            has_major_harmony=True,
+            has_minor_harmony=True,
             needs_y_buffer=needs_y_buffer,
-            group=group,
-            is_unique=is_unique
+            group=SuffixGroup.V2N_DERIVATIONAL,
+            is_unique=False
         )
 
 

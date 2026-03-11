@@ -46,27 +46,35 @@ def is_valid_transition(last_suffix: Suffix, next_suffix: Suffix) -> bool:
     next_g = next_suffix.group
 
     ## main waterfall rule.
-    if next_g < last_g:
-        return False
+   
 
     # --- RULE 1: The Post-Case Loop (-ki Exception) ---
     if last_g == SuffixGroup.MARKING_KI and next_g <= SuffixGroup.MARKING_KI:
         return True
+    
+    ## fiillerle alakalı kısım burası
     ## şelale akışına istisna olarak  yapım eklerinden sonra fiil ekleri gelebilir 
     if last_g == SuffixGroup.N2N_DERIVATIONAL and next_g <= SuffixGroup.N2N_DERIVATIONAL:
         return True   
     ## ebilmekten gibi eklerden sonra  fiil ekleri gelebilir.  gidebilmeyen gitmeyebilmek
     if last_g == SuffixGroup.VERB_COMPOUND and next_g <= SuffixGroup.VERB_COMPOUND:
         return True
-    # isim tamlamasından sonra yalnızca ki gelebilir
-    if last_g == SuffixGroup.CASE and not next_g >= SuffixGroup.MARKING_KI:
-        return False
+
         
 
     # --- RULE 4: Self-Looping Constraints ---
     if next_g == last_g:
         if last_g in [SuffixGroup.N2N_DERIVATIONAL, SuffixGroup.V2V_DERIVATIONAL, SuffixGroup.PREDICATIVE]:
             return True
+        return False
+    
+    ## şelale hallediyor diye silindi
+    # isim tamlamasından sonra yalnızca ki gelebilir
+    # if last_g == SuffixGroup.CASE and not next_g >= SuffixGroup.MARKING_KI:
+    #    return False
+    
+    #eşitlik konsa mı? recursive ykardaki kuralda 
+    if next_g < last_g:
         return False
 
     return True
