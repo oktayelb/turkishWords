@@ -8,7 +8,6 @@ class MarkingKi(Suffix):
                 has_major_harmony=False, 
                 has_minor_harmony=None, 
                 needs_y_buffer=False, 
-                form_function=None,
                 group=SuffixGroup.MARKING_KI, 
                 is_unique=True):
         

@@ -55,14 +55,14 @@ def form_for_dimunitive_cik(word, suffix_obj):
     return [base,base2,base3]
 
 
-actor_ci        = Suffix("actor_ci", "ci", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.N2N_DERIVATIONAL)
-privative_siz   = Suffix("privative_siz", "siz", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.N2N_DERIVATIONAL)
-composessive_li = Suffix("composessive_li", "li", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.N2N_DERIVATIONAL)
-suitative_lik   = Suffix("suitative_lik", "lik", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.N2N_DERIVATIONAL)
+actor_ci            = Suffix("actor_ci", "ci", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.N2N_DERIVATIONAL)
+privative_siz       = Suffix("privative_siz", "siz", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.N2N_DERIVATIONAL)
+composessive_li     = Suffix("composessive_li", "li", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.N2N_DERIVATIONAL)
+suitative_lik       = Suffix("suitative_lik", "lik", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.N2N_DERIVATIONAL)
 
 
 counting_er          = Suffix("counting_er", "er", Type.NOUN, Type.NOUN, form_function= form_for_counting_er,  has_major_harmony=True, has_minor_harmony=False, group=SuffixGroup.N2N_DERIVATIONAL)
-cooperative_daş      = Suffix("cooperative_daş", "daş", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=False, group=SuffixGroup.N2N_DERIVATIONAL)
+cooperative_deş      = Suffix("cooperative_deş", "deş", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=False, group=SuffixGroup.N2N_DERIVATIONAL)
 relative_ce          = Suffix("relative_ce", "ce", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=False, group=SuffixGroup.N2N_DERIVATIONAL)
 relative_sel         = Suffix("relative_sel", "sel", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=False, group=SuffixGroup.N2N_DERIVATIONAL)
 dimunitive_cik       = Suffix("dimunitive_cik", "cik", Type.NOUN, Type.NOUN,  form_function= form_for_dimunitive_cik,has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.N2N_DERIVATIONAL)

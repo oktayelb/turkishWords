@@ -4779,8 +4779,7 @@ Bulgurlu
 bulgurluk
 bulgursu
 bulgurumsu
-bulgusal
-bulma
+bulgusal    
 bulmaca
 bulmak
 bulucu
@@ -12030,7 +12029,6 @@ gişe
 gitar
 gitarist
 gitgide
-gitme
 gitmek
 gittikçe
 giydirici
@@ -21344,7 +21342,6 @@ mantıkça
 mantıkçı
 mantıken
 mantıki
-mantıklı
 mantıksal
 manti
 mantin
@@ -35279,10 +35276,6 @@ yatuk
 yavan
 yavanlık
 yavaş
-yavaşa
-yavaşça
-yavaşçacık
-yavaşlık
 yave
 yaver
 yaverlik

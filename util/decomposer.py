@@ -280,6 +280,11 @@ def decompose(word: str) -> List[Tuple]:
     for i in range(1, len(word) + 1):
         root = word[:i]
 
+        # Skip roots that are themselves derived forms (e.g. "alışmak" when "al" exists).
+        # The deeper decomposition (shorter root + more suffixes) will still be found.
+        if i < len(word) and wrd.is_derived_word(root):
+            continue
+
         if wrd.can_be_noun(root):
             append_analysis(word, "noun", root, analyses, shared_cache)
 
@@ -289,6 +294,10 @@ def decompose(word: str) -> List[Tuple]:
         if not wrd.exists(root):
             root_pairs = wrd.get_root_candidates(word[:i])
             for lemma_root in root_pairs:
+
+                if i < len(word) and wrd.is_derived_word(lemma_root):
+                    continue
+                
                 virtual_word = lemma_root + word[i:]
 
                 if wrd.can_be_noun(lemma_root):

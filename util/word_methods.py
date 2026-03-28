@@ -67,6 +67,12 @@ def get_random_word() -> Optional[str]:
 def exists(word: str) -> bool:
     return can_be_noun(word) or can_be_verb(word)
 
+def get_closed_class_categories(word: str) -> List[str]:
+    """Returns list of closed-class categories for a word, or empty list if open-class."""
+    from util.words.closed_class import CLOSED_CLASS_LOOKUP
+    entries = CLOSED_CLASS_LOOKUP.get(word, [])
+    return list({e.category for e in entries})
+
 def can_be_noun(word: str) -> bool:
     if not word:
         return False
@@ -130,6 +136,82 @@ def has_no_vowels(word: str) -> bool:
         if ch in VOWELS:
             return False
     return True
+
+# --- Derived-word detection ---
+# Common Turkish derivational suffix patterns that create new dictionary entries.
+# If a word ends with one of these AND stripping it yields a valid root,
+# the word is likely derived (not a true root).
+_DERIVATIONAL_ENDINGS_NOUN = [
+    # Noun-from-verb
+    ('ıcı', 'verb'), ('ici', 'verb'), ('ucu', 'verb'), ('ücü', 'verb'),
+    ('gıcı', 'verb'), ('gici', 'verb'), ('gucu', 'verb'), ('gücü', 'verb'),
+    ('ma', 'verb'), ('me', 'verb'),
+    ('ış', 'verb'), ('iş', 'verb'), ('uş', 'verb'), ('üş', 'verb'),
+    # Noun-from-noun
+    ('lık', 'noun'), ('lik', 'noun'), ('luk', 'noun'), ('lük', 'noun'),
+    ('cı', 'noun'), ('ci', 'noun'), ('cu', 'noun'), ('cü', 'noun'),
+    ('çı', 'noun'), ('çi', 'noun'), ('çu', 'noun'), ('çü', 'noun'),
+    ('sız', 'noun'), ('siz', 'noun'), ('suz', 'noun'), ('süz', 'noun'),
+    ('lı', 'noun'), ('li', 'noun'), ('lu', 'noun'), ('lü', 'noun'),
+]
+
+_DERIVATIONAL_ENDINGS_VERB = [
+    # Verb-from-verb (reciprocal, reflexive, causative, passive)
+    ('ışmak', 'verb'), ('işmek', 'verb'), ('uşmak', 'verb'), ('üşmek', 'verb'),
+    ('ınmak', 'verb'), ('inmek', 'verb'), ('unmak', 'verb'), ('ünmek', 'verb'),
+    ('dırmak', 'verb'), ('dirmek', 'verb'), ('tırmak', 'verb'), ('tirmek', 'verb'),
+    ('durmak', 'verb'), ('dürmek', 'verb'), ('turmak', 'verb'), ('türmek', 'verb'),
+    ('ılmak', 'verb'), ('ilmek', 'verb'), ('ulmak', 'verb'), ('ülmek', 'verb'),
+    # Verb-from-noun
+    ('lamak', 'noun'), ('lemek', 'noun'),
+]
+
+# Cache of words confirmed as derived
+_DERIVED_CACHE: dict = {}
+
+def is_derived_word(word: str) -> bool:
+    """
+    Returns True if `word` is likely a derived form (not a true root).
+    Checks if stripping a common derivational suffix yields a valid shorter root.
+    """
+    if word in _DERIVED_CACHE:
+        return _DERIVED_CACHE[word]
+
+    result = False
+
+    # Check noun roots that might be derived
+    if word in WORDS_SET:
+        for ending, source_pos in _DERIVATIONAL_ENDINGS_NOUN:
+            if word.endswith(ending) and len(word) > len(ending) + 1:
+                stem = word[:-len(ending)]
+                if source_pos == 'verb':
+                    if can_be_verb(stem):
+                        result = True
+                        break
+                else:
+                    if can_be_noun(stem):
+                        result = True
+                        break
+
+    # Check verb infinitives that might be derived
+    if not result and word in WORDS_SET and (word.endswith('mak') or word.endswith('mek')):
+        verb_root = word[:-3]
+        for ending, source_pos in _DERIVATIONAL_ENDINGS_VERB:
+            suffix_part = ending[:-3]  # strip mak/mek from the ending
+            if verb_root.endswith(suffix_part) and len(verb_root) > len(suffix_part) + 1:
+                stem = verb_root[:-len(suffix_part)]
+                if source_pos == 'verb':
+                    if can_be_verb(stem):
+                        result = True
+                        break
+                else:
+                    if can_be_noun(stem):
+                        result = True
+                        break
+
+    _DERIVED_CACHE[word] = result
+    return result
+
 
 def get_root_candidates(surface_root: str) -> List[str]:
     """Analyzes the text segment and returns Surface Forms that are Dictionary Lemmas."""
