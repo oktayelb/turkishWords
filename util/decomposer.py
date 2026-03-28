@@ -257,6 +257,37 @@ def find_suffix_chain(word: str, start_pos: str, root: str,
     return results
 
 
+def decompose_with_cc(word: str) -> List[Tuple]:
+    """
+    Like decompose(), but also includes closed-class word analyses.
+
+    For each closed-class interpretation of `word` (pronoun, conjunction, etc.)
+    a tuple is appended:
+        (surface_form, "cc_<category>", [ClosedClassMarker(cc_obj)], "cc_<category>")
+
+    This allows the ML model to see closed-class tokens in the sentence sequence,
+    and allows the workflow to handle words (e.g. "ve", "ile") that the regular
+    decomposer cannot match because they are not in words.txt as open-class roots.
+
+    Regular suffix-chain decompositions are always included first.
+    """
+    from util.words.closed_class import CLOSED_CLASS_LOOKUP, ClosedClassMarker
+
+    analyses = list(decompose(word))
+
+    cc_entries = CLOSED_CLASS_LOOKUP.get(word, [])
+    seen_categories: set = set()
+    for cc_obj in cc_entries:
+        cat_key = (cc_obj.category, cc_obj.word)
+        if cat_key in seen_categories:
+            continue
+        seen_categories.add(cat_key)
+        pos_tag = f"cc_{cc_obj.category}"
+        analyses.append((word, pos_tag, [ClosedClassMarker(cc_obj)], pos_tag))
+
+    return analyses
+
+
 def append_analysis(word, pos, root, analyses_list, shared_cache: dict = None):
     possible_chains = find_suffix_chain(word, pos, root, shared_cache=shared_cache)
     for chain, final_pos in possible_chains:

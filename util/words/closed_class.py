@@ -338,13 +338,13 @@ ALL_ADVERBS = [
     Adverb("derhal", "temporal"),         # immediately
     Adverb("hemen", "temporal"),          # immediately / right away
     Adverb("demin", "temporal"),          # just now
+    Adverb("geçen", "temporal"),          # the other (day or week or year etc)
 
     # Manner
     Adverb("böyle", "manner"),            # like this
     Adverb("şöyle", "manner"),            # like that
     Adverb("öyle", "manner"),             # like that (far)
     Adverb("nasıl", "manner"),            # how
-
     # Degree
     Adverb("çok", "degree"),              # very / much
     Adverb("az", "degree"),               # little / few
@@ -466,6 +466,37 @@ ALL_PARTICLES = [
     Particle("gene", "discourse"),    # again (colloquial)
     Particle("bile bile", "discourse"),  # knowingly
 ]
+
+
+# ============================================================================
+# CLOSED-CLASS MARKER  (used in suffix chain encoding for the ML model)
+# ============================================================================
+
+class ClosedClassMarker:
+    """
+    A lightweight sentinel placed in a suffix chain to signal "this entire word
+    is a closed-class word" rather than a root + suffix sequence.
+
+    Satisfies the interface that encode_suffix_chain and reconstruct_morphology
+    expect from chain elements (name, makes, form), but encodes to a dedicated
+    closed-class token in the ML vocabulary instead of a suffix token.
+
+    Usage (inside a decomposition tuple):
+        (surface_form, "cc_<category>", [ClosedClassMarker(cc_obj)], "cc_<category>")
+    """
+
+    def __init__(self, cc_word: "ClosedClassWord"):
+        self.cc_word = cc_word
+        self.name    = f"cc_{cc_word.category}"
+        self.makes   = None      # CC words don't have a suffix-style POS output
+        self.is_unique = False
+
+    def form(self, root: str) -> List[str]:
+        """CC markers produce no surface suffix — the word is already complete."""
+        return []
+
+    def __repr__(self):
+        return f"ClosedClassMarker({self.cc_word.word!r}, cat={self.cc_word.category!r})"
 
 
 # ============================================================================

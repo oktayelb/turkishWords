@@ -2,16 +2,20 @@ import re
 from typing import List, Optional, Tuple, Dict, Any
 
 import util.decomposer as sfx
-import util.word_methods as wrd 
+import util.word_methods as wrd
 from app.data_manager import DataManager
 import app.morphology_adapter as morph
 from app.sequence_matcher import find_matching_combinations, get_top_sentence_predictions
 from ml.ml_ranking_model import SentenceDisambiguator, Trainer
+from util.words.closed_class import ALL_CLOSED_CLASS_WORDS
 
 class WorkflowEngine:
     def __init__(self):
         self.data_manager = DataManager()
-        self.model = SentenceDisambiguator(suffix_vocab_size=len(sfx.ALL_SUFFIXES))
+        self.model = SentenceDisambiguator(
+            suffix_vocab_size=len(sfx.ALL_SUFFIXES),
+            closed_class_vocab_size=len(ALL_CLOSED_CLASS_WORDS),
+        )
         self.trainer = Trainer(model=self.model)
         self.training_count = self.data_manager.load_training_count()
         self.decomp_cache = {}
@@ -79,10 +83,11 @@ class WorkflowEngine:
         log_entries = []
         deleted_messages = []
         
+        from util.words.closed_class import ClosedClassMarker as _CCMarker
         for decomp in correct_decomps:
             root, pos, chain, final_pos = decomp
             suffix_info = []
-            if chain:
+            if chain and not isinstance(chain[0], _CCMarker):
                 current = root
                 for suffix in chain:
                     forms = suffix.form(current)
@@ -122,6 +127,10 @@ class WorkflowEngine:
             self.save()
         return loss, deleted_messages
 
+    def get_decompositions_with_cc(self, word: str) -> List[Tuple]:
+        """Like get_decompositions but also includes closed-class word analyses."""
+        return sfx.decompose_with_cc(word)
+
     def prepare_sentence_training(self, sentence: str) -> Optional[List[Dict]]:
         words = sentence.strip().split()
         if not words:
@@ -129,7 +138,7 @@ class WorkflowEngine:
 
         word_data = []
         for word in words:
-            decomps = self.get_decompositions(word)
+            decomps = self.get_decompositions_with_cc(word)
             if not decomps:
                 return None
             word_data.append({'word': word, 'decomps': decomps})
@@ -169,7 +178,8 @@ class WorkflowEngine:
             
             root, pos, chain, final_pos = decomps[correct_d_idx]
             suffix_info = []
-            if chain:
+            from util.words.closed_class import ClosedClassMarker as _CCMarker
+            if chain and not isinstance(chain[0], _CCMarker):
                 current = root
                 for suffix in chain:
                     forms = suffix.form(current)

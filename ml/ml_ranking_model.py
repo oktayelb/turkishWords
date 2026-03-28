@@ -17,10 +17,14 @@ from .config import config  # Direct import from sibling file
 # Category IDs:
 #   0 → Noun, 1 → Verb, 2 → SPECIAL (for PAD and WORD_SEP tokens)
 
-SPECIAL_PAD      = 0
-SPECIAL_WORD_SEP = 1
-SUFFIX_OFFSET    = 2          # suffix IDs start here
-CATEGORY_SPECIAL = 2          # category ID for PAD / WORD_SEP
+SPECIAL_PAD           = 0
+SPECIAL_WORD_SEP      = 1
+SUFFIX_OFFSET         = 2          # suffix IDs start here
+CATEGORY_SPECIAL      = 2          # category ID for PAD / WORD_SEP
+CATEGORY_CLOSED_CLASS = 3          # category ID for closed-class word tokens
+
+# CLOSED_CLASS_OFFSET is computed at runtime (SUFFIX_OFFSET + len(ALL_SUFFIXES))
+# and passed in to SentenceDisambiguator as closed_class_vocab_size.
 
 
 # ============================================================================
@@ -101,22 +105,30 @@ class SentenceDisambiguator(nn.Module):
     every word's disambiguation is informed by all surrounding words.
     """
 
-    def __init__(self, suffix_vocab_size: int):
+    def __init__(self, suffix_vocab_size: int, closed_class_vocab_size: int = 0):
         """
         Args:
             suffix_vocab_size: number of real suffix types (from ALL_SUFFIXES).
-                               Total token vocab = suffix_vocab_size + SUFFIX_OFFSET
-                               (PAD + WORD_SEP + all suffixes).
+            closed_class_vocab_size: number of closed-class word types
+                                     (from ALL_CLOSED_CLASS_WORDS). Defaults to 0
+                                     for backward compatibility.
+        Total token vocab layout:
+            [0]                                 → PAD
+            [1]                                 → WORD_SEP
+            [2 .. suffix_vocab_size+1]          → suffix IDs
+            [suffix_vocab_size+2 .. total-1]    → closed-class word IDs
+        Category IDs:
+            0 = Noun, 1 = Verb, 2 = Special, 3 = ClosedClass
         """
         super().__init__()
         self.embed_dim = config.embed_dim
-        # Full token vocab: PAD(0), WORD_SEP(1), then real suffixes starting at 2
-        self.vocab_size = suffix_vocab_size + SUFFIX_OFFSET
+        # Full token vocab: PAD + WORD_SEP + suffixes + closed-class words
+        self.vocab_size = SUFFIX_OFFSET + suffix_vocab_size + closed_class_vocab_size
 
-        # Token embeddings
+        # Token embeddings (shared with LM head via weight tying)
         self.suffix_embed   = nn.Embedding(self.vocab_size,          self.embed_dim, padding_idx=SPECIAL_PAD)
-        # Category embedding: 0=Noun, 1=Verb, 2=Special  →  3 categories
-        self.category_embed = nn.Embedding(3,                         self.embed_dim)
+        # Category embedding: 0=Noun, 1=Verb, 2=Special, 3=ClosedClass  →  4 categories
+        self.category_embed = nn.Embedding(4,                         self.embed_dim)
         # Positional embedding (up to 512 tokens per sentence)
         self.pos_embed      = nn.Embedding(512,                       self.embed_dim)
 

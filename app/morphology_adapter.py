@@ -1,7 +1,8 @@
 from typing import List, Dict, Tuple, Any
 import util.decomposer as sfx
-from ml.ml_ranking_model import SUFFIX_OFFSET
+from ml.ml_ranking_model import SUFFIX_OFFSET, CATEGORY_CLOSED_CLASS
 from util.suffix import Suffix
+from util.words.closed_class import ClosedClassMarker, ALL_CLOSED_CLASS_WORDS
 
 
 ## translatxions between representations
@@ -20,25 +21,54 @@ def match_decompositions(entries: List[Dict], decompositions: List[Tuple]) -> Li
                 break
     return indices
 
-def encode_suffix_chain(suffix_chain: List[Suffix]) -> List[Tuple[int, int]]:
-    """Encodes a suffix chain into token and category IDs for the ML model."""
-    suffix_to_id  = {
+def encode_suffix_chain(suffix_chain: List) -> List[Tuple[int, int]]:
+    """
+    Encodes a suffix chain into (token_id, category_id) pairs for the ML model.
+
+    Handles two kinds of chain elements:
+    - Regular Suffix objects    → suffix token IDs with Noun/Verb category
+    - ClosedClassMarker objects → closed-class token IDs with CATEGORY_CLOSED_CLASS
+    """
+    suffix_to_id = {
         suffix.name: idx + SUFFIX_OFFSET
         for idx, suffix in enumerate(sfx.ALL_SUFFIXES)
+    }
+    # Closed-class token IDs start right after all suffix IDs
+    cc_offset = SUFFIX_OFFSET + len(sfx.ALL_SUFFIXES)
+    cc_to_id  = {
+        id(cc_obj): cc_offset + idx
+        for idx, cc_obj in enumerate(ALL_CLOSED_CLASS_WORDS)
     }
     category_to_id = {'Noun': 0, 'Verb': 1}
 
     if not suffix_chain:
         return []
-    
-    return [
-        (suffix_to_id.get(s.name, SUFFIX_OFFSET), category_to_id.get(s.makes.name, 0))
-        for s in suffix_chain
-    ]
+
+    encoded = []
+    for s in suffix_chain:
+        if isinstance(s, ClosedClassMarker):
+            token_id = cc_to_id.get(id(s.cc_word), cc_offset)
+            encoded.append((token_id, CATEGORY_CLOSED_CLASS))
+        else:
+            token_id = suffix_to_id.get(s.name, SUFFIX_OFFSET)
+            cat_id   = category_to_id.get(s.makes.name, 0)
+            encoded.append((token_id, cat_id))
+    return encoded
 
 def reconstruct_morphology(word: str, decomposition: Tuple) -> Dict[str, Any]:
     """Reconstructs the step-by-step morphology string from a root and suffix chain."""
     root, pos, chain, final_pos = decomposition
+
+    # Closed-class word: display the category label, no suffix breakdown
+    if chain and isinstance(chain[0], ClosedClassMarker):
+        cc = chain[0].cc_word
+        return {
+            'root_str':      f"{root} ({cc.category})",
+            'final_pos':     final_pos,
+            'has_chain':     False,
+            'formation_str': f"{root} [{cc.category}]",
+        }
+
     if not chain:
         verb_marker = "-" if pos == "verb" else ""
         return {
