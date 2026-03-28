@@ -4994,24 +4994,14 @@ büluğ
 Bünyan
 bünye
 bünyece
-bürgü
-bürgülü
-bürgüsüz
+bürmek
 büro
 bürokrasi
 bürokrat
 bürokratik
 bürudet
-bürük
-bürülü
-bürüm
-bürümcek
-bürümcük
-bürümçek
 bürüme
 bürümek
-bürünme
-bürünmek
 büsbütün
 büst
 büstiyer
@@ -8640,7 +8630,6 @@ dönüştürme
 dönüştürmek
 dönüştürücü
 dönüştürülme
-dönüştürülmek
 dönüştürüm
 dönüşüm
 dönüşümcü
@@ -16969,7 +16958,6 @@ karar
 karargah
 kararınca
 kararış
-kararlı
 kararma
 kararmak
 kararname
@@ -24157,6 +24145,7 @@ nevazil
 nevaziş
 nevbahar
 neveser
+nevi
 nevir
 nevmit
 nevralji
@@ -24423,6 +24412,7 @@ nütasyon
 nüve
 nüzuł
 nüzullü
+o
 oba
 obabaşı
 obelisk
