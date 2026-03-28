@@ -20,6 +20,49 @@ class WorkflowEngine:
         self.training_count = self.data_manager.load_training_count()
         self.decomp_cache = {}
 
+        # If the checkpoint carried no replay buffer (fresh start or old checkpoint),
+        # rebuild it from logged confirmed decompositions so the model immediately
+        # has past data to replay during the first training call.
+        if not self.trainer.replay_buffer:
+            self._preload_replay_buffer()
+
+    def _preload_replay_buffer(self) -> None:
+        """Reconstruct the replay buffer from the confirmed-decompositions JSONL log."""
+        from ml.ml_ranking_model import build_sentence_sequence
+        entries = self.data_manager.get_valid_decomps()
+        loaded = 0
+        for entry in entries:
+            try:
+                if entry.get('type') == 'sentence':
+                    chains = []
+                    for word_entry in entry.get('words', []):
+                        decomps = self.get_decompositions(word_entry['word'])
+                        matched = morph.match_decompositions([word_entry], decomps)
+                        if not matched:
+                            break
+                        chain = [chain for _, _, chain, _ in decomps][matched[0]]
+                        chains.append(morph.encode_suffix_chain(chain))
+                    else:
+                        if chains:
+                            sids, cids = build_sentence_sequence(chains)
+                            if len(sids) >= 2:
+                                self.trainer._add_to_replay(sids, cids)
+                                loaded += 1
+                else:
+                    decomps = self.get_decompositions(entry['word'])
+                    matched = morph.match_decompositions([entry], decomps)
+                    if matched:
+                        chain = [c for _, _, c, _ in decomps][matched[0]]
+                        encoded = morph.encode_suffix_chain(chain)
+                        sids, cids = build_sentence_sequence([encoded])
+                        if len(sids) >= 2:
+                            self.trainer._add_to_replay(sids, cids)
+                            loaded += 1
+            except Exception:
+                continue
+        if loaded:
+            print(f"Replay buffer pre-loaded with {loaded} past examples.")
+
     def get_decompositions(self, word: str) -> List[Tuple]:
         if word not in self.decomp_cache:
             self.decomp_cache[word] = sfx.decompose(word)

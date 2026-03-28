@@ -15,21 +15,25 @@ class MLConfig:
     
     # --- Model Architecture ---
     # Vocab size is dynamic (passed at runtime), others are static
-    category_num: int = 2  # Noun/Verb
-    embed_dim: int = 128
-    num_layers: int = 4
-    num_heads: int = 8
+    embed_dim: int = 64        # 64 suits current vocab size (~290) and dataset scale.
+    num_layers: int = 2        # Increase to 4 once you have >2000 confirmed sentences.
+    num_heads: int = 4         # Must divide embed_dim evenly.
     dropout: float = 0.1
-    
+
     # --- Training Hyperparameters ---
-    batch_size: int = 16
-    learning_rate: float = 1e-4
+    learning_rate: float = 3e-4
     weight_decay: float = 0.01
-    
+
+    # --- Experience Replay ---
+    # On every training call, the new example is mixed with `replay_k` randomly
+    # sampled past examples and trained for `steps_per_update` gradient steps.
+    # This prevents catastrophic forgetting and stops single-example memorisation.
+    replay_buffer_size: int = 300   # Max past sequences to keep in memory.
+    replay_k: int = 7               # Past examples mixed in per new one.
+    steps_per_update: int = 4       # Gradient steps per training call.
+
     # --- Interactive/Loop Settings ---
-    checkpoint_frequency: int = 10  # Save every N examples
-    patience: int = 10             # Early stopping patience
-    margin: float = 0.5            # Margin for contrastive loss
+    checkpoint_frequency: int = 10  # Save every N confirmed examples.
 
 # Create the global config instance
 config = MLConfig()

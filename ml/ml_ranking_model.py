@@ -1,3 +1,4 @@
+import random
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -240,8 +241,6 @@ class Trainer:
         self.model = model
 
         self.checkpoint_frequency = config.checkpoint_frequency
-        self.batch_size           = config.batch_size
-        self.patience             = config.patience
         self.path                 = str(config.model_path)
 
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -262,6 +261,11 @@ class Trainer:
         self.val_history:   List[float] = []
         self.best_val_loss  = float('inf')
         self.global_step    = 0
+
+        # Experience replay buffer: list of (suffix_ids, category_ids) tuples.
+        # Populated from confirmed examples; used to mix past data into each
+        # training call so the model does not forget earlier decompositions.
+        self.replay_buffer: List[Tuple[List[int], List[int]]] = []
 
         try:
             self.load_checkpoint(self.path)
@@ -295,43 +299,61 @@ class Trainer:
     # Training
     # ------------------------------------------------------------------
 
-    def train_sentence(
-        self,
-        word_chains: List[List[Tuple[int, int]]],
-        max_retries: int = 20,
+    # ------------------------------------------------------------------
+    # Experience replay helpers
+    # ------------------------------------------------------------------
+
+    def _add_to_replay(self, suffix_ids: List[int], category_ids: List[int]) -> None:
+        """Add a confirmed sequence to the replay buffer, evicting old entries if full."""
+        self.replay_buffer.append((suffix_ids, category_ids))
+        if len(self.replay_buffer) > config.replay_buffer_size:
+            # Evict a random entry from the first half to keep a mix of old and recent.
+            evict_idx = random.randrange(len(self.replay_buffer) // 2)
+            self.replay_buffer.pop(evict_idx)
+
+    def _build_padded_batch(
+        self, seqs: List[Tuple[List[int], List[int]]]
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """
+        Pad a list of (suffix_ids, category_ids) sequences to the same length.
+        Returns (suffix_tensor, category_tensor, pad_mask) each of shape (B, L).
+        pad_mask is True where the position is padding.
+        """
+        max_len = max(len(s) for s, _ in seqs)
+        bsz = len(seqs)
+
+        s_t    = torch.full((bsz, max_len), SPECIAL_PAD,      dtype=torch.long, device=self.device)
+        c_t    = torch.full((bsz, max_len), CATEGORY_SPECIAL, dtype=torch.long, device=self.device)
+        p_mask = torch.ones((bsz, max_len), dtype=torch.bool,  device=self.device)  # True = pad
+
+        for i, (sids, cids) in enumerate(seqs):
+            L = len(sids)
+            s_t[i, :L]    = torch.tensor(sids, dtype=torch.long, device=self.device)
+            c_t[i, :L]    = torch.tensor(cids, dtype=torch.long, device=self.device)
+            p_mask[i, :L] = False
+
+        return s_t, c_t, p_mask
+
+    def _gradient_steps(
+        self, seqs: List[Tuple[List[int], List[int]]], n_steps: int
     ) -> float:
         """
-        Train on a confirmed sentence decomposition.
-
-        Args:
-            word_chains: one encoded chain per word in the sentence
-                         (from Translation.encode_suffix_chain).
-                         Single-word training passes a list with one entry.
-        Returns:
-            final cross-entropy loss (float).
+        Run `n_steps` gradient updates on a padded batch of sequences.
+        Returns the loss from the final step.
         """
-        # Build flat token sequence for the whole sentence
-        suffix_ids, category_ids = build_sentence_sequence(word_chains)
+        s_t, c_t, p_mask = self._build_padded_batch(seqs)
 
-        if len(suffix_ids) < 2:
-            # Nothing to train on (bare root with no suffixes → 1 token = just SEP)
-            return 0.0
-
-        s_tensor, c_tensor = self._to_tensor(suffix_ids, category_ids)
-
-        # Target for causal LM: predict token[i] from tokens[0..i-1]
-        # input = tokens[:-1],  target = tokens[1:]
-        input_s = s_tensor[:, :-1]
-        input_c = c_tensor[:, :-1]
-        target  = s_tensor[:, 1:]    # (1, L-1)
+        # Causal LM: predict token[i] from tokens[0..i-1]
+        input_s  = s_t[:, :-1]
+        input_c  = c_t[:, :-1]
+        target   = s_t[:, 1:]
+        in_mask  = p_mask[:, :-1]   # padding mask for the input side
 
         self.model.train()
         final_loss = 0.0
 
-        print(f"   Learning sentence context...", end="", flush=True)
-
-        for attempt in range(max_retries):
-            logits = self.model(input_s, input_c)            # (1, L-1, V)
+        for _ in range(n_steps):
+            logits = self.model(input_s, input_c, pad_mask=in_mask)   # (B, L-1, V)
             loss   = F.cross_entropy(
                 logits.reshape(-1, logits.size(-1)),
                 target.reshape(-1),
@@ -345,32 +367,65 @@ class Trainer:
             self.optimizer.step()
             self.global_step += 1
 
-            # Early stopping: stop once loss is low enough
-            if final_loss < 0.05:
-                print(f" Done in {attempt + 1} steps (loss={final_loss:.4f}).")
-                break
-            if attempt % 5 == 0:
-                print(".", end="", flush=True)
-        else:
-            print(f" Limit reached ({max_retries}), loss={final_loss:.4f}.")
+        return final_loss
+
+    # ------------------------------------------------------------------
+    # Training (public API)
+    # ------------------------------------------------------------------
+
+    def train_sentence(
+        self,
+        word_chains: List[List[Tuple[int, int]]],
+        max_retries: int = None,   # kept for call-site compatibility, ignored
+    ) -> float:
+        """
+        Train on a confirmed sentence (or single-word) decomposition.
+
+        Strategy — experience replay:
+          1. Encode the new example into a flat token sequence.
+          2. Add it to the replay buffer.
+          3. Sample `replay_k` past examples from the buffer.
+          4. Run `steps_per_update` gradient steps on the mixed batch.
+
+        This replaces the old "repeat 20 times on one sentence until loss < 0.05"
+        loop, which caused memorisation and catastrophic forgetting.
+
+        Args:
+            word_chains: one encoded chain per word (empty chain = bare root).
+        Returns:
+            cross-entropy loss from the final gradient step.
+        """
+        suffix_ids, category_ids = build_sentence_sequence(word_chains)
+
+        # Sequences with only a WORD_SEP token carry no learnable signal.
+        if len(suffix_ids) < 2:
+            return 0.0
+
+        # 1. Add new example to replay buffer.
+        self._add_to_replay(suffix_ids, category_ids)
+
+        # 2. Sample past examples.
+        batch: List[Tuple[List[int], List[int]]] = [(suffix_ids, category_ids)]
+        if len(self.replay_buffer) > 1:
+            k = min(config.replay_k, len(self.replay_buffer) - 1)
+            others = [x for x in self.replay_buffer if x is not batch[0]]
+            batch.extend(random.sample(others, k))
+
+        # 3. Fixed gradient steps on mixed batch.
+        print(f"   Training on {len(batch)} examples...", end="", flush=True)
+        final_loss = self._gradient_steps(batch, config.steps_per_update)
+        print(f" loss={final_loss:.4f}")
 
         self.scheduler.step()
         self.train_history.append(final_loss)
         return final_loss
 
-    # Keep the old name as an alias so call-sites in interactive_trainer.py
-    # that still use train_persistent() keep working during migration.
     def train_persistent(
         self,
-        training_data: List[Tuple],   # old-style: [([], encoded_chains, correct_idx), ...]
-        max_retries: int = 20,
+        training_data: List[Tuple],
+        max_retries: int = None,
     ) -> float:
-        """
-        Backward-compatible wrapper around train_sentence().
-
-        Converts old-style ([], encoded_chains, correct_idx) tuples into a
-        flat sentence sequence using only the confirmed chains, then trains.
-        """
+        """Legacy wrapper — converts old-style training tuples and delegates."""
         confirmed_chains = []
         for (_, candidates, correct_idx) in training_data:
             if correct_idx < len(candidates):
@@ -379,8 +434,7 @@ class Trainer:
                 confirmed_chains.append(candidates[0])
             else:
                 confirmed_chains.append([])
-
-        return self.train_sentence(confirmed_chains, max_retries=max_retries)
+        return self.train_sentence(confirmed_chains)
 
     # ------------------------------------------------------------------
     # Inference
@@ -593,6 +647,7 @@ class Trainer:
             'val_history':     self.val_history,
             'best_val_loss':   self.best_val_loss,
             'global_step':     self.global_step,
+            'replay_buffer':   self.replay_buffer,
         }, self.path)
         print(f"Saved to {self.path}")
 
@@ -601,8 +656,9 @@ class Trainer:
         self.model.load_state_dict(ckpt['model_state'])
         self.optimizer.load_state_dict(ckpt['optimizer_state'])
         self.scheduler.load_state_dict(ckpt['scheduler_state'])
-        self.train_history = ckpt.get('train_history', [])
-        self.val_history   = ckpt.get('val_history',   [])
-        self.best_val_loss = ckpt.get('best_val_loss', float('inf'))
-        self.global_step   = ckpt.get('global_step',   0)
-        print(f"Loaded from {path} (step {self.global_step})")
+        self.train_history  = ckpt.get('train_history',  [])
+        self.val_history    = ckpt.get('val_history',    [])
+        self.best_val_loss  = ckpt.get('best_val_loss',  float('inf'))
+        self.global_step    = ckpt.get('global_step',    0)
+        self.replay_buffer  = ckpt.get('replay_buffer',  [])
+        print(f"Loaded from {path} (step {self.global_step}, {len(self.replay_buffer)} replay entries)")
