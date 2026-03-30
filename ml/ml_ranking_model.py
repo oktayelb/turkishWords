@@ -5,6 +5,9 @@ import torch.nn.functional as F
 from typing import List, Optional, Tuple, Dict
 from .config import config  # Direct import from sibling file
 
+# Enable cuDNN auto-tuner — finds fastest convolution algorithms for fixed input sizes
+torch.backends.cudnn.benchmark = True
+
 # ============================================================================
 # SPECIAL TOKENS
 # ============================================================================
@@ -246,6 +249,21 @@ class Trainer:
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.model.to(self.device)
 
+        # Mixed precision scaler (CUDA only; no-op on CPU)
+        self.scaler = torch.amp.GradScaler('cuda', enabled=(self.device == 'cuda'))
+
+        # torch.compile for kernel fusion / faster execution (PyTorch 2.0+, Linux/Mac only)
+        # Skipped on Windows — requires MSVC cl.exe which is rarely available.
+        if not torch.cuda.is_available() or not hasattr(torch, 'compile'):
+            pass  # CPU-only or old PyTorch — skip
+        elif torch.version.cuda and hasattr(torch, 'compile'):
+            import platform
+            if platform.system() != 'Windows':
+                try:
+                    self.model = torch.compile(self.model)
+                except Exception:
+                    pass
+
         self.optimizer = torch.optim.AdamW(
             model.parameters(),
             lr=config.learning_rate,
@@ -318,21 +336,28 @@ class Trainer:
         Pad a list of (suffix_ids, category_ids) sequences to the same length.
         Returns (suffix_tensor, category_tensor, pad_mask) each of shape (B, L).
         pad_mask is True where the position is padding.
+        Tensors are built on CPU then transferred in a single .to(device) call.
         """
         max_len = max(len(s) for s, _ in seqs)
         bsz = len(seqs)
 
-        s_t    = torch.full((bsz, max_len), SPECIAL_PAD,      dtype=torch.long, device=self.device)
-        c_t    = torch.full((bsz, max_len), CATEGORY_SPECIAL, dtype=torch.long, device=self.device)
-        p_mask = torch.ones((bsz, max_len), dtype=torch.bool,  device=self.device)  # True = pad
+        pin = self.device == 'cuda'
+        s_t    = torch.full((bsz, max_len), SPECIAL_PAD,      dtype=torch.long).pin_memory() if pin else torch.full((bsz, max_len), SPECIAL_PAD,      dtype=torch.long)
+        c_t    = torch.full((bsz, max_len), CATEGORY_SPECIAL, dtype=torch.long).pin_memory() if pin else torch.full((bsz, max_len), CATEGORY_SPECIAL, dtype=torch.long)
+        p_mask = torch.ones((bsz, max_len), dtype=torch.bool)
 
         for i, (sids, cids) in enumerate(seqs):
             L = len(sids)
-            s_t[i, :L]    = torch.tensor(sids, dtype=torch.long, device=self.device)
-            c_t[i, :L]    = torch.tensor(cids, dtype=torch.long, device=self.device)
+            s_t[i, :L]    = torch.tensor(sids, dtype=torch.long)
+            c_t[i, :L]    = torch.tensor(cids, dtype=torch.long)
             p_mask[i, :L] = False
 
-        return s_t, c_t, p_mask
+        non_blocking = self.device == 'cuda'
+        return (
+            s_t.to(self.device, non_blocking=non_blocking),
+            c_t.to(self.device, non_blocking=non_blocking),
+            p_mask.to(self.device, non_blocking=non_blocking),
+        )
 
     def _gradient_steps(
         self, seqs: List[Tuple[List[int], List[int]]], n_steps: int
@@ -351,20 +376,24 @@ class Trainer:
 
         self.model.train()
         final_loss = 0.0
+        use_amp = self.device == 'cuda'
 
         for _ in range(n_steps):
-            logits = self.model(input_s, input_c, pad_mask=in_mask)   # (B, L-1, V)
-            loss   = F.cross_entropy(
-                logits.reshape(-1, logits.size(-1)),
-                target.reshape(-1),
-                ignore_index=SPECIAL_PAD,
-            )
+            self.optimizer.zero_grad()
+            with torch.amp.autocast('cuda', enabled=use_amp):
+                logits = self.model(input_s, input_c, pad_mask=in_mask)   # (B, L-1, V)
+                loss   = F.cross_entropy(
+                    logits.reshape(-1, logits.size(-1)),
+                    target.reshape(-1),
+                    ignore_index=SPECIAL_PAD,
+                )
             final_loss = loss.item()
 
-            self.optimizer.zero_grad()
-            loss.backward()
+            self.scaler.scale(loss).backward()
+            self.scaler.unscale_(self.optimizer)
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
-            self.optimizer.step()
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
             self.global_step += 1
 
         return final_loss
@@ -417,6 +446,70 @@ class Trainer:
         print(f" loss={final_loss:.4f}")
 
         self.scheduler.step()
+        self.train_history.append(final_loss)
+        return final_loss
+
+    def train_bulk(
+        self,
+        all_seqs: List[Tuple[List[int], List[int]]],
+        batch_size: int = 128,
+        epochs: int = 3,
+    ) -> float:
+        """Train on a large pre-collected dataset in proper epoch-based batches.
+
+        Used by relearn_all to avoid the overhead of per-sentence replay sampling.
+        All sequences are added to the replay buffer first, then trained in
+        shuffled mini-batches for `epochs` passes.
+
+        Returns the average loss of the final epoch.
+        """
+        if not all_seqs:
+            return 0.0
+
+        # Populate replay buffer with all sequences
+        for sids, cids in all_seqs:
+            self._add_to_replay(sids, cids)
+
+        use_amp = self.device == 'cuda'
+        final_loss = 0.0
+        data = list(all_seqs)
+
+        for epoch in range(epochs):
+            random.shuffle(data)
+            epoch_loss = 0.0
+            n_batches = 0
+            for start in range(0, len(data), batch_size):
+                batch = data[start:start + batch_size]
+                s_t, c_t, p_mask = self._build_padded_batch(batch)
+                input_s  = s_t[:, :-1]
+                input_c  = c_t[:, :-1]
+                target   = s_t[:, 1:]
+                in_mask  = p_mask[:, :-1]
+
+                self.model.train()
+                self.optimizer.zero_grad()
+                with torch.amp.autocast('cuda', enabled=use_amp):
+                    logits = self.model(input_s, input_c, pad_mask=in_mask)
+                    loss = F.cross_entropy(
+                        logits.reshape(-1, logits.size(-1)),
+                        target.reshape(-1),
+                        ignore_index=SPECIAL_PAD,
+                    )
+                self.scaler.scale(loss).backward()
+                self.scaler.unscale_(self.optimizer)
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
+                self.scaler.step(self.optimizer)
+                self.scaler.update()
+                self.global_step += 1
+                epoch_loss += loss.item()
+                n_batches += 1
+
+            if n_batches:
+                avg = epoch_loss / n_batches
+                final_loss = avg
+                print(f"   Bulk epoch {epoch+1}/{epochs}: avg_loss={avg:.4f}  ({n_batches} batches)")
+            self.scheduler.step()
+
         self.train_history.append(final_loss)
         return final_loss
 

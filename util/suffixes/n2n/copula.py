@@ -62,7 +62,7 @@ class Copula(Suffix):
 
 nounaorist_dir  = Copula("nounaorist_dir"   , "dir",needs_y_buffer=False)
 pasttense_di    = Copula("pasttense_di"     , "di")
-silative_se     = Copula("silative_se"      , "se")
+if_se           = Copula("if_se"            , "se")
 copula_mis      = Copula("copula_mis"       , "miş")
 
 

@@ -50,7 +50,7 @@ def form_for_factative_ir(word, suffix_obj):
     
     # Geniş zamanın olumsuzu (maz/mez) kökü için 'z'
     if len(word) > 2 and word[-2:] in ["ma","me"]:
-        if wrd.can_be_verb(word[:-2]):
+        if wrd.can_be_verb(word[:-2]) or wrd.can_be_verb(word[:-3]):
             z_base = "z"
             result_list.append(z_base)
 

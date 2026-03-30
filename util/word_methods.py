@@ -3,6 +3,13 @@ from pathlib import Path
 import random
 from typing import List, Tuple, Optional
 
+# Turkish-aware lowercase: İ→i, I→ı (standard Python .lower() maps İ→i̇ which is wrong)
+_TR_LOWER_TABLE = str.maketrans("İI", "iı")
+
+def tr_lower(s: str) -> str:
+    """Lowercase a Turkish string correctly: İ→i, I→ı."""
+    return s.translate(_TR_LOWER_TABLE).lower()
+
 DATA_FILE = Path(__file__).resolve().parent.parent / "data" / "words.txt"
 
 ## Vowel Classes

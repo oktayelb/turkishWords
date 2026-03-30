@@ -281,7 +281,8 @@ class AppCLI:
         self.welcome()
         while True:
             try:
-                cmd = self.get_input("\n Enter word or command: ").strip().lower()
+                raw = self.get_input("\n Enter word or command: ").strip()
+                cmd = raw.lower()
                 if not cmd:
                     continue
 
@@ -317,12 +318,12 @@ class AppCLI:
                     trained, skipped = self.engine.relearn_all()
                     self.show_message(f"\n  Trained on {trained} examples, skipped {skipped}.")
                 elif cmd.startswith('eval sentence '):
-                    result = self.handle_eval_sentence(cmd[14:].strip())
+                    result = self.handle_eval_sentence(raw[14:].strip())
                     if result is None and self.confirm_save():
                         self.engine.save()
                         break
                 elif cmd.startswith('eval '):
-                    word = cmd[5:].strip()
+                    word = raw[5:].strip()
                     vm = self.engine.evaluate_word(word)
                     if vm:
                         self.show_message("\n ML Model's top prediction:")
@@ -330,12 +331,12 @@ class AppCLI:
                     else:
                         self.show_message("\n  No decompositions found")
                 elif cmd.startswith('sentence '):
-                    result = self.handle_sentence(cmd[9:].strip())
+                    result = self.handle_sentence(raw[9:].strip())
                     if result is None and self.confirm_save():
                         self.engine.save()
                         break
                 else:
-                    result = self.handle_word(cmd)
+                    result = self.handle_word(raw)
                     if result is None and self.confirm_save():
                         self.engine.save()
                         break

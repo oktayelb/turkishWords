@@ -38,22 +38,30 @@ class WorkflowEngine:
                     for word_entry in entry.get('words', []):
                         decomps = self.get_decompositions(word_entry['word'])
                         matched = morph.match_decompositions([word_entry], decomps)
-                        if not matched:
-                            break
-                        chain = [chain for _, _, chain, _ in decomps][matched[0]]
-                        chains.append(morph.encode_suffix_chain(chain))
-                    else:
-                        if chains:
-                            sids, cids = build_sentence_sequence(chains)
-                            if len(sids) >= 2:
-                                self.trainer._add_to_replay(sids, cids)
-                                loaded += 1
+                        if matched:
+                            chain = [chain for _, _, chain, _ in decomps][matched[0]]
+                            chains.append(morph.encode_suffix_chain(chain))
+                        else:
+                            # Fallback: encode directly from suffix names (treebank-forced entries)
+                            sfx_dicts = word_entry.get('suffixes', [])
+                            if sfx_dicts:
+                                chains.append(morph.encode_suffix_names(sfx_dicts))
+                    if chains:
+                        sids, cids = build_sentence_sequence(chains)
+                        if len(sids) >= 2:
+                            self.trainer._add_to_replay(sids, cids)
+                            loaded += 1
                 else:
                     decomps = self.get_decompositions(entry['word'])
                     matched = morph.match_decompositions([entry], decomps)
                     if matched:
                         chain = [c for _, _, c, _ in decomps][matched[0]]
                         encoded = morph.encode_suffix_chain(chain)
+                    else:
+                        # Fallback: encode directly from suffix names
+                        sfx_dicts = entry.get('suffixes', [])
+                        encoded = morph.encode_suffix_names(sfx_dicts) if sfx_dicts else []
+                    if encoded:
                         sids, cids = build_sentence_sequence([encoded])
                         if len(sids) >= 2:
                             self.trainer._add_to_replay(sids, cids)
@@ -64,8 +72,9 @@ class WorkflowEngine:
             print(f"Replay buffer pre-loaded with {loaded} past examples.")
 
     def get_decompositions(self, word: str) -> List[Tuple]:
+        word = word.replace("'", "")
         if word not in self.decomp_cache:
-            self.decomp_cache[word] = sfx.decompose(word)
+            self.decomp_cache[word] = sfx.decompose_with_cc(word)
         return self.decomp_cache[word]
 
     def save(self):
@@ -172,6 +181,7 @@ class WorkflowEngine:
 
     def get_decompositions_with_cc(self, word: str) -> List[Tuple]:
         """Like get_decompositions but also includes closed-class word analyses."""
+        word = word.replace("'", "")
         return sfx.decompose_with_cc(word)
 
     def prepare_sentence_training(self, sentence: str) -> Optional[List[Dict]]:
@@ -250,69 +260,48 @@ class WorkflowEngine:
         return loss
 
     def relearn_all(self) -> Tuple[int, int]:
+        from ml.ml_ranking_model import build_sentence_sequence
         entries = self.data_manager.get_valid_decomps()
-        
-        word_groups = {}
-        for entry in entries:
-            if entry.get('type') == 'sentence':
-                for word_entry in entry.get('words', []):
-                    word_groups.setdefault(('__sentence__', id(entry)), []).append(entry)
-                    break
-            else:
-                word_groups.setdefault(entry['word'], []).append(entry)
-        
-        total_trained = 0
+
+        all_seqs = []   # (suffix_ids, category_ids) flat sentence sequences
         skipped = 0
+        total_words = 0
 
-        for key, correct_entries in word_groups.items():
-            if key[0] == '__sentence__':
-                continue  
-            word = key
+        for entry in entries:
             try:
-                decompositions = self.get_decompositions(word)
-                if not decompositions:
-                    skipped += 1
-                    continue
-                
-                correct_indices = morph.match_decompositions(correct_entries, decompositions)
-                if not correct_indices:
-                    skipped += 1
-                    continue
-                
-                suffix_chains = [chain for _, _, chain, _ in decompositions]
-                encoded_chains = [morph.encode_suffix_chain(chain) for chain in suffix_chains]
-                
-                for idx in correct_indices:
-                    self.trainer.train_sentence([encoded_chains[idx]])
-                    total_trained += 1
-            except Exception:
-                skipped += 1
-
-        sentence_entries = [e for e in entries if e.get('type') == 'sentence']
-        for sent_entry in sentence_entries:
-            try:
-                confirmed_chains = []
-                for word_entry in sent_entry.get('words', []):
-                    word = word_entry['word']
-                    decomps = self.get_decompositions(word)
-                    if not decomps:
-                        break
-                    matched = morph.match_decompositions([word_entry], decomps)
-                    if not matched:
-                        break
-                    suffix_chains = [chain for _, _, chain, _ in decomps]
-                    encoded_chains = [morph.encode_suffix_chain(chain) for chain in suffix_chains]
-                    confirmed_chains.append(encoded_chains[matched[0]])
+                if entry.get('type') == 'sentence':
+                    chains = []
+                    for word_entry in entry.get('words', []):
+                        sfx_dicts = word_entry.get('suffixes', [])
+                        if sfx_dicts:
+                            chains.append(morph.encode_suffix_names(sfx_dicts))
+                    if chains:
+                        sids, cids = build_sentence_sequence(chains)
+                        if len(sids) >= 2:
+                            all_seqs.append((sids, cids))
+                            total_words += len(chains)
                 else:
-                    if confirmed_chains:
-                        self.trainer.train_sentence(confirmed_chains)
-                        total_trained += len(confirmed_chains)
+                    # Word entry — encode directly from stored suffix names (no decomposer)
+                    sfx_dicts = entry.get('suffixes', [])
+                    if sfx_dicts:
+                        encoded = morph.encode_suffix_names(sfx_dicts)
+                        if encoded:
+                            sids, cids = build_sentence_sequence([encoded])
+                            if len(sids) >= 2:
+                                all_seqs.append((sids, cids))
+                                total_words += 1
+                    else:
+                        skipped += 1
             except Exception:
                 skipped += 1
 
-        self.training_count += total_trained
+        if all_seqs:
+            print(f"   Bulk training on {len(all_seqs)} sequences ({total_words} words)...")
+            self.trainer.train_bulk(all_seqs, batch_size=128, epochs=3)
+
+        self.training_count += total_words
         self.save()
-        return total_trained, skipped
+        return total_words, skipped
 
     def evaluate_word(self, word: str) -> Optional[Dict]:
         decompositions = self.get_decompositions(word)

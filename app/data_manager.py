@@ -54,16 +54,21 @@ class DataManager:
 
     def get_valid_decomps(self) -> List[Dict]:
         entries = []
-        try:    
-            with open(self.paths.valid_decompositions_path, 'r', encoding='utf-8') as f:
-                for line in f:
-                    if line.strip():
-                        try:
-                            entries.append(json.loads(line))
-                        except Exception:
-                            continue
-        except FileNotFoundError:
-            return []
+        paths_to_load = [
+            self.paths.valid_decompositions_path,
+            self.paths.treebank_adapted_path,
+        ]
+        for path in paths_to_load:
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        if line.strip():
+                            try:
+                                entries.append(json.loads(line))
+                            except Exception:
+                                continue
+            except FileNotFoundError:
+                continue
         return entries
 
     def log_decompositions(self, log_entries: List[Dict]) -> bool:
