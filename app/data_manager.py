@@ -6,6 +6,7 @@ from typing import List, Optional, Dict
 
 from app.file_paths import FilePaths
 import util.word_methods as wrd
+from util.word_methods import tr_lower
 
 class DataManager:
     def __init__(self):
@@ -39,7 +40,7 @@ class DataManager:
             content = re.sub(r"['’‘]", "", content)
             content = re.sub(r'[^\w\s]|_', ' ', content)
             
-            words = [word.lower() for word in content.split()]
+            words = [tr_lower(word) for word in content.split()]
             return words
         except Exception:
             return []

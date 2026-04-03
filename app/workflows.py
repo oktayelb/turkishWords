@@ -3,6 +3,7 @@ from typing import List, Optional, Tuple, Dict, Any
 
 import util.decomposer as sfx
 import util.word_methods as wrd
+from util.word_methods import tr_lower
 from app.data_manager import DataManager
 import app.morphology_adapter as morph
 from app.sequence_matcher import find_matching_combinations, get_top_sentence_predictions
@@ -69,6 +70,8 @@ class WorkflowEngine:
             except Exception:
                 continue
         if loaded:
+            import random
+            random.shuffle(self.trainer.replay_buffer)
             print(f"Replay buffer pre-loaded with {loaded} past examples.")
 
     def get_decompositions(self, word: str) -> List[Tuple]:
@@ -111,7 +114,7 @@ class WorkflowEngine:
                 scored_decomps.append((0.0, decomp))
         
         if scores:
-            scored_decomps.sort(key=lambda x: x[0])
+            scored_decomps.sort(key=lambda x: x[0], reverse=True)
 
         view_models = []
         sorted_decomps = []
@@ -136,6 +139,7 @@ class WorkflowEngine:
         deleted_messages = []
         
         from util.words.closed_class import ClosedClassMarker as _CCMarker
+        word_lower = tr_lower(word)
         for decomp in correct_decomps:
             root, pos, chain, final_pos = decomp
             suffix_info = []
@@ -143,7 +147,15 @@ class WorkflowEngine:
                 current = root
                 for suffix in chain:
                     forms = suffix.form(current)
-                    used_form = forms[0] if forms else ""
+                    # Match against the actual surface string
+                    rest = word_lower[len(current):]
+                    used_form = ""
+                    for f in forms:
+                        if f and rest.startswith(f):
+                            used_form = f
+                            break
+                    if not used_form:
+                        used_form = forms[0] if forms else ""
                     suffix_info.append({
                         'name': suffix.name,
                         'form': used_form,
@@ -158,16 +170,19 @@ class WorkflowEngine:
             })
         self.data_manager.log_decompositions(log_entries)
 
-        word_lower = word.lower()
         for decomp in correct_decomps:
-            root = decomp[0].lower()
+            root = tr_lower(decomp[0])
             if root == word_lower:
                 continue
             if self.data_manager.delete(word_lower):
                 deleted_messages.append(f"Deleted '{word}' (root '{root}' exists)")
+                sfx.decompose.cache_clear()
+                self.decomp_cache.pop(word_lower, None)
             infinitive_form = wrd.infinitive(word_lower)
             if self.data_manager.delete(infinitive_form):
                 deleted_messages.append(f"Deleted infinitive '{infinitive_form}'")
+                sfx.decompose.cache_clear()
+                self.decomp_cache.pop(infinitive_form, None)
 
         loss = 0.0
         for idx in original_indices:
@@ -232,11 +247,19 @@ class WorkflowEngine:
             root, pos, chain, final_pos = decomps[correct_d_idx]
             suffix_info = []
             from util.words.closed_class import ClosedClassMarker as _CCMarker
+            word_lower = tr_lower(word)
             if chain and not isinstance(chain[0], _CCMarker):
                 current = root
                 for suffix in chain:
                     forms = suffix.form(current)
-                    used_form = forms[0] if forms else ""
+                    rest = word_lower[len(current):]
+                    used_form = ""
+                    for f in forms:
+                        if f and rest.startswith(f):
+                            used_form = f
+                            break
+                    if not used_form:
+                        used_form = forms[0] if forms else ""
                     suffix_info.append({
                         'name': suffix.name,
                         'form': used_form,
@@ -297,7 +320,7 @@ class WorkflowEngine:
 
         if all_seqs:
             print(f"   Bulk training on {len(all_seqs)} sequences ({total_words} words)...")
-            self.trainer.train_bulk(all_seqs, batch_size=128, epochs=3)
+            self.trainer.train_bulk(all_seqs, batch_size=128, epochs=70)
 
         self.training_count += total_words
         self.save()
@@ -314,11 +337,11 @@ class WorkflowEngine:
         try:
             _, scores = self.trainer.predict(encoded_chains)
             valid_pairs = [(scores[i], i) for i in range(len(scores)) if scores[i] != 0.0]
-            
+
             if not valid_pairs:
                 best_idx = 0
             else:
-                best_score, best_idx = min(valid_pairs, key=lambda x: x[0])
+                best_score, best_idx = max(valid_pairs, key=lambda x: x[0])
                 
             best_decomp = decompositions[best_idx]
             vm = morph.reconstruct_morphology(word, best_decomp)
@@ -351,7 +374,7 @@ class WorkflowEngine:
                         _, scores = self.trainer.predict(encoded_chains)
                         valid_pairs = [(scores[i], i) for i in range(len(scores)) if scores[i] != 0.0]
                         if valid_pairs:
-                            best_idx = min(valid_pairs, key=lambda x: x[0])[1]
+                            best_idx = max(valid_pairs, key=lambda x: x[0])[1]
                         else:
                             best_idx = 0
                     except Exception:
@@ -384,7 +407,7 @@ class WorkflowEngine:
             
             for sentence in sentences:
                 clean_sentence = re.sub(r"['’‘]", "", sentence)
-                clean_sentence = re.sub(r'[^\w\s]|_', ' ', clean_sentence).lower()
+                clean_sentence = tr_lower(re.sub(r'[^\w\s]|_', ' ', clean_sentence))
                 
                 word_data = self.prepare_sentence_training(clean_sentence)
                 

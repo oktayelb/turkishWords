@@ -182,7 +182,7 @@ def reconstruct_morphology(word: str, decomposition: Tuple) -> Dict[str, Any]:
 def format_detailed_decomp(decomp: Tuple) -> str:
     """
     Formats the decomposition to include both suffix name and specific surface form.
-    Example: ev+plural_ler+ablative_de+marking_ki
+    Example: ev+plural_ler+locative_de+marking_ki
     """
     root, pos, chain, final_pos = decomp
     if not chain:

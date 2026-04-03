@@ -59,11 +59,11 @@ class CaseSuffix(Suffix):
 
 noun_compound = CaseSuffix("noun_compound"  , "in") # köy ağzında needs_y_buffer doğru
 accusative_i  = CaseSuffix("accusative_i"   , "i", needs_y_buffer=True)
-locative_den  = CaseSuffix("locative_den"   , "den")
+ablative_den  = CaseSuffix("ablative_den"   , "den")
 ##sorunlu
 dative_e      = CaseSuffix("dative_e"       , "e", needs_y_buffer=True)
 
-ablative_de   = CaseSuffix("ablative_de"    , "de")
+locative_de   = CaseSuffix("locative_de"    , "de")
 
 
 CASESUFFIX = [

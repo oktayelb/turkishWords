@@ -11,6 +11,7 @@ Strategy: DECOMPOSER-VALIDATED MATCHING
   5. Emit as JSONL training data
 
 This gives us correct surface forms from the decomposer (no guessing morpheme boundaries).
+
 """
 
 import json
@@ -33,9 +34,9 @@ SUFFIX_BY_NAME = {s.name: s for s in ALL_SUFFIXES}
 # The treebank features are listed in the order they typically appear.
 # We map each feature to the Savyar suffix name it corresponds to.
 #
-# IMPORTANT NAMING QUIRKS in Savyar:
-#   ablative_de  = actually locative case (-de/-da, "at/in")
-#   locative_den = actually ablative case (-den/-dan, "from")
+# NAMING NOTES for Savyar:
+#   locative_de  = locative case (-de/-da, "at/in")
+#   ablative_den = ablative case (-den/-dan, "from")
 #   noun_compound = genitive case (-in/-ın/-un/-ün/-nın/-nin)
 
 # ── Zero morphemes: skip these ──
@@ -112,8 +113,8 @@ INFINITIVE_XPOS = {
 N2N_CASE_FEATURES = {
     "Dat":  "dative_e",         # -e/-a/-ye/-ya
     "Acc":  "accusative_i",     # -i/-ı/-u/-ü/-yi/-yı/-yu/-yü/-ni/-nı/-nu/-nü
-    "Loc":  "ablative_de",      # -de/-da/-te/-ta (NOTE: Savyar name is swapped!)
-    "Abl":  "locative_den",     # -den/-dan/-ten/-tan (NOTE: Savyar name is swapped!)
+    "Loc":  "locative_de",      # -de/-da/-te/-ta
+    "Abl":  "ablative_den",     # -den/-dan/-ten/-tan
     "Gen":  "noun_compound",    # -in/-ın/-un/-ün/-nin/-nın/-nun/-nün
     "Ins":  "confactuous_le",   # -le/-la/-yle/-yla (instrumental)
     "Equ":  "relative_ce",      # -ce/-ca/-çe/-ça (equative ≈ relative_ce)
@@ -185,9 +186,9 @@ BECOME_SUFFIXES = ["aplicative_le", "reflexive_is"]
 # sevdikçe = sev + dıkça, yaşlandıkça = yaşlan + dıkça
 AS_SUFFIX = "adverbial_dikçe"
 
-# ── Prog2: -mekte = infinitive_mek + ablative_de ──
-# etmektedir = et + mek(infinitive_mek) + te(ablative_de) + dir(nounaorist_dir)
-PROG2_SUFFIXES = ["infinitive_mek", "ablative_de"]
+# ── Prog2: -mekte = infinitive_mek + locative_de ──
+# etmektedir = et + mek(infinitive_mek) + te(locative_de) + dir(nounaorist_dir)
+PROG2_SUFFIXES = ["infinitive_mek", "locative_de"]
 
 # ── Sequence equivalences for matching ──
 # Each entry: (decomposer_sequence, treebank_equivalent)
@@ -236,7 +237,7 @@ POSTP_CASE_FEATURES = {
     "PCNom":  None,
     "PCAcc":  "accusative_i",
     "PCDat":  "dative_e",
-    "PCAbl":  "locative_den",
+    "PCAbl":  "ablative_den",
     "PCGen":  "noun_compound",
     "PCIns":  "confactuous_le",
 }
@@ -572,7 +573,7 @@ def features_to_suffix_names(token):
                 suffix_names.append(AS_SUFFIX)
                 continue
 
-            # ── Prog2: -mekte = infinitive_mek + ablative_de ──
+            # ── Prog2: -mekte = infinitive_mek + locative_de ──
             # etmektedir = et + mek + te + dir
             if feat == "Prog2":
                 suffix_names.extend(PROG2_SUFFIXES)
@@ -971,16 +972,25 @@ def build_word_entry(surface, decomposition):
     morphology_parts = [root]
     suffixes = []
     current_stem = root
+    surface_lower = tr_lower(surface)
     for s in chain:
         # Compute form using the stem accumulated so far (vowel harmony depends on last vowel)
         forms = s.form(current_stem)
-        # Find which form appears in the surface
-        actual_form = ""
+        # Find which form actually appears in the surface string
+        form_used = ""
+        rest = surface_lower[len(current_stem):]
         for f in forms:
-            if f:
-                actual_form = f
+            if f and rest.startswith(f):
+                form_used = f
                 break
-        form_used = actual_form if actual_form else s.suffix
+        # Fallback: first non-empty form, then raw suffix
+        if not form_used:
+            for f in forms:
+                if f:
+                    form_used = f
+                    break
+        if not form_used:
+            form_used = s.suffix
         morphology_parts.append(form_used)
         suffixes.append({
             "name": s.name,
