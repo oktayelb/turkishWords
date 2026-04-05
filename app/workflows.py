@@ -12,6 +12,7 @@ from util.words.closed_class import ALL_CLOSED_CLASS_WORDS
 
 class WorkflowEngine:
     def __init__(self):
+        sfx.enable_index()
         self.data_manager = DataManager()
         self.model = SentenceDisambiguator(
             suffix_vocab_size=len(sfx.ALL_SUFFIXES),

@@ -20,7 +20,9 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from util.decomposer import decompose, decompose_with_cc, ALL_SUFFIXES
+from util.decomposer import decompose, decompose_with_cc, ALL_SUFFIXES, enable_index
+
+enable_index()
 from util.suffix import Suffix, Type
 from util.words.closed_class import CLOSED_CLASS_LOOKUP
 from util.word_methods import tr_lower

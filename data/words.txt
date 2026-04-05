@@ -3456,16 +3456,9 @@ bekarlık
 bekas
 bekçi
 Bekilli
-bekinme
 bekinmek
-bekitme
 bekitmek
-beklenilme
-beklenilmek
-beklenti
-bekletilme
-bekletilmek
-bekleyiş
+bekleme
 bekri
 bekrilik
 Bektaşi

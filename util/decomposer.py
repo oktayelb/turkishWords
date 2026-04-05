@@ -1,4 +1,4 @@
-from typing import List, Tuple, Set 
+from typing import List, Tuple, Set
 import functools
 
 # ============================================================================
@@ -14,6 +14,27 @@ from util.suffix import Type, Suffix, SuffixGroup
 
 ALL_SUFFIXES = NOUN2NOUN + NOUN2VERB + VERB2NOUN + VERB2VERB
 IYOR_VARIATIONS = ('iyor', 'ıyor', 'uyor', 'üyor')
+
+# ============================================================================
+# OPTIONAL ACCELERATION INDEX
+# ============================================================================
+# Set to a SuffixIndex instance to enable first-char dispatch speedup.
+# Set to None to use the original brute-force iteration (always correct).
+# Toggle at runtime: decomposer.enable_index() / decomposer.disable_index()
+_SUFFIX_INDEX = None
+
+def enable_index():
+    """Build and activate the suffix first-char dispatch index."""
+    global _SUFFIX_INDEX
+    from util.suffix_index import SuffixIndex
+    _SUFFIX_INDEX = SuffixIndex(SUFFIX_TRANSITIONS)
+    decompose.cache_clear()
+
+def disable_index():
+    """Deactivate the index; revert to brute-force suffix iteration."""
+    global _SUFFIX_INDEX
+    _SUFFIX_INDEX = None
+    decompose.cache_clear()
 
 # ============================================================================
 # SUFFIX TYPES
@@ -152,6 +173,27 @@ def get_pekistirme_analyses(word: str) -> List[Tuple]:
 
     return analyses
 
+def _bruteforce_suffix_iter(start_pos, root):
+    """Original iteration: try every suffix, compute forms on the fly."""
+    for target_pos, candidate_suffixes in SUFFIX_TRANSITIONS[start_pos].items():
+        for suffix_obj in candidate_suffixes:
+            yield target_pos, suffix_obj, suffix_obj.form(root)
+
+
+def _indexed_suffix_iter(start_pos, rest, root):
+    """
+    Indexed iteration: use first-char dispatch to skip irrelevant suffixes.
+    Still computes exact forms (index is only used for filtering).
+    """
+    seen = set()
+    for target_pos, suffix_obj, _hint_form in _SUFFIX_INDEX.get_candidates(start_pos, rest, root):
+        key = (target_pos, suffix_obj.name)
+        if key in seen:
+            continue
+        seen.add(key)
+        yield target_pos, suffix_obj, suffix_obj.form(root)
+
+
 def find_suffix_chain(word: str, start_pos: str, root: str,
                       current_chain: List = None, visited: Set = None,
                       shared_cache: dict = None) -> List:
@@ -192,8 +234,13 @@ def find_suffix_chain(word: str, start_pos: str, root: str,
 
     results = []
 
-    for target_pos, candidate_suffixes in SUFFIX_TRANSITIONS[start_pos].items():
-        for suffix_obj in candidate_suffixes:
+    # --- Choose iteration strategy: indexed or brute-force ---
+    if _SUFFIX_INDEX is not None:
+        _iter = _indexed_suffix_iter(start_pos, rest, root)
+    else:
+        _iter = _bruteforce_suffix_iter(start_pos, root)
+
+    for target_pos, suffix_obj, suffix_forms in _iter:
 
             # --- HIERARCHY VALIDATION ---
             if current_chain:
@@ -202,17 +249,11 @@ def find_suffix_chain(word: str, start_pos: str, root: str,
                     continue
 
             # --- UNIQUENESS CHECK ---
-            # NOTE: uniqueness cannot be cached safely across roots
-            # because it depends on full chain history.
-            # We skip the cache for unique suffixes' subtrees (handled naturally
-            # since unique suffixes excluded by chain content won't recurse into cache).
             if suffix_obj.is_unique:
                 if any(s.name == suffix_obj.name for s in current_chain):
                     continue
 
-            # --- FORM GENERATION ---
-            suffix_forms = suffix_obj.form(root)
-
+            # --- FORM MATCHING ---
             for suffix_form in suffix_forms:
                 sf_len = len(suffix_form)
                 if sf_len > len(rest):

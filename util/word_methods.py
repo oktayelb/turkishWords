@@ -3,7 +3,6 @@ from pathlib import Path
 import random
 from typing import List, Tuple, Optional
 
-# Turkish-aware lowercase: İ→i, I→ı (standard Python .lower() maps İ→i̇ which is wrong)
 _TR_LOWER_TABLE = str.maketrans("İI", "iı")
 
 def tr_lower(s: str) -> str:
@@ -236,7 +235,7 @@ def get_root_candidates(surface_root: str) -> List[str]:
         elif last_char == 'ğ':  candidate = form_to_check[:-1] + 'k'
         elif last_char == 'g':  candidate = form_to_check[:-1] + 'k'
 
-        if can_be_noun(candidate) or can_be_verb(candidate):
+        if (can_be_noun(candidate) or can_be_verb(candidate)) and candidate not in candidates:
             candidates.append(candidate)
 
     check_and_add_softened(surface_root)
@@ -256,5 +255,14 @@ def get_root_candidates(surface_root: str) -> List[str]:
             restored = surface_root + terminal_vowel
             if can_be_noun(restored) or can_be_verb(restored):
                  candidates.append(restored)
+
+    # Consonant gemination reversal: hiss→his, hakk→hak, redd→ret
+    # Common in Arabic/Persian loanwords where the final consonant doubles
+    # before vowel-initial suffixes (hak→hakkı, his→hissi, ret→reddi)
+    if len(surface_root) >= 3 and surface_root[-1] == surface_root[-2]:
+        degeminated = surface_root[:-1]
+        if (can_be_noun(degeminated) or can_be_verb(degeminated)) and degeminated not in candidates:
+            candidates.append(degeminated)
+        check_and_add_softened(degeminated)
 
     return candidates

@@ -10,7 +10,7 @@ class Plural(Suffix):
                  needs_y_buffer=False, 
                  form_function=None,
                  group=SuffixGroup.PLURAL, 
-                 is_unique=False):
+                 is_unique=True):
         
         if has_minor_harmony is None:
             # If the suffix contains any narrow vowel, it defaults to having minor harmony

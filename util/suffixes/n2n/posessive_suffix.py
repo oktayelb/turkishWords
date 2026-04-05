@@ -43,7 +43,7 @@ posessive_2sg = PosessiveSuffix("posessive_2sg", "in")
 posessive_3sg = PosessiveSuffix("posessive_3sg", "i", form_function=form_for_posessive_3sg)
 posessive_1pl = PosessiveSuffix("posessive_1pl", "imiz")
 posessive_2pl = PosessiveSuffix("posessive_2pl", "iniz")
-posessive_3pl = PosessiveSuffix("posessive_3pl", "leri")
+posessive_3pl = PosessiveSuffix("posessive_3pl", "leri",has_minor_harmony= False)
 
 POSESSIVE_SUFFIX = [
     value for name, value in globals().items() 

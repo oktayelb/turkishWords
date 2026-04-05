@@ -60,10 +60,10 @@ class Copula(Suffix):
 
 
 
-nounaorist_dir  = Copula("nounaorist_dir"   , "dir",needs_y_buffer=False)
-pasttense_di    = Copula("pasttense_di"     , "di")
-if_se           = Copula("if_se"            , "se")
-copula_mis      = Copula("copula_mis"       , "miş")
+nounaorist_dir   = Copula("nounaorist_dir"   , "dir",needs_y_buffer=False)
+pasttense_noundi = Copula("pasttense_noundi"     , "di")
+if_se            = Copula("if_se"            , "se")
+copula_mis       = Copula("copula_mis"       , "miş")
 
 
 COPULA = [

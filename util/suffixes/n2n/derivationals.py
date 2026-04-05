@@ -72,8 +72,8 @@ abstractifier_iyat   = Suffix("abstractifier_iyat", "iyat", Type.NOUN, Type.NOUN
 ideologicative_izm   = Suffix("ideologicative_izm", "izm", Type.NOUN, Type.NOUN, has_major_harmony=False, has_minor_harmony=False, group=SuffixGroup.N2N_DERIVATIONAL)
 scientist_olog       = Suffix("scientist_olog", "olog", Type.NOUN, Type.NOUN, has_major_harmony=False, has_minor_harmony=False, group=SuffixGroup.N2N_DERIVATIONAL)
 familative_gil       = Suffix("familative_gil", "gil", Type.NOUN, Type.NOUN, has_major_harmony=False, has_minor_harmony=False, group=SuffixGroup.N2N_DERIVATIONAL)
-approximative_si     = Suffix("approximative_si", "si", Type.NOUN, Type.NOUN, form_function= form_for_approximative_si, has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.DERIVATIONAL_LOCKING)
-approximative_imtrak = Suffix("approximative_imtrak", "imtrak", Type.NOUN, Type.NOUN, has_major_harmony=False, has_minor_harmony=False, group=SuffixGroup.DERIVATIONAL_LOCKING)
+approximative_si     = Suffix("approximative_si", "si", Type.NOUN, Type.NOUN, form_function= form_for_approximative_si, has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.N2N_DERIVATIONAL)
+approximative_imtrak = Suffix("approximative_imtrak", "imtrak", Type.NOUN, Type.NOUN, has_major_harmony=False, has_minor_harmony=False, group=SuffixGroup.N2N_DERIVATIONAL)
 
 
 #adverbial in+ ci olarak analiz edilip silinebilir
@@ -81,6 +81,6 @@ ordinal_inci         = Suffix("ordinal_inci", "inci", Type.NOUN, Type.NOUN, has_
 
 
 DERIVATIONALS = [
-    value for name, value in globals().items() 
-    if isinstance(value, Suffix) and name != "Suffix"
+value for name, value in globals().items() 
+if isinstance(value, Suffix) and name != "Suffix"
 ]
