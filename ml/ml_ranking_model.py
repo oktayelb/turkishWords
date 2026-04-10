@@ -122,7 +122,7 @@ class SentenceDisambiguator(nn.Module):
             [2 .. suffix_vocab_size+1]          → suffix IDs
             [suffix_vocab_size+2 .. total-1]    → closed-class word IDs
         Category IDs:
-            0 = Noun, 1 = Verb, 2 = Special, 3 = ClosedClass
+            0 = Noun, 1 = Verb, 2 = Special, 3 = ClosedClass  →  4 categories
         """
         super().__init__()
         self.embed_dim = config.embed_dim
@@ -313,6 +313,42 @@ class Trainer:
         # Fallback if somehow everything is 0.0
         return int(max(range(len(scores)), key=lambda i: scores[i]))
 
+    def _compute_metrics(self, preds: torch.Tensor, targets: torch.Tensor) -> Tuple[float, float, float, float]:
+        """
+        Calculates Accuracy and Macro-Averaged Precision, Recall, and F1.
+        Macro-averaging gives equal weight to all token classes, preventing 
+        common tokens from hiding poor performance on rare tokens.
+        """
+        if len(targets) == 0:
+            return 0.0, 0.0, 0.0, 0.0
+            
+        acc = (preds == targets).float().mean().item()
+        num_classes = self.model.vocab_size
+        
+        # Calculate true positives per class
+        tps_mask = (preds == targets)
+        tps = torch.bincount(targets[tps_mask], minlength=num_classes).float()
+        
+        # Calculate predicted counts and target counts per class
+        pred_counts = torch.bincount(preds, minlength=num_classes).float()
+        target_counts = torch.bincount(targets, minlength=num_classes).float()
+        
+        # Calculate per-class metrics with epsilon to avoid division by zero
+        precision = tps / (pred_counts + 1e-9)
+        recall = tps / (target_counts + 1e-9)
+        f1 = 2 * (precision * recall) / (precision + recall + 1e-9)
+        
+        # Macro average strictly over classes that appeared in the target batch
+        valid_classes = target_counts > 0
+        if not valid_classes.any():
+            return acc, 0.0, 0.0, 0.0
+            
+        macro_p = precision[valid_classes].mean().item()
+        macro_r = recall[valid_classes].mean().item()
+        macro_f1 = f1[valid_classes].mean().item()
+        
+        return acc, macro_p, macro_r, macro_f1
+
     # ------------------------------------------------------------------
     # Training
     # ------------------------------------------------------------------
@@ -453,7 +489,7 @@ class Trainer:
         self,
         all_seqs: List[Tuple[List[int], List[int]]],
         batch_size: int = 128,
-        epochs: int = 3,
+        epochs: int = 60,
     ) -> float:
         """Train on a large pre-collected dataset in proper epoch-based batches.
 
@@ -478,6 +514,11 @@ class Trainer:
             random.shuffle(data)
             epoch_loss = 0.0
             n_batches = 0
+            
+            # Lists to store epoch predictions and targets for metric calculation
+            all_epoch_preds = []
+            all_epoch_targs = []
+
             for start in range(0, len(data), batch_size):
                 batch = data[start:start + batch_size]
                 s_t, c_t, p_mask = self._build_padded_batch(batch)
@@ -495,6 +536,15 @@ class Trainer:
                         target.reshape(-1),
                         ignore_index=SPECIAL_PAD,
                     )
+                
+                # Extract predictions for metrics without affecting computation graph
+                with torch.no_grad():
+                    preds = logits.argmax(dim=-1).reshape(-1)
+                    targs = target.reshape(-1)
+                    valid_mask = targs != SPECIAL_PAD
+                    all_epoch_preds.append(preds[valid_mask].cpu())
+                    all_epoch_targs.append(targs[valid_mask].cpu())
+
                 self.scaler.scale(loss).backward()
                 self.scaler.unscale_(self.optimizer)
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
@@ -507,7 +557,16 @@ class Trainer:
             if n_batches:
                 avg = epoch_loss / n_batches
                 final_loss = avg
-                print(f"   Bulk epoch {epoch+1}/{epochs}: avg_loss={avg:.4f}  ({n_batches} batches)")
+                
+                # Calculate metrics for the epoch
+                if all_epoch_targs:
+                    epoch_preds_cat = torch.cat(all_epoch_preds)
+                    epoch_targs_cat = torch.cat(all_epoch_targs)
+                    acc, prec, rec, f1 = self._compute_metrics(epoch_preds_cat, epoch_targs_cat)
+                    print(f"   Bulk epoch {epoch+1}/{epochs}: avg_loss={avg:.4f} | Acc={acc:.4f} | P={prec:.4f} | R={rec:.4f} | F1={f1:.4f} ({n_batches} batches)")
+                else:
+                    print(f"   Bulk epoch {epoch+1}/{epochs}: avg_loss={avg:.4f}  ({n_batches} batches)")
+                    
             self.scheduler.step()
 
         self.train_history.append(final_loss)
