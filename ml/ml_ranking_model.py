@@ -16,15 +16,18 @@ torch.backends.cudnn.benchmark = True
 # The vocabulary is laid out as:
 #   [0]            → PAD
 #   [1]            → WORD_SEP  (boundary between words in a sentence)
-#   [2 .. V+1]     → suffix IDs  (suffix_idx + 2, where suffix_idx is 0-based)
+#   [2]            → BOS       (beginning-of-sequence, prepended to every input)
+#   [3 .. V+2]     → suffix IDs  (suffix_idx + 3, where suffix_idx is 0-based)
+#   [V+3 .. ]      → closed-class word IDs
 #
 # Category IDs:
-#   0 → Noun, 1 → Verb, 2 → SPECIAL (for PAD and WORD_SEP tokens)
+#   0 → Noun, 1 → Verb, 2 → SPECIAL (PAD / WORD_SEP / BOS), 3 → ClosedClass
 
 SPECIAL_PAD           = 0
 SPECIAL_WORD_SEP      = 1
-SUFFIX_OFFSET         = 2          # suffix IDs start here
-CATEGORY_SPECIAL      = 2          # category ID for PAD / WORD_SEP
+SPECIAL_BOS           = 2          # beginning-of-sequence
+SUFFIX_OFFSET         = 3          # suffix IDs start here
+CATEGORY_SPECIAL      = 2          # category ID for PAD / WORD_SEP / BOS
 CATEGORY_CLOSED_CLASS = 3          # category ID for closed-class word tokens
 
 # CLOSED_CLASS_OFFSET is computed at runtime (SUFFIX_OFFSET + len(ALL_SUFFIXES))
@@ -63,32 +66,39 @@ def _get_all_suffixes():
     return sfx.ALL_SUFFIXES
 
 
-def build_sentence_sequence(
+def _chain_tokens(
     word_chains: List[List[Tuple[int, int]]]
 ) -> Tuple[List[int], List[int]]:
     """
-    Flatten a list of encoded chains (one per word) into a single
-    (suffix_ids, category_ids) pair, separated by WORD_SEP tokens.
-
-    Layout for a 2-word sentence  [w1_suf1, w1_suf2 | SEP | w2_suf1 | SEP]:
-        suffix_ids   = [w1_suf1_id, w1_suf2_id, WORD_SEP, w2_suf1_id, WORD_SEP]
-        category_ids = [w1_cat1,    w1_cat2,    C_SPEC,  w2_cat1,    C_SPEC]
-
-    Each word ends with a WORD_SEP so the model learns to predict the first
-    suffix of the next word given all previous context.
+    Raw per-word tokens (suffixes + trailing WORD_SEP per word). No BOS.
+    Used when concatenating fragments (ctx + candidate + right) in scoring.
     """
     suffix_ids:   List[int] = []
     category_ids: List[int] = []
-
     for chain in word_chains:
         for (sid, cid) in chain:
             suffix_ids.append(sid)
             category_ids.append(cid)
-        # word boundary marker
         suffix_ids.append(SPECIAL_WORD_SEP)
         category_ids.append(CATEGORY_SPECIAL)
-
     return suffix_ids, category_ids
+
+
+def build_sentence_sequence(
+    word_chains: List[List[Tuple[int, int]]]
+) -> Tuple[List[int], List[int]]:
+    """
+    Full trainable sequence: BOS prefix + raw chain tokens.
+
+    Layout for a 2-word sentence  [BOS | w1_suf1, w1_suf2, SEP | w2_suf1, SEP]:
+        suffix_ids   = [BOS, w1_suf1_id, w1_suf2_id, WORD_SEP, w2_suf1_id, WORD_SEP]
+        category_ids = [C_SPEC, w1_cat1, w1_cat2,    C_SPEC,   w2_cat1,    C_SPEC]
+
+    The leading BOS gives the model a conditioning token for the very first
+    suffix prediction (otherwise the first-token probability is unscorable).
+    """
+    s, c = _chain_tokens(word_chains)
+    return [SPECIAL_BOS] + s, [CATEGORY_SPECIAL] + c
 
 
 # ============================================================================
@@ -119,10 +129,11 @@ class SentenceDisambiguator(nn.Module):
         Total token vocab layout:
             [0]                                 → PAD
             [1]                                 → WORD_SEP
-            [2 .. suffix_vocab_size+1]          → suffix IDs
-            [suffix_vocab_size+2 .. total-1]    → closed-class word IDs
+            [2]                                 → BOS
+            [3 .. suffix_vocab_size+2]          → suffix IDs
+            [suffix_vocab_size+3 .. total-1]    → closed-class word IDs
         Category IDs:
-            0 = Noun, 1 = Verb, 2 = Special, 3 = ClosedClass  →  4 categories
+            0 = Noun, 1 = Verb, 2 = Special (PAD/WORD_SEP/BOS), 3 = ClosedClass
         """
         super().__init__()
         self.embed_dim = config.embed_dim
@@ -306,48 +317,67 @@ class Trainer:
         return s, c
 
     def _get_best_index(self, scores: List[float]) -> int:
-        """Helper to pick the best score, explicitly ignoring 0.0 to prevent bare-root dominance."""
-        valid_indices = [i for i, s in enumerate(scores) if s != 0.0]
-        if valid_indices:
-            return int(max(valid_indices, key=lambda i: scores[i]))
-        # Fallback if somehow everything is 0.0
+        """Pick the argmax score. With BOS prepended to every sequence,
+        every candidate — including bare roots — produces a real log-prob,
+        so no sentinel filtering is needed."""
         return int(max(range(len(scores)), key=lambda i: scores[i]))
 
-    def _compute_metrics(self, preds: torch.Tensor, targets: torch.Tensor) -> Tuple[float, float, float, float]:
+    def _compute_metrics(
+        self, preds: torch.Tensor, targets: torch.Tensor
+    ) -> Tuple[float, float, float, float, float]:
         """
-        Calculates Accuracy and Macro-Averaged Precision, Recall, and F1.
-        Macro-averaging gives equal weight to all token classes, preventing 
-        common tokens from hiding poor performance on rare tokens.
+        Suffix-level accuracy + macro-averaged P/R/F1, plus a separate
+        word-boundary accuracy for diagnostic transparency.
+
+        The caller is expected to have already filtered PAD tokens. This
+        function additionally isolates real suffix tokens from the special
+        WORD_SEP / BOS tokens before computing the headline metrics, because
+        WORD_SEP is trivially predictable (every word ends with one) and
+        would otherwise mask poor suffix-level performance.
+
+        Returns: (suffix_acc, macro_p, macro_r, macro_f1, wordsep_acc)
         """
         if len(targets) == 0:
-            return 0.0, 0.0, 0.0, 0.0
-            
-        acc = (preds == targets).float().mean().item()
+            return 0.0, 0.0, 0.0, 0.0, 0.0
+
+        # Isolate the "real" suffix predictions (strip WORD_SEP and BOS).
+        is_special = (targets == SPECIAL_WORD_SEP) | (targets == SPECIAL_BOS)
+        suffix_mask = ~is_special
+
+        suffix_preds   = preds[suffix_mask]
+        suffix_targets = targets[suffix_mask]
+
+        # Word-boundary accuracy, reported separately for visibility.
+        sep_targets_mask = (targets == SPECIAL_WORD_SEP)
+        if sep_targets_mask.any():
+            wordsep_acc = (preds[sep_targets_mask] == SPECIAL_WORD_SEP).float().mean().item()
+        else:
+            wordsep_acc = 0.0
+
+        if len(suffix_targets) == 0:
+            return 0.0, 0.0, 0.0, 0.0, wordsep_acc
+
+        suffix_acc = (suffix_preds == suffix_targets).float().mean().item()
+
         num_classes = self.model.vocab_size
-        
-        # Calculate true positives per class
-        tps_mask = (preds == targets)
-        tps = torch.bincount(targets[tps_mask], minlength=num_classes).float()
-        
-        # Calculate predicted counts and target counts per class
-        pred_counts = torch.bincount(preds, minlength=num_classes).float()
-        target_counts = torch.bincount(targets, minlength=num_classes).float()
-        
-        # Calculate per-class metrics with epsilon to avoid division by zero
+        tps_mask      = (suffix_preds == suffix_targets)
+        tps           = torch.bincount(suffix_targets[tps_mask], minlength=num_classes).float()
+        pred_counts   = torch.bincount(suffix_preds,             minlength=num_classes).float()
+        target_counts = torch.bincount(suffix_targets,           minlength=num_classes).float()
+
         precision = tps / (pred_counts + 1e-9)
-        recall = tps / (target_counts + 1e-9)
-        f1 = 2 * (precision * recall) / (precision + recall + 1e-9)
-        
-        # Macro average strictly over classes that appeared in the target batch
+        recall    = tps / (target_counts + 1e-9)
+        f1        = 2 * (precision * recall) / (precision + recall + 1e-9)
+
         valid_classes = target_counts > 0
         if not valid_classes.any():
-            return acc, 0.0, 0.0, 0.0
-            
-        macro_p = precision[valid_classes].mean().item()
-        macro_r = recall[valid_classes].mean().item()
+            return suffix_acc, 0.0, 0.0, 0.0, wordsep_acc
+
+        macro_p  = precision[valid_classes].mean().item()
+        macro_r  = recall[valid_classes].mean().item()
         macro_f1 = f1[valid_classes].mean().item()
-        
-        return acc, macro_p, macro_r, macro_f1
+
+        return suffix_acc, macro_p, macro_r, macro_f1, wordsep_acc
 
     # ------------------------------------------------------------------
     # Training
@@ -537,7 +567,9 @@ class Trainer:
                         ignore_index=SPECIAL_PAD,
                     )
                 
-                # Extract predictions for metrics without affecting computation graph
+                # Extract predictions for metrics without affecting computation graph.
+                # Keep WORD_SEP and BOS in the tensors here; _compute_metrics splits
+                # them out into suffix-level and word-boundary accuracies separately.
                 with torch.no_grad():
                     preds = logits.argmax(dim=-1).reshape(-1)
                     targs = target.reshape(-1)
@@ -562,8 +594,14 @@ class Trainer:
                 if all_epoch_targs:
                     epoch_preds_cat = torch.cat(all_epoch_preds)
                     epoch_targs_cat = torch.cat(all_epoch_targs)
-                    acc, prec, rec, f1 = self._compute_metrics(epoch_preds_cat, epoch_targs_cat)
-                    print(f"   Bulk epoch {epoch+1}/{epochs}: avg_loss={avg:.4f} | Acc={acc:.4f} | P={prec:.4f} | R={rec:.4f} | F1={f1:.4f} ({n_batches} batches)")
+                    suf_acc, prec, rec, f1, sep_acc = self._compute_metrics(
+                        epoch_preds_cat, epoch_targs_cat
+                    )
+                    print(
+                        f"   Bulk epoch {epoch+1}/{epochs}: avg_loss={avg:.4f} | "
+                        f"SufAcc={suf_acc:.4f} | P={prec:.4f} | R={rec:.4f} | F1={f1:.4f} | "
+                        f"SepAcc={sep_acc:.4f} ({n_batches} batches)"
+                    )
                 else:
                     print(f"   Bulk epoch {epoch+1}/{epochs}: avg_loss={avg:.4f}  ({n_batches} batches)")
                     
@@ -619,49 +657,37 @@ class Trainer:
         """
         self.model.eval()
 
-        # Build the fixed left-context sequence
-        ctx_suffix, ctx_cat = build_sentence_sequence(context_chains) if context_chains else ([], [])
+        # Build the fixed prefix: BOS + raw left-context tokens.
+        # Using _chain_tokens (not build_sentence_sequence) avoids a double BOS
+        # when we concatenate ctx + cand + right fragments below.
+        ctx_s, ctx_c     = _chain_tokens(context_chains) if context_chains else ([], [])
+        right_s, right_c = _chain_tokens(right_chains)   if right_chains   else ([], [])
 
-        # Right context (fixed suffix, used to give bidirectional signal)
-        if right_chains:
-            right_s, right_c = build_sentence_sequence(right_chains)
-        else:
-            right_s, right_c = [], []
+        prefix_s = [SPECIAL_BOS]       + ctx_s
+        prefix_c = [CATEGORY_SPECIAL]  + ctx_c
+        prefix_len = len(prefix_s)
 
-        scores = []
+        scores: List[float] = []
         with torch.no_grad():
             for chain in candidates:
-                # Candidate token sequence + SEP
-                cand_s, cand_c = build_sentence_sequence([chain])  # ends with WORD_SEP
-
-                # Full sequence: left_ctx | candidate | right_ctx
-                full_s = ctx_suffix + cand_s + right_s
-                full_c = ctx_cat   + cand_c  + right_c
-
-                if len(full_s) < 2:
-                    scores.append(0.0)
-                    continue
-
-                s_t, c_t = self._to_tensor(full_s, full_c)
-
-                # Log-probs over positions 1..L-1
-                lp = self.model.log_probs(s_t, c_t)   # (1, L-1)
-
-                # We care only about the candidate tokens (index ctx_len .. ctx_len+cand_len-1
-                # in the *prediction* dimension, which is shifted by 1)
-                ctx_len  = len(ctx_suffix)
+                # Raw candidate tokens (no BOS): chain + WORD_SEP.
+                # Bare root → cand = [WORD_SEP], cand_len == 1 (still scorable).
+                cand_s, cand_c = _chain_tokens([chain])
                 cand_len = len(cand_s)
 
-                # Positions in log_prob tensor: lp[:, i] = log P(token[i+1] | token[0..i])
-                # Candidate tokens are at positions ctx_len .. ctx_len+cand_len-1 in full_s
-                # → they are predicted by lp at indices ctx_len-1 .. ctx_len+cand_len-2
-                start = max(0, ctx_len - 1)
-                end   = ctx_len + cand_len - 1  # exclusive
+                full_s = prefix_s + cand_s + right_s
+                full_c = prefix_c + cand_c + right_c
 
-                if end <= start or end > lp.shape[1]:
-                    scores.append(lp.sum().item())  # fallback: sum everything
-                else:
-                    scores.append(lp[0, start:end].sum().item())
+                s_t, c_t = self._to_tensor(full_s, full_c)
+                lp = self.model.log_probs(s_t, c_t)   # (1, L-1)
+
+                # lp[0, i] = log P(full_s[i+1] | full_s[0..i]).
+                # Candidate tokens occupy positions prefix_len .. prefix_len+cand_len-1
+                # in full_s, so they are predicted by lp[0, prefix_len-1 : prefix_len-1+cand_len].
+                # Because BOS is always present, prefix_len >= 1, so start >= 0 with no clamping.
+                start = prefix_len - 1
+                end   = start + cand_len
+                scores.append(lp[0, start:end].sum().item())
 
         return scores
 
@@ -677,7 +703,8 @@ class Trainer:
         """
         self.model.eval()
 
-        # Flatten into one list of jobs: (word_idx, cand_idx, suffix_seq, cat_seq)
+        # Flatten into one list of jobs: (word_idx, cand_idx, suffix_seq, cat_seq).
+        # build_sentence_sequence prepends BOS, so every seq is length >= 2.
         flat_jobs = []
         for w_idx, candidates in enumerate(all_candidates):
             for c_idx, chain in enumerate(candidates):
@@ -694,12 +721,6 @@ class Trainer:
             for i in range(0, len(flat_jobs), batch_size):
                 batch = flat_jobs[i:i + batch_size]
                 max_len = max(len(job[2]) for job in batch)
-
-                if max_len < 2:
-                    for job in batch:
-                        scores_map[job[0]].append(0.0)
-                    continue
-
                 bsz = len(batch)
                 
                 # Allocate tensors

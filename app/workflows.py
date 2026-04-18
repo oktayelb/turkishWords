@@ -103,17 +103,10 @@ class WorkflowEngine:
             except Exception:
                 pass
         
-        scored_decomps = []
-        for i, decomp in enumerate(decompositions):
-            score = scores[i] if scores else 0.0
-            if scores and score == 0.0:
-                continue
-            scored_decomps.append((score, decomp))
-            
-        if not scored_decomps and scores:
-            for i, decomp in enumerate(decompositions):
-                scored_decomps.append((0.0, decomp))
-        
+        scored_decomps = [
+            (scores[i] if scores else 0.0, decomp)
+            for i, decomp in enumerate(decompositions)
+        ]
         if scores:
             scored_decomps.sort(key=lambda x: x[0], reverse=True)
 
@@ -336,14 +329,7 @@ class WorkflowEngine:
         encoded_chains = [morph.encode_suffix_chain(chain) for chain in suffix_chains]
 
         try:
-            _, scores = self.trainer.predict(encoded_chains)
-            valid_pairs = [(scores[i], i) for i in range(len(scores)) if scores[i] != 0.0]
-
-            if not valid_pairs:
-                best_idx = 0
-            else:
-                best_score, best_idx = max(valid_pairs, key=lambda x: x[0])
-                
+            best_idx, scores = self.trainer.predict(encoded_chains)
             best_decomp = decompositions[best_idx]
             vm = morph.reconstruct_morphology(word, best_decomp)
             vm['score'] = scores[best_idx]
@@ -372,15 +358,10 @@ class WorkflowEngine:
                 best_idx = 0
                 if self.training_count > 0:
                     try:
-                        _, scores = self.trainer.predict(encoded_chains)
-                        valid_pairs = [(scores[i], i) for i in range(len(scores)) if scores[i] != 0.0]
-                        if valid_pairs:
-                            best_idx = max(valid_pairs, key=lambda x: x[0])[1]
-                        else:
-                            best_idx = 0
+                        best_idx, _ = self.trainer.predict(encoded_chains)
                     except Exception:
                         best_idx = 0
-                
+
                 if best_idx >= len(decomps):
                     best_idx = 0
                         
