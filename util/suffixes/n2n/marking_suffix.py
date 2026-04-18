@@ -8,7 +8,6 @@ class MarkingKi(Suffix):
                 has_major_harmony=False, 
                 has_minor_harmony=None, 
                 needs_y_buffer=False, 
-                form_function=None,
                 group=SuffixGroup.MARKING_KI, 
                 is_unique=True):
         
@@ -27,7 +26,9 @@ class MarkingKi(Suffix):
     @staticmethod
     
     def _default_form(word, suffix_obj):
-       
+
+        if word[-2:] in ["de", "da", "te", "ta","in","ın"]:
+            return "ki"
         return ["ki", "kü"]
 
 ###form fonksiyonu mu dizsek?

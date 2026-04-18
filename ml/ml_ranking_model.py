@@ -1,8 +1,12 @@
+import random
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from typing import List, Optional, Tuple, Dict
 from .config import config  # Direct import from sibling file
+
+# Enable cuDNN auto-tuner — finds fastest convolution algorithms for fixed input sizes
+torch.backends.cudnn.benchmark = True
 
 # ============================================================================
 # SPECIAL TOKENS
@@ -12,15 +16,22 @@ from .config import config  # Direct import from sibling file
 # The vocabulary is laid out as:
 #   [0]            → PAD
 #   [1]            → WORD_SEP  (boundary between words in a sentence)
-#   [2 .. V+1]     → suffix IDs  (suffix_idx + 2, where suffix_idx is 0-based)
+#   [2]            → BOS       (beginning-of-sequence, prepended to every input)
+#   [3 .. V+2]     → suffix IDs  (suffix_idx + 3, where suffix_idx is 0-based)
+#   [V+3 .. ]      → closed-class word IDs
 #
 # Category IDs:
-#   0 → Noun, 1 → Verb, 2 → SPECIAL (for PAD and WORD_SEP tokens)
+#   0 → Noun, 1 → Verb, 2 → SPECIAL (PAD / WORD_SEP / BOS), 3 → ClosedClass
 
-SPECIAL_PAD      = 0
-SPECIAL_WORD_SEP = 1
-SUFFIX_OFFSET    = 2          # suffix IDs start here
-CATEGORY_SPECIAL = 2          # category ID for PAD / WORD_SEP
+SPECIAL_PAD           = 0
+SPECIAL_WORD_SEP      = 1
+SPECIAL_BOS           = 2          # beginning-of-sequence
+SUFFIX_OFFSET         = 3          # suffix IDs start here
+CATEGORY_SPECIAL      = 2          # category ID for PAD / WORD_SEP / BOS
+CATEGORY_CLOSED_CLASS = 3          # category ID for closed-class word tokens
+
+# CLOSED_CLASS_OFFSET is computed at runtime (SUFFIX_OFFSET + len(ALL_SUFFIXES))
+# and passed in to SentenceDisambiguator as closed_class_vocab_size.
 
 
 # ============================================================================
@@ -55,32 +66,39 @@ def _get_all_suffixes():
     return sfx.ALL_SUFFIXES
 
 
-def build_sentence_sequence(
+def _chain_tokens(
     word_chains: List[List[Tuple[int, int]]]
 ) -> Tuple[List[int], List[int]]:
     """
-    Flatten a list of encoded chains (one per word) into a single
-    (suffix_ids, category_ids) pair, separated by WORD_SEP tokens.
-
-    Layout for a 2-word sentence  [w1_suf1, w1_suf2 | SEP | w2_suf1 | SEP]:
-        suffix_ids   = [w1_suf1_id, w1_suf2_id, WORD_SEP, w2_suf1_id, WORD_SEP]
-        category_ids = [w1_cat1,    w1_cat2,    C_SPEC,  w2_cat1,    C_SPEC]
-
-    Each word ends with a WORD_SEP so the model learns to predict the first
-    suffix of the next word given all previous context.
+    Raw per-word tokens (suffixes + trailing WORD_SEP per word). No BOS.
+    Used when concatenating fragments (ctx + candidate + right) in scoring.
     """
     suffix_ids:   List[int] = []
     category_ids: List[int] = []
-
     for chain in word_chains:
         for (sid, cid) in chain:
             suffix_ids.append(sid)
             category_ids.append(cid)
-        # word boundary marker
         suffix_ids.append(SPECIAL_WORD_SEP)
         category_ids.append(CATEGORY_SPECIAL)
-
     return suffix_ids, category_ids
+
+
+def build_sentence_sequence(
+    word_chains: List[List[Tuple[int, int]]]
+) -> Tuple[List[int], List[int]]:
+    """
+    Full trainable sequence: BOS prefix + raw chain tokens.
+
+    Layout for a 2-word sentence  [BOS | w1_suf1, w1_suf2, SEP | w2_suf1, SEP]:
+        suffix_ids   = [BOS, w1_suf1_id, w1_suf2_id, WORD_SEP, w2_suf1_id, WORD_SEP]
+        category_ids = [C_SPEC, w1_cat1, w1_cat2,    C_SPEC,   w2_cat1,    C_SPEC]
+
+    The leading BOS gives the model a conditioning token for the very first
+    suffix prediction (otherwise the first-token probability is unscorable).
+    """
+    s, c = _chain_tokens(word_chains)
+    return [SPECIAL_BOS] + s, [CATEGORY_SPECIAL] + c
 
 
 # ============================================================================
@@ -101,22 +119,31 @@ class SentenceDisambiguator(nn.Module):
     every word's disambiguation is informed by all surrounding words.
     """
 
-    def __init__(self, suffix_vocab_size: int):
+    def __init__(self, suffix_vocab_size: int, closed_class_vocab_size: int = 0):
         """
         Args:
             suffix_vocab_size: number of real suffix types (from ALL_SUFFIXES).
-                               Total token vocab = suffix_vocab_size + SUFFIX_OFFSET
-                               (PAD + WORD_SEP + all suffixes).
+            closed_class_vocab_size: number of closed-class word types
+                                     (from ALL_CLOSED_CLASS_WORDS). Defaults to 0
+                                     for backward compatibility.
+        Total token vocab layout:
+            [0]                                 → PAD
+            [1]                                 → WORD_SEP
+            [2]                                 → BOS
+            [3 .. suffix_vocab_size+2]          → suffix IDs
+            [suffix_vocab_size+3 .. total-1]    → closed-class word IDs
+        Category IDs:
+            0 = Noun, 1 = Verb, 2 = Special (PAD/WORD_SEP/BOS), 3 = ClosedClass
         """
         super().__init__()
         self.embed_dim = config.embed_dim
-        # Full token vocab: PAD(0), WORD_SEP(1), then real suffixes starting at 2
-        self.vocab_size = suffix_vocab_size + SUFFIX_OFFSET
+        # Full token vocab: PAD + WORD_SEP + suffixes + closed-class words
+        self.vocab_size = SUFFIX_OFFSET + suffix_vocab_size + closed_class_vocab_size
 
-        # Token embeddings
+        # Token embeddings (shared with LM head via weight tying)
         self.suffix_embed   = nn.Embedding(self.vocab_size,          self.embed_dim, padding_idx=SPECIAL_PAD)
-        # Category embedding: 0=Noun, 1=Verb, 2=Special  →  3 categories
-        self.category_embed = nn.Embedding(3,                         self.embed_dim)
+        # Category embedding: 0=Noun, 1=Verb, 2=Special, 3=ClosedClass  →  4 categories
+        self.category_embed = nn.Embedding(4,                         self.embed_dim)
         # Positional embedding (up to 512 tokens per sentence)
         self.pos_embed      = nn.Embedding(512,                       self.embed_dim)
 
@@ -228,12 +255,25 @@ class Trainer:
         self.model = model
 
         self.checkpoint_frequency = config.checkpoint_frequency
-        self.batch_size           = config.batch_size
-        self.patience             = config.patience
         self.path                 = str(config.model_path)
 
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.model.to(self.device)
+
+        # Mixed precision scaler (CUDA only; no-op on CPU)
+        self.scaler = torch.amp.GradScaler('cuda', enabled=(self.device == 'cuda'))
+
+        # torch.compile for kernel fusion / faster execution (PyTorch 2.0+, Linux/Mac only)
+        # Skipped on Windows — requires MSVC cl.exe which is rarely available.
+        if not torch.cuda.is_available() or not hasattr(torch, 'compile'):
+            pass  # CPU-only or old PyTorch — skip
+        elif torch.version.cuda and hasattr(torch, 'compile'):
+            import platform
+            if platform.system() != 'Windows':
+                try:
+                    self.model = torch.compile(self.model)
+                except Exception:
+                    pass
 
         self.optimizer = torch.optim.AdamW(
             model.parameters(),
@@ -250,6 +290,11 @@ class Trainer:
         self.val_history:   List[float] = []
         self.best_val_loss  = float('inf')
         self.global_step    = 0
+
+        # Experience replay buffer: list of (suffix_ids, category_ids) tuples.
+        # Populated from confirmed examples; used to mix past data into each
+        # training call so the model does not forget earlier decompositions.
+        self.replay_buffer: List[Tuple[List[int], List[int]]] = []
 
         try:
             self.load_checkpoint(self.path)
@@ -272,93 +317,305 @@ class Trainer:
         return s, c
 
     def _get_best_index(self, scores: List[float]) -> int:
-        """Helper to pick the best score, explicitly ignoring 0.0 to prevent bare-root dominance."""
-        valid_indices = [i for i, s in enumerate(scores) if s != 0.0]
-        if valid_indices:
-            return int(max(valid_indices, key=lambda i: scores[i]))
-        # Fallback if somehow everything is 0.0
+        """Pick the argmax score. With BOS prepended to every sequence,
+        every candidate — including bare roots — produces a real log-prob,
+        so no sentinel filtering is needed."""
         return int(max(range(len(scores)), key=lambda i: scores[i]))
+
+    def _compute_metrics(
+        self, preds: torch.Tensor, targets: torch.Tensor
+    ) -> Tuple[float, float, float, float, float]:
+        """
+        Suffix-level accuracy + macro-averaged P/R/F1, plus a separate
+        word-boundary accuracy for diagnostic transparency.
+
+        The caller is expected to have already filtered PAD tokens. This
+        function additionally isolates real suffix tokens from the special
+        WORD_SEP / BOS tokens before computing the headline metrics, because
+        WORD_SEP is trivially predictable (every word ends with one) and
+        would otherwise mask poor suffix-level performance.
+
+        Returns: (suffix_acc, macro_p, macro_r, macro_f1, wordsep_acc)
+        """
+        if len(targets) == 0:
+            return 0.0, 0.0, 0.0, 0.0, 0.0
+
+        # Isolate the "real" suffix predictions (strip WORD_SEP and BOS).
+        is_special = (targets == SPECIAL_WORD_SEP) | (targets == SPECIAL_BOS)
+        suffix_mask = ~is_special
+
+        suffix_preds   = preds[suffix_mask]
+        suffix_targets = targets[suffix_mask]
+
+        # Word-boundary accuracy, reported separately for visibility.
+        sep_targets_mask = (targets == SPECIAL_WORD_SEP)
+        if sep_targets_mask.any():
+            wordsep_acc = (preds[sep_targets_mask] == SPECIAL_WORD_SEP).float().mean().item()
+        else:
+            wordsep_acc = 0.0
+
+        if len(suffix_targets) == 0:
+            return 0.0, 0.0, 0.0, 0.0, wordsep_acc
+
+        suffix_acc = (suffix_preds == suffix_targets).float().mean().item()
+
+        num_classes = self.model.vocab_size
+        tps_mask      = (suffix_preds == suffix_targets)
+        tps           = torch.bincount(suffix_targets[tps_mask], minlength=num_classes).float()
+        pred_counts   = torch.bincount(suffix_preds,             minlength=num_classes).float()
+        target_counts = torch.bincount(suffix_targets,           minlength=num_classes).float()
+
+        precision = tps / (pred_counts + 1e-9)
+        recall    = tps / (target_counts + 1e-9)
+        f1        = 2 * (precision * recall) / (precision + recall + 1e-9)
+
+        valid_classes = target_counts > 0
+        if not valid_classes.any():
+            return suffix_acc, 0.0, 0.0, 0.0, wordsep_acc
+
+        macro_p  = precision[valid_classes].mean().item()
+        macro_r  = recall[valid_classes].mean().item()
+        macro_f1 = f1[valid_classes].mean().item()
+
+        return suffix_acc, macro_p, macro_r, macro_f1, wordsep_acc
 
     # ------------------------------------------------------------------
     # Training
     # ------------------------------------------------------------------
 
-    def train_sentence(
-        self,
-        word_chains: List[List[Tuple[int, int]]],
-        max_retries: int = 20,
+    # ------------------------------------------------------------------
+    # Experience replay helpers
+    # ------------------------------------------------------------------
+
+    def _add_to_replay(self, suffix_ids: List[int], category_ids: List[int]) -> None:
+        """Add a confirmed sequence to the replay buffer, evicting old entries if full."""
+        self.replay_buffer.append((suffix_ids, category_ids))
+        if len(self.replay_buffer) > config.replay_buffer_size:
+            # Evict a random entry from the first half to keep a mix of old and recent.
+            evict_idx = random.randrange(len(self.replay_buffer) // 2)
+            self.replay_buffer.pop(evict_idx)
+
+    def _build_padded_batch(
+        self, seqs: List[Tuple[List[int], List[int]]]
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """
+        Pad a list of (suffix_ids, category_ids) sequences to the same length.
+        Returns (suffix_tensor, category_tensor, pad_mask) each of shape (B, L).
+        pad_mask is True where the position is padding.
+        Tensors are built on CPU then transferred in a single .to(device) call.
+        """
+        max_len = max(len(s) for s, _ in seqs)
+        bsz = len(seqs)
+
+        pin = self.device == 'cuda'
+        s_t    = torch.full((bsz, max_len), SPECIAL_PAD,      dtype=torch.long).pin_memory() if pin else torch.full((bsz, max_len), SPECIAL_PAD,      dtype=torch.long)
+        c_t    = torch.full((bsz, max_len), CATEGORY_SPECIAL, dtype=torch.long).pin_memory() if pin else torch.full((bsz, max_len), CATEGORY_SPECIAL, dtype=torch.long)
+        p_mask = torch.ones((bsz, max_len), dtype=torch.bool)
+
+        for i, (sids, cids) in enumerate(seqs):
+            L = len(sids)
+            s_t[i, :L]    = torch.tensor(sids, dtype=torch.long)
+            c_t[i, :L]    = torch.tensor(cids, dtype=torch.long)
+            p_mask[i, :L] = False
+
+        non_blocking = self.device == 'cuda'
+        return (
+            s_t.to(self.device, non_blocking=non_blocking),
+            c_t.to(self.device, non_blocking=non_blocking),
+            p_mask.to(self.device, non_blocking=non_blocking),
+        )
+
+    def _gradient_steps(
+        self, seqs: List[Tuple[List[int], List[int]]], n_steps: int
     ) -> float:
         """
-        Train on a confirmed sentence decomposition.
-
-        Args:
-            word_chains: one encoded chain per word in the sentence
-                         (from Translation.encode_suffix_chain).
-                         Single-word training passes a list with one entry.
-        Returns:
-            final cross-entropy loss (float).
+        Run `n_steps` gradient updates on a padded batch of sequences.
+        Returns the loss from the final step.
         """
-        # Build flat token sequence for the whole sentence
-        suffix_ids, category_ids = build_sentence_sequence(word_chains)
+        s_t, c_t, p_mask = self._build_padded_batch(seqs)
 
-        if len(suffix_ids) < 2:
-            # Nothing to train on (bare root with no suffixes → 1 token = just SEP)
-            return 0.0
-
-        s_tensor, c_tensor = self._to_tensor(suffix_ids, category_ids)
-
-        # Target for causal LM: predict token[i] from tokens[0..i-1]
-        # input = tokens[:-1],  target = tokens[1:]
-        input_s = s_tensor[:, :-1]
-        input_c = c_tensor[:, :-1]
-        target  = s_tensor[:, 1:]    # (1, L-1)
+        # Causal LM: predict token[i] from tokens[0..i-1]
+        input_s  = s_t[:, :-1]
+        input_c  = c_t[:, :-1]
+        target   = s_t[:, 1:]
+        in_mask  = p_mask[:, :-1]   # padding mask for the input side
 
         self.model.train()
         final_loss = 0.0
+        use_amp = self.device == 'cuda'
 
-        print(f"   Learning sentence context...", end="", flush=True)
-
-        for attempt in range(max_retries):
-            logits = self.model(input_s, input_c)            # (1, L-1, V)
-            loss   = F.cross_entropy(
-                logits.reshape(-1, logits.size(-1)),
-                target.reshape(-1),
-                ignore_index=SPECIAL_PAD,
-            )
+        for _ in range(n_steps):
+            self.optimizer.zero_grad()
+            with torch.amp.autocast('cuda', enabled=use_amp):
+                logits = self.model(input_s, input_c, pad_mask=in_mask)   # (B, L-1, V)
+                loss   = F.cross_entropy(
+                    logits.reshape(-1, logits.size(-1)),
+                    target.reshape(-1),
+                    ignore_index=SPECIAL_PAD,
+                )
             final_loss = loss.item()
 
-            self.optimizer.zero_grad()
-            loss.backward()
+            self.scaler.scale(loss).backward()
+            self.scaler.unscale_(self.optimizer)
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
-            self.optimizer.step()
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
             self.global_step += 1
 
-            # Early stopping: stop once loss is low enough
-            if final_loss < 0.05:
-                print(f" Done in {attempt + 1} steps (loss={final_loss:.4f}).")
-                break
-            if attempt % 5 == 0:
-                print(".", end="", flush=True)
-        else:
-            print(f" Limit reached ({max_retries}), loss={final_loss:.4f}.")
+        return final_loss
+
+    # ------------------------------------------------------------------
+    # Training (public API)
+    # ------------------------------------------------------------------
+
+    def train_sentence(
+        self,
+        word_chains: List[List[Tuple[int, int]]],
+        max_retries: int = None,   # kept for call-site compatibility, ignored
+    ) -> float:
+        """
+        Train on a confirmed sentence (or single-word) decomposition.
+
+        Strategy — experience replay:
+          1. Encode the new example into a flat token sequence.
+          2. Add it to the replay buffer.
+          3. Sample `replay_k` past examples from the buffer.
+          4. Run `steps_per_update` gradient steps on the mixed batch.
+
+        This replaces the old "repeat 20 times on one sentence until loss < 0.05"
+        loop, which caused memorisation and catastrophic forgetting.
+
+        Args:
+            word_chains: one encoded chain per word (empty chain = bare root).
+        Returns:
+            cross-entropy loss from the final gradient step.
+        """
+        suffix_ids, category_ids = build_sentence_sequence(word_chains)
+
+        # Sequences with only a WORD_SEP token carry no learnable signal.
+        if len(suffix_ids) < 2:
+            return 0.0
+
+        # 1. Add new example to replay buffer.
+        self._add_to_replay(suffix_ids, category_ids)
+
+        # 2. Sample past examples.
+        batch: List[Tuple[List[int], List[int]]] = [(suffix_ids, category_ids)]
+        if len(self.replay_buffer) > 1:
+            k = min(config.replay_k, len(self.replay_buffer) - 1)
+            others = [x for x in self.replay_buffer if x is not batch[0]]
+            batch.extend(random.sample(others, k))
+
+        # 3. Fixed gradient steps on mixed batch.
+        print(f"   Training on {len(batch)} examples...", end="", flush=True)
+        final_loss = self._gradient_steps(batch, config.steps_per_update)
+        print(f" loss={final_loss:.4f}")
 
         self.scheduler.step()
         self.train_history.append(final_loss)
         return final_loss
 
-    # Keep the old name as an alias so call-sites in interactive_trainer.py
-    # that still use train_persistent() keep working during migration.
+    def train_bulk(
+        self,
+        all_seqs: List[Tuple[List[int], List[int]]],
+        batch_size: int = 128,
+        epochs: int = 60,
+    ) -> float:
+        """Train on a large pre-collected dataset in proper epoch-based batches.
+
+        Used by relearn_all to avoid the overhead of per-sentence replay sampling.
+        All sequences are added to the replay buffer first, then trained in
+        shuffled mini-batches for `epochs` passes.
+
+        Returns the average loss of the final epoch.
+        """
+        if not all_seqs:
+            return 0.0
+
+        # Populate replay buffer with all sequences
+        for sids, cids in all_seqs:
+            self._add_to_replay(sids, cids)
+
+        use_amp = self.device == 'cuda'
+        final_loss = 0.0
+        data = list(all_seqs)
+
+        for epoch in range(epochs):
+            random.shuffle(data)
+            epoch_loss = 0.0
+            n_batches = 0
+            
+            # Lists to store epoch predictions and targets for metric calculation
+            all_epoch_preds = []
+            all_epoch_targs = []
+
+            for start in range(0, len(data), batch_size):
+                batch = data[start:start + batch_size]
+                s_t, c_t, p_mask = self._build_padded_batch(batch)
+                input_s  = s_t[:, :-1]
+                input_c  = c_t[:, :-1]
+                target   = s_t[:, 1:]
+                in_mask  = p_mask[:, :-1]
+
+                self.model.train()
+                self.optimizer.zero_grad()
+                with torch.amp.autocast('cuda', enabled=use_amp):
+                    logits = self.model(input_s, input_c, pad_mask=in_mask)
+                    loss = F.cross_entropy(
+                        logits.reshape(-1, logits.size(-1)),
+                        target.reshape(-1),
+                        ignore_index=SPECIAL_PAD,
+                    )
+                
+                # Extract predictions for metrics without affecting computation graph.
+                # Keep WORD_SEP and BOS in the tensors here; _compute_metrics splits
+                # them out into suffix-level and word-boundary accuracies separately.
+                with torch.no_grad():
+                    preds = logits.argmax(dim=-1).reshape(-1)
+                    targs = target.reshape(-1)
+                    valid_mask = targs != SPECIAL_PAD
+                    all_epoch_preds.append(preds[valid_mask].cpu())
+                    all_epoch_targs.append(targs[valid_mask].cpu())
+
+                self.scaler.scale(loss).backward()
+                self.scaler.unscale_(self.optimizer)
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
+                self.scaler.step(self.optimizer)
+                self.scaler.update()
+                self.global_step += 1
+                epoch_loss += loss.item()
+                n_batches += 1
+
+            if n_batches:
+                avg = epoch_loss / n_batches
+                final_loss = avg
+                
+                # Calculate metrics for the epoch
+                if all_epoch_targs:
+                    epoch_preds_cat = torch.cat(all_epoch_preds)
+                    epoch_targs_cat = torch.cat(all_epoch_targs)
+                    suf_acc, prec, rec, f1, sep_acc = self._compute_metrics(
+                        epoch_preds_cat, epoch_targs_cat
+                    )
+                    print(
+                        f"   Bulk epoch {epoch+1}/{epochs}: avg_loss={avg:.4f} | "
+                        f"SufAcc={suf_acc:.4f} | P={prec:.4f} | R={rec:.4f} | F1={f1:.4f} | "
+                        f"SepAcc={sep_acc:.4f} ({n_batches} batches)"
+                    )
+                else:
+                    print(f"   Bulk epoch {epoch+1}/{epochs}: avg_loss={avg:.4f}  ({n_batches} batches)")
+                    
+            self.scheduler.step()
+
+        self.train_history.append(final_loss)
+        return final_loss
+
     def train_persistent(
         self,
-        training_data: List[Tuple],   # old-style: [([], encoded_chains, correct_idx), ...]
-        max_retries: int = 20,
+        training_data: List[Tuple],
+        max_retries: int = None,
     ) -> float:
-        """
-        Backward-compatible wrapper around train_sentence().
-
-        Converts old-style ([], encoded_chains, correct_idx) tuples into a
-        flat sentence sequence using only the confirmed chains, then trains.
-        """
+        """Legacy wrapper — converts old-style training tuples and delegates."""
         confirmed_chains = []
         for (_, candidates, correct_idx) in training_data:
             if correct_idx < len(candidates):
@@ -367,8 +624,7 @@ class Trainer:
                 confirmed_chains.append(candidates[0])
             else:
                 confirmed_chains.append([])
-
-        return self.train_sentence(confirmed_chains, max_retries=max_retries)
+        return self.train_sentence(confirmed_chains)
 
     # ------------------------------------------------------------------
     # Inference
@@ -401,49 +657,37 @@ class Trainer:
         """
         self.model.eval()
 
-        # Build the fixed left-context sequence
-        ctx_suffix, ctx_cat = build_sentence_sequence(context_chains) if context_chains else ([], [])
+        # Build the fixed prefix: BOS + raw left-context tokens.
+        # Using _chain_tokens (not build_sentence_sequence) avoids a double BOS
+        # when we concatenate ctx + cand + right fragments below.
+        ctx_s, ctx_c     = _chain_tokens(context_chains) if context_chains else ([], [])
+        right_s, right_c = _chain_tokens(right_chains)   if right_chains   else ([], [])
 
-        # Right context (fixed suffix, used to give bidirectional signal)
-        if right_chains:
-            right_s, right_c = build_sentence_sequence(right_chains)
-        else:
-            right_s, right_c = [], []
+        prefix_s = [SPECIAL_BOS]       + ctx_s
+        prefix_c = [CATEGORY_SPECIAL]  + ctx_c
+        prefix_len = len(prefix_s)
 
-        scores = []
+        scores: List[float] = []
         with torch.no_grad():
             for chain in candidates:
-                # Candidate token sequence + SEP
-                cand_s, cand_c = build_sentence_sequence([chain])  # ends with WORD_SEP
-
-                # Full sequence: left_ctx | candidate | right_ctx
-                full_s = ctx_suffix + cand_s + right_s
-                full_c = ctx_cat   + cand_c  + right_c
-
-                if len(full_s) < 2:
-                    scores.append(0.0)
-                    continue
-
-                s_t, c_t = self._to_tensor(full_s, full_c)
-
-                # Log-probs over positions 1..L-1
-                lp = self.model.log_probs(s_t, c_t)   # (1, L-1)
-
-                # We care only about the candidate tokens (index ctx_len .. ctx_len+cand_len-1
-                # in the *prediction* dimension, which is shifted by 1)
-                ctx_len  = len(ctx_suffix)
+                # Raw candidate tokens (no BOS): chain + WORD_SEP.
+                # Bare root → cand = [WORD_SEP], cand_len == 1 (still scorable).
+                cand_s, cand_c = _chain_tokens([chain])
                 cand_len = len(cand_s)
 
-                # Positions in log_prob tensor: lp[:, i] = log P(token[i+1] | token[0..i])
-                # Candidate tokens are at positions ctx_len .. ctx_len+cand_len-1 in full_s
-                # → they are predicted by lp at indices ctx_len-1 .. ctx_len+cand_len-2
-                start = max(0, ctx_len - 1)
-                end   = ctx_len + cand_len - 1  # exclusive
+                full_s = prefix_s + cand_s + right_s
+                full_c = prefix_c + cand_c + right_c
 
-                if end <= start or end > lp.shape[1]:
-                    scores.append(lp.sum().item())  # fallback: sum everything
-                else:
-                    scores.append(lp[0, start:end].sum().item())
+                s_t, c_t = self._to_tensor(full_s, full_c)
+                lp = self.model.log_probs(s_t, c_t)   # (1, L-1)
+
+                # lp[0, i] = log P(full_s[i+1] | full_s[0..i]).
+                # Candidate tokens occupy positions prefix_len .. prefix_len+cand_len-1
+                # in full_s, so they are predicted by lp[0, prefix_len-1 : prefix_len-1+cand_len].
+                # Because BOS is always present, prefix_len >= 1, so start >= 0 with no clamping.
+                start = prefix_len - 1
+                end   = start + cand_len
+                scores.append(lp[0, start:end].sum().item())
 
         return scores
 
@@ -459,7 +703,8 @@ class Trainer:
         """
         self.model.eval()
 
-        # Flatten into one list of jobs: (word_idx, cand_idx, suffix_seq, cat_seq)
+        # Flatten into one list of jobs: (word_idx, cand_idx, suffix_seq, cat_seq).
+        # build_sentence_sequence prepends BOS, so every seq is length >= 2.
         flat_jobs = []
         for w_idx, candidates in enumerate(all_candidates):
             for c_idx, chain in enumerate(candidates):
@@ -476,12 +721,6 @@ class Trainer:
             for i in range(0, len(flat_jobs), batch_size):
                 batch = flat_jobs[i:i + batch_size]
                 max_len = max(len(job[2]) for job in batch)
-
-                if max_len < 2:
-                    for job in batch:
-                        scores_map[job[0]].append(0.0)
-                    continue
-
                 bsz = len(batch)
                 
                 # Allocate tensors
@@ -581,6 +820,7 @@ class Trainer:
             'val_history':     self.val_history,
             'best_val_loss':   self.best_val_loss,
             'global_step':     self.global_step,
+            'replay_buffer':   self.replay_buffer,
         }, self.path)
         print(f"Saved to {self.path}")
 
@@ -589,8 +829,9 @@ class Trainer:
         self.model.load_state_dict(ckpt['model_state'])
         self.optimizer.load_state_dict(ckpt['optimizer_state'])
         self.scheduler.load_state_dict(ckpt['scheduler_state'])
-        self.train_history = ckpt.get('train_history', [])
-        self.val_history   = ckpt.get('val_history',   [])
-        self.best_val_loss = ckpt.get('best_val_loss', float('inf'))
-        self.global_step   = ckpt.get('global_step',   0)
-        print(f"Loaded from {path} (step {self.global_step})")
+        self.train_history  = ckpt.get('train_history',  [])
+        self.val_history    = ckpt.get('val_history',    [])
+        self.best_val_loss  = ckpt.get('best_val_loss',  float('inf'))
+        self.global_step    = ckpt.get('global_step',    0)
+        self.replay_buffer  = ckpt.get('replay_buffer',  [])
+        print(f"Loaded from {path} (step {self.global_step}, {len(self.replay_buffer)} replay entries)")

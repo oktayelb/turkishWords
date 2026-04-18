@@ -1,7 +1,22 @@
 from typing import List, Dict, Tuple, Any
 import util.decomposer as sfx
-from ml.ml_ranking_model import SUFFIX_OFFSET
+from ml.ml_ranking_model import SUFFIX_OFFSET, CATEGORY_CLOSED_CLASS
 from util.suffix import Suffix
+from util.words.closed_class import ClosedClassMarker, ALL_CLOSED_CLASS_WORDS
+
+# --- Module-level ID lookup caches (built once, reused for all encode calls) ---
+def _build_caches():
+    suffix_to_id = {s.name: idx + SUFFIX_OFFSET for idx, s in enumerate(sfx.ALL_SUFFIXES)}
+    cc_offset = SUFFIX_OFFSET + len(sfx.ALL_SUFFIXES)
+    cc_to_id = {id(cc): cc_offset + idx for idx, cc in enumerate(ALL_CLOSED_CLASS_WORDS)}
+    cc_name_to_id = {}
+    for idx, cc in enumerate(ALL_CLOSED_CLASS_WORDS):
+        name = f"cc_{cc.category}"
+        if name not in cc_name_to_id:
+            cc_name_to_id[name] = cc_offset + idx
+    return suffix_to_id, cc_to_id, cc_name_to_id, cc_offset
+
+_SUFFIX_TO_ID, _CC_TO_ID, _CC_NAME_TO_ID, _CC_OFFSET = _build_caches()
 
 
 ## translatxions between representations
@@ -20,25 +35,52 @@ def match_decompositions(entries: List[Dict], decompositions: List[Tuple]) -> Li
                 break
     return indices
 
-def encode_suffix_chain(suffix_chain: List[Suffix]) -> List[Tuple[int, int]]:
-    """Encodes a suffix chain into token and category IDs for the ML model."""
-    suffix_to_id  = {
-        suffix.name: idx + SUFFIX_OFFSET
-        for idx, suffix in enumerate(sfx.ALL_SUFFIXES)
-    }
-    category_to_id = {'Noun': 0, 'Verb': 1}
+def encode_suffix_names(suffix_dicts: List[Dict]) -> List[Tuple[int, int]]:
+    """Encode suffix chain directly from JSONL suffix dicts (name/makes strings)."""
+    category_to_id = {'NOUN': 0, 'VERB': 1, 'noun': 0, 'verb': 1, 'Noun': 0, 'Verb': 1}
+    encoded = []
+    for sd in suffix_dicts:
+        name = sd['name']
+        makes = sd.get('makes', 'NOUN')
+        if name.startswith('cc_'):
+            token_id = _CC_NAME_TO_ID.get(name, _CC_OFFSET)
+            encoded.append((token_id, CATEGORY_CLOSED_CLASS))
+        else:
+            token_id = _SUFFIX_TO_ID.get(name, SUFFIX_OFFSET)
+            cat_id = category_to_id.get(makes, 0)
+            encoded.append((token_id, cat_id))
+    return encoded
 
+
+def encode_suffix_chain(suffix_chain: List) -> List[Tuple[int, int]]:
+    """Encodes a suffix chain into (token_id, category_id) pairs for the ML model."""
     if not suffix_chain:
         return []
-    
-    return [
-        (suffix_to_id.get(s.name, SUFFIX_OFFSET), category_to_id.get(s.makes.name, 0))
-        for s in suffix_chain
-    ]
+    encoded = []
+    for s in suffix_chain:
+        if isinstance(s, ClosedClassMarker):
+            token_id = _CC_TO_ID.get(id(s.cc_word), _CC_OFFSET)
+            encoded.append((token_id, CATEGORY_CLOSED_CLASS))
+        else:
+            token_id = _SUFFIX_TO_ID.get(s.name, SUFFIX_OFFSET)
+            cat_id   = 1 if s.makes.name == 'Verb' else 0
+            encoded.append((token_id, cat_id))
+    return encoded
 
 def reconstruct_morphology(word: str, decomposition: Tuple) -> Dict[str, Any]:
     """Reconstructs the step-by-step morphology string from a root and suffix chain."""
     root, pos, chain, final_pos = decomposition
+
+    # Closed-class word: display the category label, no suffix breakdown
+    if chain and isinstance(chain[0], ClosedClassMarker):
+        cc = chain[0].cc_word
+        return {
+            'root_str':      f"{root} ({cc.category})",
+            'final_pos':     final_pos,
+            'has_chain':     False,
+            'formation_str': f"{root} [{cc.category}]",
+        }
+
     if not chain:
         verb_marker = "-" if pos == "verb" else ""
         return {
@@ -140,7 +182,7 @@ def reconstruct_morphology(word: str, decomposition: Tuple) -> Dict[str, Any]:
 def format_detailed_decomp(decomp: Tuple) -> str:
     """
     Formats the decomposition to include both suffix name and specific surface form.
-    Example: ev+plural_ler+ablative_de+marking_ki
+    Example: ev+plural_ler+locative_de+marking_ki
     """
     root, pos, chain, final_pos = decomp
     if not chain:

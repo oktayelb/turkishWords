@@ -1,4 +1,4 @@
-from typing import List, Tuple, Set 
+from typing import List, Tuple, Set
 import functools
 
 # ============================================================================
@@ -14,6 +14,27 @@ from util.suffix import Type, Suffix, SuffixGroup
 
 ALL_SUFFIXES = NOUN2NOUN + NOUN2VERB + VERB2NOUN + VERB2VERB
 IYOR_VARIATIONS = ('iyor', 'ıyor', 'uyor', 'üyor')
+
+# ============================================================================
+# OPTIONAL ACCELERATION INDEX
+# ============================================================================
+# Set to a SuffixIndex instance to enable first-char dispatch speedup.
+# Set to None to use the original brute-force iteration (always correct).
+# Toggle at runtime: decomposer.enable_index() / decomposer.disable_index()
+_SUFFIX_INDEX = None
+
+def enable_index():
+    """Build and activate the suffix first-char dispatch index."""
+    global _SUFFIX_INDEX
+    from util.suffix_index import SuffixIndex
+    _SUFFIX_INDEX = SuffixIndex(SUFFIX_TRANSITIONS)
+    decompose.cache_clear()
+
+def disable_index():
+    """Deactivate the index; revert to brute-force suffix iteration."""
+    global _SUFFIX_INDEX
+    _SUFFIX_INDEX = None
+    decompose.cache_clear()
 
 # ============================================================================
 # SUFFIX TYPES
@@ -152,6 +173,27 @@ def get_pekistirme_analyses(word: str) -> List[Tuple]:
 
     return analyses
 
+def _bruteforce_suffix_iter(start_pos, root):
+    """Original iteration: try every suffix, compute forms on the fly."""
+    for target_pos, candidate_suffixes in SUFFIX_TRANSITIONS[start_pos].items():
+        for suffix_obj in candidate_suffixes:
+            yield target_pos, suffix_obj, suffix_obj.form(root)
+
+
+def _indexed_suffix_iter(start_pos, rest, root):
+    """
+    Indexed iteration: use first-char dispatch to skip irrelevant suffixes.
+    Still computes exact forms (index is only used for filtering).
+    """
+    seen = set()
+    for target_pos, suffix_obj, _hint_form in _SUFFIX_INDEX.get_candidates(start_pos, rest, root):
+        key = (target_pos, suffix_obj.name)
+        if key in seen:
+            continue
+        seen.add(key)
+        yield target_pos, suffix_obj, suffix_obj.form(root)
+
+
 def find_suffix_chain(word: str, start_pos: str, root: str,
                       current_chain: List = None, visited: Set = None,
                       shared_cache: dict = None) -> List:
@@ -192,8 +234,13 @@ def find_suffix_chain(word: str, start_pos: str, root: str,
 
     results = []
 
-    for target_pos, candidate_suffixes in SUFFIX_TRANSITIONS[start_pos].items():
-        for suffix_obj in candidate_suffixes:
+    # --- Choose iteration strategy: indexed or brute-force ---
+    if _SUFFIX_INDEX is not None:
+        _iter = _indexed_suffix_iter(start_pos, rest, root)
+    else:
+        _iter = _bruteforce_suffix_iter(start_pos, root)
+
+    for target_pos, suffix_obj, suffix_forms in _iter:
 
             # --- HIERARCHY VALIDATION ---
             if current_chain:
@@ -202,17 +249,11 @@ def find_suffix_chain(word: str, start_pos: str, root: str,
                     continue
 
             # --- UNIQUENESS CHECK ---
-            # NOTE: uniqueness cannot be cached safely across roots
-            # because it depends on full chain history.
-            # We skip the cache for unique suffixes' subtrees (handled naturally
-            # since unique suffixes excluded by chain content won't recurse into cache).
             if suffix_obj.is_unique:
                 if any(s.name == suffix_obj.name for s in current_chain):
                     continue
 
-            # --- FORM GENERATION ---
-            suffix_forms = suffix_obj.form(root)
-
+            # --- FORM MATCHING ---
             for suffix_form in suffix_forms:
                 sf_len = len(suffix_form)
                 if sf_len > len(rest):
@@ -257,6 +298,37 @@ def find_suffix_chain(word: str, start_pos: str, root: str,
     return results
 
 
+def decompose_with_cc(word: str) -> List[Tuple]:
+    """
+    Like decompose(), but also includes closed-class word analyses.
+
+    For each closed-class interpretation of `word` (pronoun, conjunction, etc.)
+    a tuple is appended:
+        (surface_form, "cc_<category>", [ClosedClassMarker(cc_obj)], "cc_<category>")
+
+    This allows the ML model to see closed-class tokens in the sentence sequence,
+    and allows the workflow to handle words (e.g. "ve", "ile") that the regular
+    decomposer cannot match because they are not in words.txt as open-class roots.
+
+    Regular suffix-chain decompositions are always included first.
+    """
+    from util.words.closed_class import CLOSED_CLASS_LOOKUP, ClosedClassMarker
+
+    analyses = list(decompose(word))
+
+    cc_entries = CLOSED_CLASS_LOOKUP.get(word, [])
+    seen_categories: set = set()
+    for cc_obj in cc_entries:
+        cat_key = (cc_obj.category, cc_obj.word)
+        if cat_key in seen_categories:
+            continue
+        seen_categories.add(cat_key)
+        pos_tag = f"cc_{cc_obj.category}"
+        analyses.append((word, pos_tag, [ClosedClassMarker(cc_obj)], pos_tag))
+
+    return analyses
+
+
 def append_analysis(word, pos, root, analyses_list, shared_cache: dict = None):
     possible_chains = find_suffix_chain(word, pos, root, shared_cache=shared_cache)
     for chain, final_pos in possible_chains:
@@ -280,6 +352,11 @@ def decompose(word: str) -> List[Tuple]:
     for i in range(1, len(word) + 1):
         root = word[:i]
 
+        # Skip roots that are themselves derived forms (e.g. "alışmak" when "al" exists).
+        # The deeper decomposition (shorter root + more suffixes) will still be found.
+        if i < len(word) and wrd.is_derived_word(root):
+            continue
+
         if wrd.can_be_noun(root):
             append_analysis(word, "noun", root, analyses, shared_cache)
 
@@ -289,6 +366,10 @@ def decompose(word: str) -> List[Tuple]:
         if not wrd.exists(root):
             root_pairs = wrd.get_root_candidates(word[:i])
             for lemma_root in root_pairs:
+
+                if i < len(word) and wrd.is_derived_word(lemma_root):
+                    continue
+                
                 virtual_word = lemma_root + word[i:]
 
                 if wrd.can_be_noun(lemma_root):

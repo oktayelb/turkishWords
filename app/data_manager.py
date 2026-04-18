@@ -6,6 +6,7 @@ from typing import List, Optional, Dict
 
 from app.file_paths import FilePaths
 import util.word_methods as wrd
+from util.word_methods import tr_lower
 
 class DataManager:
     def __init__(self):
@@ -39,7 +40,7 @@ class DataManager:
             content = re.sub(r"['’‘]", "", content)
             content = re.sub(r'[^\w\s]|_', ' ', content)
             
-            words = [word.lower() for word in content.split()]
+            words = [tr_lower(word) for word in content.split()]
             return words
         except Exception:
             return []
@@ -54,16 +55,21 @@ class DataManager:
 
     def get_valid_decomps(self) -> List[Dict]:
         entries = []
-        try:    
-            with open(self.paths.valid_decompositions_path, 'r', encoding='utf-8') as f:
-                for line in f:
-                    if line.strip():
-                        try:
-                            entries.append(json.loads(line))
-                        except Exception:
-                            continue
-        except FileNotFoundError:
-            return []
+        paths_to_load = [
+            self.paths.valid_decompositions_path,
+            self.paths.treebank_adapted_path,
+        ]
+        for path in paths_to_load:
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        if line.strip():
+                            try:
+                                entries.append(json.loads(line))
+                            except Exception:
+                                continue
+            except FileNotFoundError:
+                continue
         return entries
 
     def log_decompositions(self, log_entries: List[Dict]) -> bool:

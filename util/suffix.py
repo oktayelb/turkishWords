@@ -10,9 +10,9 @@ class SuffixGroup(IntEnum):
     N2V_DERIVATIONAL = 50      # İsimden Fiile yapım ekleri; -le  -e -se...
     N2N_DERIVATIONAL = 50      # İsimden isim yapım ekleri -lık -lı -cı...
     V2N_DERIVATIONAL = 50      # Fiilden isim yapan ekler; -iş -me -ma -ış...
-    PLURAL = 50                # Çoğul eki  -ler
+    PLURAL = 60                # Çoğul eki  -ler
     POSSESSIVE = 150           # İyelik Ekleri; -im -in -imiz
-    CASE = 200                     # Hal Ekleri -e -de -i -den -nin
+    CASE = 200                 # Hal Ekleri -e -de -i -den -nin
     MARKING_KI = 225           # İşaret eki -ki
     WITH_LE = 230              # Birliktelik eki -le
     DERIVATIONAL_LOCKING = 240 # Zarf yapan ekler; -ip -erek -e -dikçe... (-erekten kabul etmez)
@@ -64,9 +64,7 @@ class Suffix:
         if vowel_collision:
 
             if suffix_obj.needs_y_buffer:
-                candidates.append('y' + base)
-                candidates.append('ğ' + base) 
-        
+                candidates.append('y' + base)        
             elif len(base) > 1:
                 candidates.append(base[1:]) 
 

@@ -45,24 +45,25 @@ class CaseSuffix(Suffix):
         base = Suffix._apply_major_harmony(word, base, suffix_obj.has_major_harmony)
         base = Suffix._apply_minor_harmony(word, base, suffix_obj.has_minor_harmony)
         base = Suffix._apply_consonant_hardening(word, base)
-        
-        candidates.append(base)  # Always include the base form
-        
+
         if word and word[-1] in ["a","e","ı","i","o","ö","u","ü"]:  # If the last character is a vowel, we need to consider buffer consonants
-            candidates.remove(base)  
             candidates.append('n' + base)
 
             if suffix_obj.needs_y_buffer:
                 candidates.append('y' + base)
-        
+        else:
+            candidates.append(base)
+
         return candidates
 
 
 noun_compound = CaseSuffix("noun_compound"  , "in") # köy ağzında needs_y_buffer doğru
 accusative_i  = CaseSuffix("accusative_i"   , "i", needs_y_buffer=True)
-locative_den  = CaseSuffix("locative_den"   , "den")
+ablative_den  = CaseSuffix("ablative_den"   , "den")
+##sorunlu
 dative_e      = CaseSuffix("dative_e"       , "e", needs_y_buffer=True)
-ablative_de   = CaseSuffix("ablative_de"    , "de")
+
+locative_de   = CaseSuffix("locative_de"    , "de")
 
 
 CASESUFFIX = [

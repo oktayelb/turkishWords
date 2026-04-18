@@ -55,14 +55,14 @@ def form_for_dimunitive_cik(word, suffix_obj):
     return [base,base2,base3]
 
 
-actor_ci        = Suffix("actor_ci", "ci", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.N2N_DERIVATIONAL)
-privative_siz   = Suffix("privative_siz", "siz", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.N2N_DERIVATIONAL)
-composessive_li = Suffix("composessive_li", "li", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.N2N_DERIVATIONAL)
-suitative_lik   = Suffix("suitative_lik", "lik", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.N2N_DERIVATIONAL)
+actor_ci            = Suffix("actor_ci", "ci", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.N2N_DERIVATIONAL)
+privative_siz       = Suffix("privative_siz", "siz", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.N2N_DERIVATIONAL)
+composessive_li     = Suffix("composessive_li", "li", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.N2N_DERIVATIONAL)
+suitative_lik       = Suffix("suitative_lik", "lik", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.N2N_DERIVATIONAL)
 
 
 counting_er          = Suffix("counting_er", "er", Type.NOUN, Type.NOUN, form_function= form_for_counting_er,  has_major_harmony=True, has_minor_harmony=False, group=SuffixGroup.N2N_DERIVATIONAL)
-cooperative_daş      = Suffix("cooperative_daş", "daş", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=False, group=SuffixGroup.N2N_DERIVATIONAL)
+cooperative_deş      = Suffix("cooperative_deş", "deş", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=False, group=SuffixGroup.N2N_DERIVATIONAL)
 relative_ce          = Suffix("relative_ce", "ce", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=False, group=SuffixGroup.N2N_DERIVATIONAL)
 relative_sel         = Suffix("relative_sel", "sel", Type.NOUN, Type.NOUN, has_major_harmony=True, has_minor_harmony=False, group=SuffixGroup.N2N_DERIVATIONAL)
 dimunitive_cik       = Suffix("dimunitive_cik", "cik", Type.NOUN, Type.NOUN,  form_function= form_for_dimunitive_cik,has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.N2N_DERIVATIONAL)
@@ -72,8 +72,8 @@ abstractifier_iyat   = Suffix("abstractifier_iyat", "iyat", Type.NOUN, Type.NOUN
 ideologicative_izm   = Suffix("ideologicative_izm", "izm", Type.NOUN, Type.NOUN, has_major_harmony=False, has_minor_harmony=False, group=SuffixGroup.N2N_DERIVATIONAL)
 scientist_olog       = Suffix("scientist_olog", "olog", Type.NOUN, Type.NOUN, has_major_harmony=False, has_minor_harmony=False, group=SuffixGroup.N2N_DERIVATIONAL)
 familative_gil       = Suffix("familative_gil", "gil", Type.NOUN, Type.NOUN, has_major_harmony=False, has_minor_harmony=False, group=SuffixGroup.N2N_DERIVATIONAL)
-approximative_si     = Suffix("approximative_si", "si", Type.NOUN, Type.NOUN, form_function= form_for_approximative_si, has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.DERIVATIONAL_LOCKING)
-approximative_imtrak = Suffix("approximative_imtrak", "imtrak", Type.NOUN, Type.NOUN, has_major_harmony=False, has_minor_harmony=False, group=SuffixGroup.DERIVATIONAL_LOCKING)
+approximative_si     = Suffix("approximative_si", "si", Type.NOUN, Type.NOUN, form_function= form_for_approximative_si, has_major_harmony=True, has_minor_harmony=True, group=SuffixGroup.N2N_DERIVATIONAL)
+approximative_imtrak = Suffix("approximative_imtrak", "imtrak", Type.NOUN, Type.NOUN, has_major_harmony=False, has_minor_harmony=False, group=SuffixGroup.N2N_DERIVATIONAL)
 
 
 #adverbial in+ ci olarak analiz edilip silinebilir
@@ -81,6 +81,6 @@ ordinal_inci         = Suffix("ordinal_inci", "inci", Type.NOUN, Type.NOUN, has_
 
 
 DERIVATIONALS = [
-    value for name, value in globals().items() 
-    if isinstance(value, Suffix) and name != "Suffix"
+value for name, value in globals().items() 
+if isinstance(value, Suffix) and name != "Suffix"
 ]

@@ -49,21 +49,21 @@ class Copula(Suffix):
         base = Suffix._apply_consonant_hardening(word, base)
         
         candidates.append(base)  # Always include the base form
-        
+
         if word and word[-1] in VOWELS:  # If the last character is a vowel, we need to consider buffer consonants
             if suffix_obj.needs_y_buffer:
                 candidates.append('y' + base)
-        
+
         return candidates
 
 
 
 
 
-nounaorist_dir  = Copula("nounaorist_dir"   , "dir",needs_y_buffer=False)
-pasttense_di    = Copula("pasttense_di"     , "di")
-silative_se     = Copula("silative_se"      , "se")
-copula_mis      = Copula("copula_mis"       , "miş")
+nounaorist_dir   = Copula("nounaorist_dir"   , "dir",needs_y_buffer=False)
+pasttense_noundi = Copula("pasttense_noundi"     , "di")
+if_se            = Copula("if_se"            , "se")
+copula_mis       = Copula("copula_mis"       , "miş")
 
 
 COPULA = [

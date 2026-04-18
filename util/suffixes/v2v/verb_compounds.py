@@ -27,12 +27,8 @@ class CompoundVerb(Suffix):
     @staticmethod
     
     def _default_form(word, suffix_obj):
-        """
-        Overridden default form handler specifically for Case Suffixes.
-        Consolidates 'n' and 'y' buffer logic for Turkish nominal inflection.
-        
-        """
-        
+
+
         ebase = suffix_obj.suffix[0]
         candidates = []
         # Apply standard harmonies using the parent class's static methods
@@ -52,11 +48,11 @@ class CompoundVerb(Suffix):
 
 ### Buranın ayrılması laaızm daha temiz bir mimari... ebilmek evermek eyazmak şeylerini halletmeli.
 possibiliative_ebil   = CompoundVerb("possibilitative_ebil", "ebil")
-almostative_eyazmak   = CompoundVerb("almostative_eyazmak", "eyazmak")
-continuative_edurmak  = CompoundVerb("continuative_edurmak", "edurmak")
-remainmative_kalmak   = CompoundVerb("remainmative_ekalmak", "ekalmak")
-persistive_egelmek    = CompoundVerb("persistive_egelmek", "egelmek")
-suddenative_ivermek   = CompoundVerb("suddenative_ivermek", "ivermek")
+almostative_eyazmak   = CompoundVerb("almostative_eyazmak", "eyaz")
+continuative_edurmak  = CompoundVerb("continuative_edurmak", "edur")
+remainmative_kalmak   = CompoundVerb("remainmative_ekalmak", "ekal")
+persistive_egelmek    = CompoundVerb("persistive_egelmek", "egel")
+suddenative_ivermek   = CompoundVerb("suddenative_ivermek", "iver")
 
 #iyoru buraya bir şekilde koysak mı?
 

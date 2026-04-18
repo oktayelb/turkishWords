@@ -5,12 +5,12 @@ class Plural(Suffix):
     def __init__(self, name, suffix, 
                 comes_to=Type.NOUN,
                 makes=Type.NOUN,
-                 has_major_harmony=None, 
+                 has_major_harmony= True, 
                  has_minor_harmony=None, 
                  needs_y_buffer=False, 
                  form_function=None,
                  group=SuffixGroup.PLURAL, 
-                 is_unique=False):
+                 is_unique=True):
         
         if has_minor_harmony is None:
             # If the suffix contains any narrow vowel, it defaults to having minor harmony

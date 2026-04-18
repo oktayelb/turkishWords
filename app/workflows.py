@@ -2,23 +2,83 @@ import re
 from typing import List, Optional, Tuple, Dict, Any
 
 import util.decomposer as sfx
-import util.word_methods as wrd 
+import util.word_methods as wrd
+from util.word_methods import tr_lower
 from app.data_manager import DataManager
 import app.morphology_adapter as morph
 from app.sequence_matcher import find_matching_combinations, get_top_sentence_predictions
 from ml.ml_ranking_model import SentenceDisambiguator, Trainer
+from util.words.closed_class import ALL_CLOSED_CLASS_WORDS
 
 class WorkflowEngine:
     def __init__(self):
+        sfx.enable_index()
         self.data_manager = DataManager()
-        self.model = SentenceDisambiguator(suffix_vocab_size=len(sfx.ALL_SUFFIXES))
+        self.model = SentenceDisambiguator(
+            suffix_vocab_size=len(sfx.ALL_SUFFIXES),
+            closed_class_vocab_size=len(ALL_CLOSED_CLASS_WORDS),
+        )
         self.trainer = Trainer(model=self.model)
         self.training_count = self.data_manager.load_training_count()
         self.decomp_cache = {}
 
+        # If the checkpoint carried no replay buffer (fresh start or old checkpoint),
+        # rebuild it from logged confirmed decompositions so the model immediately
+        # has past data to replay during the first training call.
+        if not self.trainer.replay_buffer:
+            self._preload_replay_buffer()
+
+    def _preload_replay_buffer(self) -> None:
+        """Reconstruct the replay buffer from the confirmed-decompositions JSONL log."""
+        from ml.ml_ranking_model import build_sentence_sequence
+        entries = self.data_manager.get_valid_decomps()
+        loaded = 0
+        for entry in entries:
+            try:
+                if entry.get('type') == 'sentence':
+                    chains = []
+                    for word_entry in entry.get('words', []):
+                        decomps = self.get_decompositions(word_entry['word'])
+                        matched = morph.match_decompositions([word_entry], decomps)
+                        if matched:
+                            chain = [chain for _, _, chain, _ in decomps][matched[0]]
+                            chains.append(morph.encode_suffix_chain(chain))
+                        else:
+                            # Fallback: encode directly from suffix names (treebank-forced entries)
+                            sfx_dicts = word_entry.get('suffixes', [])
+                            if sfx_dicts:
+                                chains.append(morph.encode_suffix_names(sfx_dicts))
+                    if chains:
+                        sids, cids = build_sentence_sequence(chains)
+                        if len(sids) >= 2:
+                            self.trainer._add_to_replay(sids, cids)
+                            loaded += 1
+                else:
+                    decomps = self.get_decompositions(entry['word'])
+                    matched = morph.match_decompositions([entry], decomps)
+                    if matched:
+                        chain = [c for _, _, c, _ in decomps][matched[0]]
+                        encoded = morph.encode_suffix_chain(chain)
+                    else:
+                        # Fallback: encode directly from suffix names
+                        sfx_dicts = entry.get('suffixes', [])
+                        encoded = morph.encode_suffix_names(sfx_dicts) if sfx_dicts else []
+                    if encoded:
+                        sids, cids = build_sentence_sequence([encoded])
+                        if len(sids) >= 2:
+                            self.trainer._add_to_replay(sids, cids)
+                            loaded += 1
+            except Exception:
+                continue
+        if loaded:
+            import random
+            random.shuffle(self.trainer.replay_buffer)
+            print(f"Replay buffer pre-loaded with {loaded} past examples.")
+
     def get_decompositions(self, word: str) -> List[Tuple]:
+        word = word.replace("'", "")
         if word not in self.decomp_cache:
-            self.decomp_cache[word] = sfx.decompose(word)
+            self.decomp_cache[word] = sfx.decompose_with_cc(word)
         return self.decomp_cache[word]
 
     def save(self):
@@ -43,19 +103,12 @@ class WorkflowEngine:
             except Exception:
                 pass
         
-        scored_decomps = []
-        for i, decomp in enumerate(decompositions):
-            score = scores[i] if scores else 0.0
-            if scores and score == 0.0:
-                continue
-            scored_decomps.append((score, decomp))
-            
-        if not scored_decomps and scores:
-            for i, decomp in enumerate(decompositions):
-                scored_decomps.append((0.0, decomp))
-        
+        scored_decomps = [
+            (scores[i] if scores else 0.0, decomp)
+            for i, decomp in enumerate(decompositions)
+        ]
         if scores:
-            scored_decomps.sort(key=lambda x: x[0])
+            scored_decomps.sort(key=lambda x: x[0], reverse=True)
 
         view_models = []
         sorted_decomps = []
@@ -79,14 +132,24 @@ class WorkflowEngine:
         log_entries = []
         deleted_messages = []
         
+        from util.words.closed_class import ClosedClassMarker as _CCMarker
+        word_lower = tr_lower(word)
         for decomp in correct_decomps:
             root, pos, chain, final_pos = decomp
             suffix_info = []
-            if chain:
+            if chain and not isinstance(chain[0], _CCMarker):
                 current = root
                 for suffix in chain:
                     forms = suffix.form(current)
-                    used_form = forms[0] if forms else ""
+                    # Match against the actual surface string
+                    rest = word_lower[len(current):]
+                    used_form = ""
+                    for f in forms:
+                        if f and rest.startswith(f):
+                            used_form = f
+                            break
+                    if not used_form:
+                        used_form = forms[0] if forms else ""
                     suffix_info.append({
                         'name': suffix.name,
                         'form': used_form,
@@ -101,16 +164,19 @@ class WorkflowEngine:
             })
         self.data_manager.log_decompositions(log_entries)
 
-        word_lower = word.lower()
         for decomp in correct_decomps:
-            root = decomp[0].lower()
+            root = tr_lower(decomp[0])
             if root == word_lower:
                 continue
             if self.data_manager.delete(word_lower):
                 deleted_messages.append(f"Deleted '{word}' (root '{root}' exists)")
+                sfx.decompose.cache_clear()
+                self.decomp_cache.pop(word_lower, None)
             infinitive_form = wrd.infinitive(word_lower)
             if self.data_manager.delete(infinitive_form):
                 deleted_messages.append(f"Deleted infinitive '{infinitive_form}'")
+                sfx.decompose.cache_clear()
+                self.decomp_cache.pop(infinitive_form, None)
 
         loss = 0.0
         for idx in original_indices:
@@ -122,6 +188,11 @@ class WorkflowEngine:
             self.save()
         return loss, deleted_messages
 
+    def get_decompositions_with_cc(self, word: str) -> List[Tuple]:
+        """Like get_decompositions but also includes closed-class word analyses."""
+        word = word.replace("'", "")
+        return sfx.decompose_with_cc(word)
+
     def prepare_sentence_training(self, sentence: str) -> Optional[List[Dict]]:
         words = sentence.strip().split()
         if not words:
@@ -129,7 +200,7 @@ class WorkflowEngine:
 
         word_data = []
         for word in words:
-            decomps = self.get_decompositions(word)
+            decomps = self.get_decompositions_with_cc(word)
             if not decomps:
                 return None
             word_data.append({'word': word, 'decomps': decomps})
@@ -169,11 +240,20 @@ class WorkflowEngine:
             
             root, pos, chain, final_pos = decomps[correct_d_idx]
             suffix_info = []
-            if chain:
+            from util.words.closed_class import ClosedClassMarker as _CCMarker
+            word_lower = tr_lower(word)
+            if chain and not isinstance(chain[0], _CCMarker):
                 current = root
                 for suffix in chain:
                     forms = suffix.form(current)
-                    used_form = forms[0] if forms else ""
+                    rest = word_lower[len(current):]
+                    used_form = ""
+                    for f in forms:
+                        if f and rest.startswith(f):
+                            used_form = f
+                            break
+                    if not used_form:
+                        used_form = forms[0] if forms else ""
                     suffix_info.append({
                         'name': suffix.name,
                         'form': used_form,
@@ -197,69 +277,48 @@ class WorkflowEngine:
         return loss
 
     def relearn_all(self) -> Tuple[int, int]:
+        from ml.ml_ranking_model import build_sentence_sequence
         entries = self.data_manager.get_valid_decomps()
-        
-        word_groups = {}
-        for entry in entries:
-            if entry.get('type') == 'sentence':
-                for word_entry in entry.get('words', []):
-                    word_groups.setdefault(('__sentence__', id(entry)), []).append(entry)
-                    break
-            else:
-                word_groups.setdefault(entry['word'], []).append(entry)
-        
-        total_trained = 0
+
+        all_seqs = []   # (suffix_ids, category_ids) flat sentence sequences
         skipped = 0
+        total_words = 0
 
-        for key, correct_entries in word_groups.items():
-            if key[0] == '__sentence__':
-                continue  
-            word = key
+        for entry in entries:
             try:
-                decompositions = self.get_decompositions(word)
-                if not decompositions:
-                    skipped += 1
-                    continue
-                
-                correct_indices = morph.match_decompositions(correct_entries, decompositions)
-                if not correct_indices:
-                    skipped += 1
-                    continue
-                
-                suffix_chains = [chain for _, _, chain, _ in decompositions]
-                encoded_chains = [morph.encode_suffix_chain(chain) for chain in suffix_chains]
-                
-                for idx in correct_indices:
-                    self.trainer.train_sentence([encoded_chains[idx]])
-                    total_trained += 1
-            except Exception:
-                skipped += 1
-
-        sentence_entries = [e for e in entries if e.get('type') == 'sentence']
-        for sent_entry in sentence_entries:
-            try:
-                confirmed_chains = []
-                for word_entry in sent_entry.get('words', []):
-                    word = word_entry['word']
-                    decomps = self.get_decompositions(word)
-                    if not decomps:
-                        break
-                    matched = morph.match_decompositions([word_entry], decomps)
-                    if not matched:
-                        break
-                    suffix_chains = [chain for _, _, chain, _ in decomps]
-                    encoded_chains = [morph.encode_suffix_chain(chain) for chain in suffix_chains]
-                    confirmed_chains.append(encoded_chains[matched[0]])
+                if entry.get('type') == 'sentence':
+                    chains = []
+                    for word_entry in entry.get('words', []):
+                        sfx_dicts = word_entry.get('suffixes', [])
+                        if sfx_dicts:
+                            chains.append(morph.encode_suffix_names(sfx_dicts))
+                    if chains:
+                        sids, cids = build_sentence_sequence(chains)
+                        if len(sids) >= 2:
+                            all_seqs.append((sids, cids))
+                            total_words += len(chains)
                 else:
-                    if confirmed_chains:
-                        self.trainer.train_sentence(confirmed_chains)
-                        total_trained += len(confirmed_chains)
+                    # Word entry — encode directly from stored suffix names (no decomposer)
+                    sfx_dicts = entry.get('suffixes', [])
+                    if sfx_dicts:
+                        encoded = morph.encode_suffix_names(sfx_dicts)
+                        if encoded:
+                            sids, cids = build_sentence_sequence([encoded])
+                            if len(sids) >= 2:
+                                all_seqs.append((sids, cids))
+                                total_words += 1
+                    else:
+                        skipped += 1
             except Exception:
                 skipped += 1
 
-        self.training_count += total_trained
+        if all_seqs:
+            print(f"   Bulk training on {len(all_seqs)} sequences ({total_words} words)...")
+            self.trainer.train_bulk(all_seqs, batch_size=128, epochs=200)
+
+        self.training_count += total_words
         self.save()
-        return total_trained, skipped
+        return total_words, skipped
 
     def evaluate_word(self, word: str) -> Optional[Dict]:
         decompositions = self.get_decompositions(word)
@@ -270,14 +329,7 @@ class WorkflowEngine:
         encoded_chains = [morph.encode_suffix_chain(chain) for chain in suffix_chains]
 
         try:
-            _, scores = self.trainer.predict(encoded_chains)
-            valid_pairs = [(scores[i], i) for i in range(len(scores)) if scores[i] != 0.0]
-            
-            if not valid_pairs:
-                best_idx = 0
-            else:
-                best_score, best_idx = min(valid_pairs, key=lambda x: x[0])
-                
+            best_idx, scores = self.trainer.predict(encoded_chains)
             best_decomp = decompositions[best_idx]
             vm = morph.reconstruct_morphology(word, best_decomp)
             vm['score'] = scores[best_idx]
@@ -306,15 +358,10 @@ class WorkflowEngine:
                 best_idx = 0
                 if self.training_count > 0:
                     try:
-                        _, scores = self.trainer.predict(encoded_chains)
-                        valid_pairs = [(scores[i], i) for i in range(len(scores)) if scores[i] != 0.0]
-                        if valid_pairs:
-                            best_idx = min(valid_pairs, key=lambda x: x[0])[1]
-                        else:
-                            best_idx = 0
+                        best_idx, _ = self.trainer.predict(encoded_chains)
                     except Exception:
                         best_idx = 0
-                
+
                 if best_idx >= len(decomps):
                     best_idx = 0
                         
@@ -342,7 +389,7 @@ class WorkflowEngine:
             
             for sentence in sentences:
                 clean_sentence = re.sub(r"['’‘]", "", sentence)
-                clean_sentence = re.sub(r'[^\w\s]|_', ' ', clean_sentence).lower()
+                clean_sentence = tr_lower(re.sub(r'[^\w\s]|_', ' ', clean_sentence))
                 
                 word_data = self.prepare_sentence_training(clean_sentence)
                 
