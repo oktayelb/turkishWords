@@ -50,37 +50,33 @@ def form_for_perfectative_ik(word, suffix_obj):
     base = Suffix._apply_major_harmony(word, base, suffix_obj.has_major_harmony)
     base = Suffix._apply_minor_harmony(word, base, suffix_obj.has_minor_harmony)
     base = Suffix._apply_consonant_hardening(word, base)
-    result_list.append(base)
-    
+    if word and word[-1] in VOWELS:
+        # y buffer
+        y_form = 'y' + base
+        result_list.append(y_form)
 
-    # Softening base: ik -> iğ
-    soft_base = Suffix._apply_softening(base)
-    if soft_base != base:
-        result_list.append(soft_base)
-    
+        soft_y = Suffix._apply_softening(y_form)
+        if soft_y != y_form:
+            result_list.append(soft_y)
 
-    if word:
-        if word[-1] in VOWELS:
-            # y buffer
-            y_form = 'y' + base
-            result_list.append(y_form)
-            
-            soft_y = Suffix._apply_softening(y_form)
-            if soft_y != y_form:
-                result_list.append(soft_y)
-            
-            result_list.append('ğ' + base)
-            
-            # k variant
-            k_form = base[1:]
-            result_list.append(k_form)
-            
-            # Softening k variant: k -> ğ
-            soft_k = Suffix._apply_softening(k_form)
-            if soft_k != k_form:
-                result_list.append(soft_k)
-        
-    
+        result_list.append('ğ' + base)
+
+        # k variant
+        k_form = base[1:]
+        result_list.append(k_form)
+
+        # Softening k variant: k -> ğ
+        soft_k = Suffix._apply_softening(k_form)
+        if soft_k != k_form:
+            result_list.append(soft_k)
+    else:
+        result_list.append(base)
+
+        # Softening base: ik -> iğ
+        soft_base = Suffix._apply_softening(base)
+        if soft_base != base:
+            result_list.append(soft_base)
+
     return result_list
 
 def form_for_nounifier_inti(word, suffix_obj):
@@ -89,13 +85,13 @@ def form_for_nounifier_inti(word, suffix_obj):
     base = Suffix._apply_major_harmony(word, base, suffix_obj.has_major_harmony)
     base = Suffix._apply_minor_harmony(word, base, suffix_obj.has_minor_harmony)
     base = Suffix._apply_consonant_hardening(word, base)
-    result_list.append(base)
-    
+    if word and word[-1] in VOWELS:
+        reduced = base[1:]
+        result_list.append(reduced)
+    else:
+        result_list.append(base)
+
     if word:
-        if word[-1] in VOWELS:
-            reduced = base[1:]
-            result_list.append(reduced)
-        
         if len(word) >= 2:
             last_two = word[-2:]
             if last_two in ['in', 'ın', 'un', 'ün']:

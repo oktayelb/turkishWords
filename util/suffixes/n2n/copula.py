@@ -49,11 +49,11 @@ class Copula(Suffix):
         base = Suffix._apply_consonant_hardening(word, base)
         
         candidates.append(base)  # Always include the base form
-        
+
         if word and word[-1] in VOWELS:  # If the last character is a vowel, we need to consider buffer consonants
             if suffix_obj.needs_y_buffer:
                 candidates.append('y' + base)
-        
+
         return candidates
 
 
