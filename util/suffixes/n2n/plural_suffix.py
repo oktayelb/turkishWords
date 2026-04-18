@@ -5,7 +5,7 @@ class Plural(Suffix):
     def __init__(self, name, suffix, 
                 comes_to=Type.NOUN,
                 makes=Type.NOUN,
-                 has_major_harmony=None, 
+                 has_major_harmony= True, 
                  has_minor_harmony=None, 
                  needs_y_buffer=False, 
                  form_function=None,
